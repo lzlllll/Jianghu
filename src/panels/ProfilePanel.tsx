@@ -128,57 +128,6 @@ export function ProfilePanel() {
             </div>
           </ScrollCard>
 
-          <ScrollCard title="心性效果概览" subtitle="祸福相依，一念之间">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {(player.stats?.heartScores || []).map((hs) => {
-                const modifiers = hs.modifiers && hs.modifiers.length > 0
-                  ? hs.modifiers
-                  : generateHeartModifiers(hs.trait, hs.score);
-                return (
-                  <div
-                    key={hs.trait}
-                    className="p-5 rounded-lg border border-paper-400/10"
-                  >
-                    <div className="flex items-center gap-4 mb-4">
-                      <span className="font-brush text-2xl text-paper-100">{hs.trait}</span>
-                      <div className="flex-1 h-2 bg-ink-900/60 rounded-full overflow-hidden">
-                        <div
-                          className={cn(
-                            "h-full rounded-full",
-                            hs.score >= 70 ? "bg-gold-500/80" : hs.score >= 40 ? "bg-paper-400/60" : "bg-cinnabar-500/50",
-                          )}
-                          style={{ width: `${hs.score}%` }}
-                        />
-                      </div>
-                      <span className="font-number text-base text-gold-400">{hs.score}</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {modifiers.map((mod, idx) => (
-                        <span
-                          key={idx}
-                          className={cn(
-                            "font-number text-sm px-3 py-1 rounded border",
-                            mod.value > 0
-                              ? "bg-jade-500/20 text-jade-300 border-jade-500/30"
-                              : "bg-cinnabar-500/20 text-cinnabar-300 border-cinnabar-500/30",
-                          )}
-                        >
-                          {HEART_STAT_DISPLAY[mod.stat] || mod.stat}
-                          {" "}{mod.value > 0 ? "+" : ""}{mod.value}%
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
-              {(player.stats?.heartScores || []).length === 0 && (
-                <div className="font-serif text-base text-paper-400/50 text-center py-8 col-span-2">
-                  心性均衡，尚无显著效果显现。
-                </div>
-              )}
-            </div>
-          </ScrollCard>
-
           <div className="grid grid-cols-2 gap-6">
             <ScrollCard title="修炼历程" subtitle="回首来路，初心不改">
               <div className="relative pl-6 max-h-[300px] overflow-y-auto">
@@ -411,174 +360,164 @@ export function ProfilePanel() {
 
                 <ScrollCard title="经脉" subtitle="十二经脉，气血运行">
                   <div className="relative flex justify-center">
-                    <div className="relative w-64 h-80">
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <div className="w-16 h-16 rounded-full border-2 border-paper-400/20 bg-paper-400/5 relative">
-                          <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="relative w-[340px] h-[420px]">
+                      <div className="absolute inset-0 flex flex-col items-center justify-between">
+                        {/* 头部 */}
+                        <div className="flex flex-col items-center">
+                          <div className="w-16 h-16 rounded-full border-2 border-paper-400/20 bg-paper-400/5 flex items-center justify-center">
                             <span className="font-brush text-base text-paper-400/40">头</span>
                           </div>
-                          {groupedMeridians["head"]?.map((m) => (
-                            <div
-                              key={m.id}
-                              className={cn(
-                                "absolute px-2 py-1 rounded text-sm font-brush border whitespace-nowrap",
-                                m.damage
-                                  ? "bg-cinnabar-500/20 text-cinnabar-300 border-cinnabar-500/30"
-                                  : m.clarity >= 80
-                                    ? "bg-gold-500/20 text-gold-300 border-gold-500/30"
-                                    : "bg-paper-400/15 text-paper-300 border-paper-400/20",
-                              )}
-                              style={{
-                                top: "-40px",
-                                left: "50%",
-                                transform: "translateX(-50%)",
-                              }}
-                            >
-                              {m.name} {m.clarity}%
-                            </div>
-                          ))}
-                        </div>
-                        <div className="w-24 h-28 border-2 border-paper-400/20 bg-paper-400/5 mt-1 relative">
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="font-brush text-base text-paper-400/40">胸</span>
+                          <div className="flex flex-col items-center gap-1 mt-2">
+                            {groupedMeridians["head"]?.map((m) => (
+                              <div
+                                key={m.id}
+                                className={cn(
+                                  "px-3 py-1 rounded text-sm font-brush border whitespace-nowrap",
+                                  m.damage
+                                    ? "bg-cinnabar-500/20 text-cinnabar-300 border-cinnabar-500/30"
+                                    : m.clarity >= 80
+                                      ? "bg-gold-500/20 text-gold-300 border-gold-500/30"
+                                      : "bg-paper-400/15 text-paper-300 border-paper-400/20",
+                                )}
+                              >
+                                {m.name} {m.clarity}%
+                              </div>
+                            ))}
                           </div>
-                          {groupedMeridians["chest"]?.map((m) => (
-                            <div
-                              key={m.id}
-                              className={cn(
-                                "absolute px-2 py-1 rounded text-sm font-brush border whitespace-nowrap",
-                                m.damage
-                                  ? "bg-cinnabar-500/20 text-cinnabar-300 border-cinnabar-500/30"
-                                  : m.clarity >= 80
-                                    ? "bg-gold-500/20 text-gold-300 border-gold-500/30"
-                                    : "bg-paper-400/15 text-paper-300 border-paper-400/20",
-                              )}
-                              style={{
-                                top: "-32px",
-                                left: "50%",
-                                transform: "translateX(-50%)",
-                              }}
-                            >
-                              {m.name} {m.clarity}%
-                            </div>
-                          ))}
-                          {groupedMeridians["abdomen"]?.map((m) => (
-                            <div
-                              key={m.id}
-                              className={cn(
-                                "absolute px-2 py-1 rounded text-sm font-brush border whitespace-nowrap",
-                                m.damage
-                                  ? "bg-cinnabar-500/20 text-cinnabar-300 border-cinnabar-500/30"
-                                  : m.clarity >= 80
-                                    ? "bg-gold-500/20 text-gold-300 border-gold-500/30"
-                                    : "bg-paper-400/15 text-paper-300 border-paper-400/20",
-                              )}
-                              style={{
-                                bottom: "-32px",
-                                left: "50%",
-                                transform: "translateX(-50%)",
-                              }}
-                            >
-                              {m.name} {m.clarity}%
-                            </div>
-                          ))}
                         </div>
-                        <div className="flex gap-12 mt-1">
-                          <div className="w-12 h-24 border-2 border-paper-400/20 bg-paper-400/5 relative">
-                            <div className="absolute inset-0 flex items-center justify-center">
+
+                        {/* 胸腹 */}
+                        <div className="flex flex-col items-center">
+                          <div className="w-28 h-24 border-2 border-paper-400/20 bg-paper-400/5 flex items-center justify-center rounded">
+                            <span className="font-brush text-base text-paper-400/40">躯干</span>
+                          </div>
+                          <div className="flex flex-col items-center gap-1 mt-2">
+                            {groupedMeridians["chest"]?.map((m) => (
+                              <div
+                                key={m.id}
+                                className={cn(
+                                  "px-3 py-1 rounded text-sm font-brush border whitespace-nowrap",
+                                  m.damage
+                                    ? "bg-cinnabar-500/20 text-cinnabar-300 border-cinnabar-500/30"
+                                    : m.clarity >= 80
+                                      ? "bg-gold-500/20 text-gold-300 border-gold-500/30"
+                                      : "bg-paper-400/15 text-paper-300 border-paper-400/20",
+                                )}
+                              >
+                                {m.name} {m.clarity}%
+                              </div>
+                            ))}
+                            {groupedMeridians["abdomen"]?.map((m) => (
+                              <div
+                                key={m.id}
+                                className={cn(
+                                  "px-3 py-1 rounded text-sm font-brush border whitespace-nowrap",
+                                  m.damage
+                                    ? "bg-cinnabar-500/20 text-cinnabar-300 border-cinnabar-500/30"
+                                    : m.clarity >= 80
+                                      ? "bg-gold-500/20 text-gold-300 border-gold-500/30"
+                                      : "bg-paper-400/15 text-paper-300 border-paper-400/20",
+                                )}
+                              >
+                                {m.name} {m.clarity}%
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* 手臂 */}
+                        <div className="flex w-full justify-between px-4">
+                          <div className="flex flex-col items-start">
+                            <div className="w-14 h-20 border-2 border-paper-400/20 bg-paper-400/5 flex items-center justify-center rounded">
                               <span className="font-brush text-base text-paper-400/40">左</span>
                             </div>
-                            {groupedMeridians["arm_left"]?.map((m) => (
-                              <div
-                                key={m.id}
-                                className={cn(
-                                  "absolute px-2 py-1 rounded text-sm font-brush border whitespace-nowrap",
-                                  m.damage
-                                    ? "bg-cinnabar-500/20 text-cinnabar-300 border-cinnabar-500/30"
-                                    : m.clarity >= 80
-                                      ? "bg-gold-500/20 text-gold-300 border-gold-500/30"
-                                      : "bg-paper-400/15 text-paper-300 border-paper-400/20",
-                                )}
-                                style={{
-                                  top: "25%",
-                                  right: "100%",
-                                  marginRight: "6px",
-                                }}
-                              >
-                                {m.name} {m.clarity}%
-                              </div>
-                            ))}
+                            <div className="flex flex-col items-center gap-1 mt-2">
+                              {groupedMeridians["arm_left"]?.map((m) => (
+                                <div
+                                  key={m.id}
+                                  className={cn(
+                                    "px-3 py-1 rounded text-sm font-brush border whitespace-nowrap",
+                                    m.damage
+                                      ? "bg-cinnabar-500/20 text-cinnabar-300 border-cinnabar-500/30"
+                                      : m.clarity >= 80
+                                        ? "bg-gold-500/20 text-gold-300 border-gold-500/30"
+                                        : "bg-paper-400/15 text-paper-300 border-paper-400/20",
+                                  )}
+                                >
+                                  {m.name} {m.clarity}%
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                          <div className="w-12 h-24 border-2 border-paper-400/20 bg-paper-400/5 relative">
-                            <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="flex flex-col items-end">
+                            <div className="w-14 h-20 border-2 border-paper-400/20 bg-paper-400/5 flex items-center justify-center rounded">
                               <span className="font-brush text-base text-paper-400/40">右</span>
                             </div>
-                            {groupedMeridians["arm_right"]?.map((m) => (
-                              <div
-                                key={m.id}
-                                className={cn(
-                                  "absolute px-2 py-1 rounded text-sm font-brush border whitespace-nowrap",
-                                  m.damage
-                                    ? "bg-cinnabar-500/20 text-cinnabar-300 border-cinnabar-500/30"
-                                    : m.clarity >= 80
-                                      ? "bg-gold-500/20 text-gold-300 border-gold-500/30"
-                                      : "bg-paper-400/15 text-paper-300 border-paper-400/20",
-                                )}
-                                style={{
-                                  top: "25%",
-                                  left: "100%",
-                                  marginLeft: "6px",
-                                }}
-                              >
-                                {m.name} {m.clarity}%
-                              </div>
-                            ))}
+                            <div className="flex flex-col items-center gap-1 mt-2">
+                              {groupedMeridians["arm_right"]?.map((m) => (
+                                <div
+                                  key={m.id}
+                                  className={cn(
+                                    "px-3 py-1 rounded text-sm font-brush border whitespace-nowrap",
+                                    m.damage
+                                      ? "bg-cinnabar-500/20 text-cinnabar-300 border-cinnabar-500/30"
+                                      : m.clarity >= 80
+                                        ? "bg-gold-500/20 text-gold-300 border-gold-500/30"
+                                        : "bg-paper-400/15 text-paper-300 border-paper-400/20",
+                                  )}
+                                >
+                                  {m.name} {m.clarity}%
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
-                        <div className="flex gap-12 mt-1">
-                          <div className="w-12 h-24 border-2 border-paper-400/20 bg-paper-400/5 relative">
-                            {groupedMeridians["leg_left"]?.map((m) => (
-                              <div
-                                key={m.id}
-                                className={cn(
-                                  "absolute px-2 py-1 rounded text-sm font-brush border whitespace-nowrap",
-                                  m.damage
-                                    ? "bg-cinnabar-500/20 text-cinnabar-300 border-cinnabar-500/30"
-                                    : m.clarity >= 80
-                                      ? "bg-gold-500/20 text-gold-300 border-gold-500/30"
-                                      : "bg-paper-400/15 text-paper-300 border-paper-400/20",
-                                )}
-                                style={{
-                                  top: "25%",
-                                  right: "100%",
-                                  marginRight: "6px",
-                                }}
-                              >
-                                {m.name} {m.clarity}%
-                              </div>
-                            ))}
+
+                        {/* 腿 */}
+                        <div className="flex w-full justify-between px-4">
+                          <div className="flex flex-col items-start">
+                            <div className="w-14 h-20 border-2 border-paper-400/20 bg-paper-400/5 flex items-center justify-center rounded">
+                              <span className="font-brush text-base text-paper-400/40">左足</span>
+                            </div>
+                            <div className="flex flex-col items-center gap-1 mt-2">
+                              {groupedMeridians["leg_left"]?.map((m) => (
+                                <div
+                                  key={m.id}
+                                  className={cn(
+                                    "px-3 py-1 rounded text-sm font-brush border whitespace-nowrap",
+                                    m.damage
+                                      ? "bg-cinnabar-500/20 text-cinnabar-300 border-cinnabar-500/30"
+                                      : m.clarity >= 80
+                                        ? "bg-gold-500/20 text-gold-300 border-gold-500/30"
+                                        : "bg-paper-400/15 text-paper-300 border-paper-400/20",
+                                  )}
+                                >
+                                  {m.name} {m.clarity}%
+                                </div>
+                              ))}
+                            </div>
                           </div>
-                          <div className="w-12 h-24 border-2 border-paper-400/20 bg-paper-400/5 relative">
-                            {groupedMeridians["leg_right"]?.map((m) => (
-                              <div
-                                key={m.id}
-                                className={cn(
-                                  "absolute px-2 py-1 rounded text-sm font-brush border whitespace-nowrap",
-                                  m.damage
-                                    ? "bg-cinnabar-500/20 text-cinnabar-300 border-cinnabar-500/30"
-                                    : m.clarity >= 80
-                                      ? "bg-gold-500/20 text-gold-300 border-gold-500/30"
-                                      : "bg-paper-400/15 text-paper-300 border-paper-400/20",
-                                )}
-                                style={{
-                                  top: "25%",
-                                  left: "100%",
-                                  marginLeft: "6px",
-                                }}
-                              >
-                                {m.name} {m.clarity}%
-                              </div>
-                            ))}
+                          <div className="flex flex-col items-end">
+                            <div className="w-14 h-20 border-2 border-paper-400/20 bg-paper-400/5 flex items-center justify-center rounded">
+                              <span className="font-brush text-base text-paper-400/40">右足</span>
+                            </div>
+                            <div className="flex flex-col items-center gap-1 mt-2">
+                              {groupedMeridians["leg_right"]?.map((m) => (
+                                <div
+                                  key={m.id}
+                                  className={cn(
+                                    "px-3 py-1 rounded text-sm font-brush border whitespace-nowrap",
+                                    m.damage
+                                      ? "bg-cinnabar-500/20 text-cinnabar-300 border-cinnabar-500/30"
+                                      : m.clarity >= 80
+                                        ? "bg-gold-500/20 text-gold-300 border-gold-500/30"
+                                        : "bg-paper-400/15 text-paper-300 border-paper-400/20",
+                                  )}
+                                >
+                                  {m.name} {m.clarity}%
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
                       </div>

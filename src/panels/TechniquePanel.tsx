@@ -5,7 +5,7 @@ import { PanelTitle } from "@/components/ui/PanelTitle";
 import { GradeTag } from "@/components/ui/GradeTag";
 import { ProficiencyRing } from "@/components/ui/ProficiencyRing";
 import { cn } from "@/lib/utils";
-import type { Technique, TechniqueCategory } from "@/data/types";
+import type { Technique, TechniqueCategory, ElementType, HeartCompatibility } from "@/data/types";
 
 const CATEGORY_INFO: Record<string, { name: string; subtitle: string; color: string }> = {
   心法: { name: "心法", subtitle: "修炼根基，灵力循环", color: "gold" },
@@ -43,10 +43,10 @@ export function TechniquePanel() {
   const canPractice = (tech: Technique): boolean => {
     for (const req of tech.prerequisites || []) {
       if (req.type === "realm") {
-        const reqIndex = [0, 4, 8, 12, 16, 20, 24, 28, 32, 36].findIndex((idx) => 
-          req.value === "引气" || req.value === "炼气" || req.value === "筑基" || 
-          req.value === "金丹" || req.value === "元婴" || req.value === "化神" || 
-          req.value === "炼虚" || req.value === "合体" || req.value === "大乘" || 
+        const reqIndex = [0, 4, 8, 12, 16, 20, 24, 28, 32, 36].findIndex((idx) =>
+          req.value === "引气" || req.value === "炼气" || req.value === "筑基" ||
+          req.value === "金丹" || req.value === "元婴" || req.value === "化神" ||
+          req.value === "炼虚" || req.value === "合体" || req.value === "大乘" ||
           req.value === "渡劫"
         );
         if (currentRealm < (reqIndex >= 0 ? reqIndex : 0)) return false;
@@ -73,20 +73,111 @@ export function TechniquePanel() {
     return true;
   };
 
-  const getMatchScore = (tech: Technique): number => {
-    let score = 50;
+  const ELEMENT_GENERATE: Record<string, ElementType> = {
+    金: "水", 木: "火", 土: "金", 水: "木", 火: "土",
+    风: "雷", 雷: "火", 冰: "水", 光: "火", 暗: "土",
+  };
+  const ELEMENT_COUNTER: Record<string, ElementType> = {
+    金: "木", 木: "土", 土: "水", 水: "火", 火: "金",
+    风: "土", 雷: "水", 冰: "火", 光: "暗", 暗: "光",
+  };
+
+  interface MatchSource {
+    label: string;
+    value: number;
+    detail: string;
+  }
+
+  const getMatchBreakdown = (tech: Technique): MatchSource[] => {
+    const sources: MatchSource[] = [];
     const rootElements = player.spiritRoots.map((r) => r.element);
+
     if (rootElements.includes(tech.element)) {
-      score += 25;
+      sources.push({ label: "灵根同属性", value: 25, detail: `${tech.element}系匹配` });
     }
-    const matchingHearts = tech.heartMatch?.map((trait) => {
-      return player.stats.heartScores.find((hs) => hs.trait === trait)?.score || 0;
-    }) || [];
-    const avgMatchingScore = matchingHearts.length > 0
-      ? matchingHearts.reduce((a, b) => a + b, 0) / matchingHearts.length
-      : 0;
-    score += (avgMatchingScore / 100) * 25;
-    return Math.min(100, Math.max(0, score));
+    if (rootElements.includes(ELEMENT_GENERATE[tech.element])) {
+      sources.push({ label: "灵根相生", value: 10, detail: `${tech.element}→${ELEMENT_GENERATE[tech.element]}相生` });
+    }
+    if (rootElements.includes(ELEMENT_COUNTER[tech.element])) {
+      sources.push({ label: "灵根相克", value: -15, detail: `${tech.element}→${ELEMENT_COUNTER[tech.element]}相克` });
+    }
+
+    const base = 50 + sources.reduce((s, src) => s + src.value, 0);
+
+    for (const compat of tech.heartCompatibility || []) {
+      const heartScore = player.stats.heartScores.find((hs) => hs.trait === compat.trait)?.score || 0;
+      const contribution = (heartScore / 100) * (compat.bonus / 100) * 100;
+      if (contribution !== 0) {
+        sources.push({
+          label: `心性「${compat.trait}」`,
+          value: Math.round(contribution),
+          detail: `${heartScore}分 × ${compat.bonus}%加成`,
+        });
+      }
+    }
+
+    return sources;
+  };
+
+  const getMatchScore = (tech: Technique): number => {
+    const breakdown = getMatchBreakdown(tech);
+    const total = 50 + breakdown.reduce((s, src) => s + src.value, 0);
+    return Math.min(100, Math.max(0, total));
+  };
+
+  interface CultivationModifier {
+    label: string;
+    value: string;
+    impact: "positive" | "negative" | "neutral";
+  }
+
+  const getCultivationModifiers = (tech: Technique): CultivationModifier[] => {
+    const list: CultivationModifier[] = [];
+    const rootElements = player.spiritRoots.map((r) => r.element);
+
+    if (rootElements.includes(tech.element)) {
+      list.push({ label: "灵根同属性", value: "+25%", impact: "positive" });
+    }
+    if (rootElements.includes(ELEMENT_GENERATE[tech.element])) {
+      list.push({ label: "灵根相生", value: "+10%", impact: "positive" });
+    }
+    if (rootElements.includes(ELEMENT_COUNTER[tech.element])) {
+      list.push({ label: "灵根相克", value: "-15%", impact: "negative" });
+    }
+
+    for (const compat of tech.heartCompatibility || []) {
+      const heartScore = player.stats.heartScores.find((hs) => hs.trait === compat.trait)?.score || 0;
+      const contribution = Math.round((heartScore / 100) * (compat.bonus / 100) * 100);
+      if (contribution !== 0) {
+        list.push({
+          label: `心性「${compat.trait}」`,
+          value: contribution > 0 ? `+${contribution}%` : `${contribution}%`,
+          impact: contribution > 0 ? "positive" : "negative",
+        });
+      }
+    }
+
+    const avgMeridianClarity =
+      player.meridians.reduce((sum, m) => sum + m.clarity, 0) / player.meridians.length;
+    if (avgMeridianClarity < 50) {
+      list.push({ label: "经脉滞塞(<50%)", value: "×0.5", impact: "negative" });
+    }
+
+    const wisdomBonus = Math.max(0, (player.stats.wisdom - 50) * 0.5);
+    if (wisdomBonus > 0) {
+      list.push({ label: "悟性加成", value: `+${wisdomBonus.toFixed(1)}%`, impact: "positive" });
+    }
+
+    const baseSpeed = tech.basePracticeSpeed || 100;
+    if (baseSpeed !== 100) {
+      list.push({
+        label: "基础修炼速度",
+        value: baseSpeed > 100 ? `+${baseSpeed - 100}%` : `${baseSpeed - 100}%`,
+        impact: baseSpeed >= 100 ? "positive" : "negative",
+      });
+    }
+
+    return list;
   };
 
   return (
@@ -135,7 +226,7 @@ export function TechniquePanel() {
           <option value={10}>第十重</option>
         </select>
         <span className="font-serif text-xs text-paper-400/50 self-center">
-          匹配度计算：灵根契合 +25%，心性契合 +0~25%
+          匹配度：灵根±25%，心性±%，总分0~100
         </span>
       </div>
 
@@ -149,6 +240,8 @@ export function TechniquePanel() {
           const nextLevel = hasLevels ? tech.levels[currentLevel] : undefined;
           const matchScore = getMatchScore(tech);
           const isActiveHeart = tech.category === "心法" && player.activeHeartTechnique === tech.id;
+          const matchBreakdown = getMatchBreakdown(tech);
+          const cultivationModifiers = getCultivationModifiers(tech);
           const unlockedSkills = tech.skills && tech.skills.length > 0
             ? tech.skills.filter((s) => currentLevel >= s.levelRequired)
             : [];
@@ -243,9 +336,9 @@ export function TechniquePanel() {
                     )}
                   </div>
 
-                  <div className="mt-4 space-y-2">
+                  <div className="mt-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="font-serif text-xs text-paper-400/60">匹配度</span>
+                      <span className="font-serif text-xs text-paper-400/60">综合匹配度</span>
                       <span className="font-number text-xs text-paper-300">{Math.round(matchScore)}%</span>
                     </div>
                     <div className="h-1.5 bg-ink-900/80 rounded-sm overflow-hidden">
@@ -253,12 +346,52 @@ export function TechniquePanel() {
                         className={cn(
                           "h-full transition-all duration-500",
                           matchScore >= 80 ? "bg-gradient-to-r from-gold-500 to-gold-300" :
-                          matchScore >= 50 ? "bg-gradient-to-r from-jade-500 to-jade-300" :
-                          "bg-gradient-to-r from-cinnabar-600 to-cinnabar-400",
+                            matchScore >= 50 ? "bg-gradient-to-r from-jade-500 to-jade-300" :
+                              "bg-gradient-to-r from-cinnabar-600 to-cinnabar-400",
                         )}
                         style={{ width: `${matchScore}%` }}
                       />
                     </div>
+
+                    <div className="bg-ink-900/40 rounded border border-paper-400/10 p-2 space-y-1.5">
+                      <span className="font-brush text-[10px] text-paper-400/50">匹配度来源</span>
+                      {matchBreakdown.map((src, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-[11px]">
+                          <span className="font-serif text-paper-300/80">{src.label}</span>
+                          <span className={cn(
+                            "font-number",
+                            src.value > 0 ? "text-jade-400" : src.value < 0 ? "text-cinnabar-400" : "text-paper-400",
+                          )}>
+                            {src.value > 0 ? `+${src.value}` : src.value}%
+                          </span>
+                        </div>
+                      ))}
+                      {matchBreakdown.length === 0 && (
+                        <span className="font-serif text-[11px] text-paper-400/40">无额外匹配修正</span>
+                      )}
+                      <div className="border-t border-paper-400/10 pt-1 flex items-center justify-between text-[11px]">
+                        <span className="font-serif text-paper-400/50">基础分</span>
+                        <span className="font-number text-paper-400">50%</span>
+                      </div>
+                    </div>
+
+                    {cultivationModifiers.length > 0 && (
+                      <div className="bg-ink-900/40 rounded border border-paper-400/10 p-2 space-y-1.5">
+                        <span className="font-brush text-[10px] text-paper-400/50">修炼效率修正</span>
+                        {cultivationModifiers.map((mod, idx) => (
+                          <div key={idx} className="flex items-center justify-between text-[11px]">
+                            <span className="font-serif text-paper-300/80">{mod.label}</span>
+                            <span className={cn(
+                              "font-number",
+                              mod.impact === "positive" ? "text-jade-400" :
+                                mod.impact === "negative" ? "text-cinnabar-400" : "text-paper-400",
+                            )}>
+                              {mod.value}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
 

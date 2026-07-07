@@ -205,7 +205,7 @@ function applyOne(root: any, op: DataOp): void {
 function descend(obj: any, seg: PathSeg): any {
   if (typeof seg === "string") return obj?.[seg];
   if (Array.isArray(obj)) {
-    return obj.find((x: any) => String(x?.id) === seg.id);
+    return obj.find((x: any) => String(x?.id) === seg.id || String(x?.trait) === seg.id || String(x?.name) === seg.id);
   }
   return undefined;
 }

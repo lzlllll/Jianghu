@@ -184,10 +184,6 @@ function InventoryGrid({ items }: { items: InventoryItem[] }) {
               <p className="font-serif text-sm text-paper-300/90 leading-relaxed">
                 {selected.desc}
               </p>
-              <div className="mt-4 flex gap-2">
-                <button className="ghost-btn px-3 py-1.5 rounded text-xs">使用</button>
-                <button className="ghost-btn px-3 py-1.5 rounded text-xs">丢弃</button>
-              </div>
             </div>
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-center">
