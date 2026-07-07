@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useGameStore } from "@/store/useGameStore";
 import { ScrollCard } from "@/components/ui/ScrollCard";
 import { PanelTitle } from "@/components/ui/PanelTitle";
@@ -27,6 +27,14 @@ const SLOT_LABELS = [
   { slot: "护" as const, name: "护身法宝", desc: "御敌之宝" },
   { slot: "辅" as const, name: "辅助法宝", desc: "行修之资" },
 ];
+
+const INVENTORY_CATEGORIES: Record<string, { label: string; icon: string; order: number; color: string }> = {
+  法宝: { label: "法宝法器", icon: "⚔", order: 1, color: "gold" },
+  丹药: { label: "成品丹药", icon: "💊", order: 2, color: "jade" },
+  符箓: { label: "成品符箓", icon: "📜", order: 3, color: "cinnabar" },
+  材料: { label: "炼器材料", icon: "🔨", order: 4, color: "pine" },
+  杂物: { label: "特殊物品", icon: "✦", order: 5, color: "purple" },
+};
 
 export function TreasurePanel() {
   const spiritStones = useGameStore((s) => s.spiritStones);
@@ -119,7 +127,26 @@ function InventoryGrid({ items }: { items: InventoryItem[] }) {
   const [selected, setSelected] = useState<InventoryItem | null>(null);
   const totalSlots = 48;
   const filledSlots = items.length;
-  const emptySlots = Math.max(0, totalSlots - filledSlots);
+
+  const groupedItems = useMemo(() => {
+    const groups: Record<string, InventoryItem[]> = {};
+    for (const item of items) {
+      const cat = item.type;
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(item);
+    }
+    return Object.entries(groups).sort(
+      ([a], [b]) => (INVENTORY_CATEGORIES[a]?.order ?? 99) - (INVENTORY_CATEGORIES[b]?.order ?? 99),
+    );
+  }, [items]);
+
+  const categoryColors: Record<string, string> = {
+    gold: "border-gold-400/30 bg-gold-400/5",
+    jade: "border-jade-400/30 bg-jade-400/5",
+    cinnabar: "border-cinnabar-400/30 bg-cinnabar-400/5",
+    pine: "border-pine-400/30 bg-pine-400/5",
+    purple: "border-purple-400/30 bg-purple-400/5",
+  };
 
   return (
     <ScrollCard
@@ -132,36 +159,56 @@ function InventoryGrid({ items }: { items: InventoryItem[] }) {
       }
     >
       <div className="grid grid-cols-2 gap-4">
-        {/* 网格 */}
-        <div className="grid grid-cols-8 gap-1.5">
-          {items.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setSelected(item)}
-              className={cn(
-                "aspect-square rounded border bg-ink-900/50 flex flex-col items-center justify-center relative group transition-all",
-                GRADE_BG[item.grade],
-                selected?.id === item.id && "ring-1 ring-gold-400 shadow-glow",
-              )}
-              title={item.name}
-            >
-              <span className="text-lg text-gold-400/90 group-hover:scale-110 transition-transform">
-                {item.icon}
-              </span>
-              {item.count > 1 && (
-                <span className="absolute bottom-0 right-0.5 font-number text-[9px] text-paper-100 bg-ink-900/80 px-1 rounded-tl">
-                  {item.count}
-                </span>
-              )}
-              <span className="absolute top-0.5 left-0.5 w-1.5 h-1.5 rounded-full bg-gold-400/40 opacity-0 group-hover:opacity-100" />
-            </button>
-          ))}
-          {Array.from({ length: emptySlots }).map((_, idx) => (
-            <div
-              key={`empty-${idx}`}
-              className="aspect-square rounded border border-paper-400/5 bg-ink-900/20"
-            />
-          ))}
+        {/* 分类网格 */}
+        <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
+          {groupedItems.map(([type, typeItems]) => {
+            const catInfo = INVENTORY_CATEGORIES[type] || { label: type, icon: "◇", order: 99, color: "gold" };
+            const emptySlots = Math.max(0, Math.min(8, totalSlots - items.length));
+            const isLast = groupedItems.indexOf([type, typeItems]) === groupedItems.length - 1;
+            return (
+              <div key={type}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm">{catInfo.icon}</span>
+                  <span className="font-brush text-sm text-paper-200">{catInfo.label}</span>
+                  <span className="font-number text-[10px] text-paper-400/50">{typeItems.length}件</span>
+                </div>
+                <div className="grid grid-cols-8 gap-1.5">
+                  {typeItems.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => setSelected(item)}
+                      className={cn(
+                        "aspect-square rounded border bg-ink-900/50 flex flex-col items-center justify-center relative group transition-all",
+                        GRADE_BG[item.grade],
+                        selected?.id === item.id && "ring-1 ring-gold-400 shadow-glow",
+                      )}
+                      title={item.name}
+                    >
+                      <span className="text-lg text-gold-400/90 group-hover:scale-110 transition-transform">
+                        {item.icon}
+                      </span>
+                      {item.count > 1 && (
+                        <span className="absolute bottom-0 right-0.5 font-number text-[9px] text-paper-100 bg-ink-900/80 px-1 rounded-tl">
+                          {item.count}
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                  {isLast && Array.from({ length: emptySlots }).map((_, idx) => (
+                    <div
+                      key={`empty-${idx}`}
+                      className="aspect-square rounded border border-paper-400/5 bg-ink-900/20"
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+          {groupedItems.length === 0 && (
+            <div className="font-serif text-xs text-paper-400/40 text-center py-8">
+              储物袋空空如也
+            </div>
+          )}
         </div>
 
         {/* 详情 */}
@@ -174,7 +221,7 @@ function InventoryGrid({ items }: { items: InventoryItem[] }) {
                   <div className="flex items-center gap-2 mt-1">
                     <GradeTag grade={selected.grade} />
                     <span className="font-serif text-xs text-paper-400/60">
-                      {selected.type} · ×{selected.count}
+                      {INVENTORY_CATEGORIES[selected.type]?.label || selected.type} · ×{selected.count}
                     </span>
                   </div>
                 </div>
