@@ -12,6 +12,7 @@ import type {
   HeartTrait,
   MeridianZone,
   HeartModifier,
+  BuffTargetStat,
 } from "./types";
 
 export const REALMS: RealmTier[] = [
@@ -225,7 +226,7 @@ export function generateHeartModifiers(trait: string, score: number): HeartModif
 
   const mods = baseModifiers[trait] || [];
   return mods.map((m) => ({
-    stat: m.stat,
+    stat: m.stat as BuffTargetStat,
     value: Math.round((score / 100) * m.coefficient * 100),
     description: m.desc,
   }));
@@ -379,7 +380,7 @@ export const initialTechniques: Technique[] = [
     heartCompatibility: [
       { trait: "勇猛", bonus: 20 },
       { trait: "狡黠", bonus: 25 },
-      { trait: "敏捷", bonus: 15 },
+      { trait: "聪慧", bonus: 15 },
       { trait: "谨慎", bonus: -15 },
       { trait: "执着", bonus: -10 },
     ],
