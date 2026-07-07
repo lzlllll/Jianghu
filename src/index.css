@@ -1,0 +1,236 @@
+@import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@300;400;500;600;700;900&family=ZCOOL+XiaoWei&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: "Noto Serif SC", "STSong", serif;
+  line-height: 1.6;
+  font-weight: 400;
+  color: #e8dcc0;
+  background-color: #0f0d0a;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  overflow: hidden;
+  background-color: #0f0d0a;
+}
+
+/* 水墨远山背景层 */
+.ink-bg {
+  background:
+    radial-gradient(ellipse at 20% 110%, rgba(58, 74, 74, 0.25) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 0%, rgba(168, 50, 50, 0.08) 0%, transparent 45%),
+    radial-gradient(ellipse at 50% 50%, rgba(40, 32, 24, 0.6) 0%, #0f0d0a 70%),
+    #0f0d0a;
+}
+
+/* 宣纸纹理 */
+.paper-texture {
+  background-image:
+    linear-gradient(180deg, rgba(232, 220, 192, 0.03) 0%, rgba(232, 220, 192, 0.01) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.91 0 0 0 0 0.86 0 0 0 0 0.75 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='240' height='240' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* 卷轴卡片样式 */
+.scroll-card {
+  background:
+    linear-gradient(180deg, rgba(245, 236, 214, 0.04) 0%, rgba(20, 16, 12, 0.5) 100%),
+    rgba(26, 22, 18, 0.7);
+  border: 1px solid rgba(196, 176, 136, 0.18);
+  box-shadow:
+    0 0 0 1px rgba(60, 40, 20, 0.3),
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    inset 0 0 60px rgba(120, 90, 50, 0.08);
+  backdrop-filter: blur(2px);
+}
+
+.scroll-card:hover {
+  border-color: rgba(201, 169, 97, 0.4);
+}
+
+/* 印章按钮 */
+.seal-btn {
+  position: relative;
+  background: linear-gradient(180deg, #b83838 0%, #8a2828 100%);
+  border: 1px solid rgba(232, 220, 192, 0.3);
+  color: #f5ecd6;
+  font-family: "Ma Shan Zheng", "KaiTi", serif;
+  letter-spacing: 0.1em;
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.4),
+    0 4px 12px rgba(168, 50, 50, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transition: all 0.2s ease;
+}
+
+.seal-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow:
+    0 4px 0 rgba(0, 0, 0, 0.4),
+    0 8px 20px rgba(168, 50, 50, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.seal-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(168, 50, 50, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.seal-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  filter: grayscale(0.5);
+}
+
+/* 副按钮 - 描边款 */
+.ghost-btn {
+  background: rgba(232, 220, 192, 0.05);
+  border: 1px solid rgba(196, 176, 136, 0.3);
+  color: #d9c9a3;
+  font-family: "Noto Serif SC", serif;
+  transition: all 0.2s ease;
+}
+
+.ghost-btn:hover:not(:disabled) {
+  background: rgba(201, 169, 97, 0.12);
+  border-color: rgba(201, 169, 97, 0.6);
+  color: #e8dcc0;
+}
+
+.ghost-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(15, 13, 10, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(201, 169, 97, 0.25);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 169, 97, 0.45);
+}
+
+/* 印章红章效果 */
+.red-seal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #a83232;
+  color: #f5ecd6;
+  font-family: "Ma Shan Zheng", serif;
+  border: 2px solid #6e1f1f;
+  box-shadow: inset 0 0 4px rgba(0, 0, 0, 0.3);
+  text-align: center;
+  line-height: 1;
+}
+
+/* 云纹分割线 */
+.cloud-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(201, 169, 97, 0.3) 20%,
+    rgba(201, 169, 97, 0.5) 50%,
+    rgba(201, 169, 97, 0.3) 80%,
+    transparent 100%
+  );
+}
+
+/* 选中态高亮 */
+.nav-active {
+  background: linear-gradient(90deg, rgba(168, 50, 50, 0.25) 0%, transparent 100%);
+  border-left: 3px solid #c9a961;
+}
+
+/* 墨色输入框 */
+.input-ink {
+  width: 100%;
+  background: rgba(15, 13, 10, 0.6);
+  border: 1px solid rgba(196, 176, 136, 0.25);
+  border-radius: 4px;
+  padding: 8px 12px;
+  color: #e8dcc0;
+  font-family: "Noto Serif SC", serif;
+  font-size: 13px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+
+.input-ink::placeholder {
+  color: rgba(196, 176, 136, 0.35);
+}
+
+.input-ink:focus {
+  border-color: rgba(201, 169, 97, 0.6);
+  background: rgba(15, 13, 10, 0.8);
+  box-shadow: 0 0 0 2px rgba(201, 169, 97, 0.1);
+}
+
+/* 输入与滑块 */
+input[type="range"].fire-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  background: linear-gradient(90deg, #4a6b5a 0%, #c9a961 50%, #a83232 100%);
+  border-radius: 3px;
+  outline: none;
+}
+
+input[type="range"].fire-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  background: radial-gradient(circle, #c9a961 30%, #8a6e3a 100%);
+  border: 2px solid #1a1612;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(201, 169, 97, 0.6);
+}
+
+/* 文本选区 */
+::selection {
+  background: rgba(168, 50, 50, 0.5);
+  color: #f5ecd6;
+}
+
+/* 通用工具类 */
+.text-shadow-ink {
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+}
+
+.vertical-text {
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  letter-spacing: 0.2em;
+}
