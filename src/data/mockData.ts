@@ -9,8 +9,6 @@ import type {
   Relation,
   RealmTier,
   HeartScore,
-  HeartTrait,
-  MeridianZone,
   HeartModifier,
   BuffTargetStat,
 } from "./types";
@@ -70,7 +68,7 @@ export const DAO_PATHS: Record<string, { name: string; description: string }> = 
   array: { name: "天音阵图", description: "阵法音律，困敌杀敌" },
 };
 
-export const HEART_TRAITS: HeartTrait[] = ["刚毅", "狡黠", "仁厚", "无情", "谨慎", "勇猛", "聪慧", "执着"];
+export const HEART_TRAITS: string[] = ["刚毅", "狡黠", "仁厚", "无情", "谨慎", "勇猛", "聪慧", "执着"];
 
 export const ELEMENT_COUNTER: Record<string, string> = {
   "金": "木",
@@ -117,14 +115,14 @@ export const initialPlayer: Player = {
     wisdom: 90,
     agility: 65,
     heartScores: [
-      { trait: "刚毅", score: 45, modifiers: [{ stat: "vitality", value: 13, description: "意志坚定" }, { stat: "wisdom", value: -7, description: "略显固执" }] },
-      { trait: "狡黠", score: 30, modifiers: [{ stat: "agility", value: 8, description: "反应灵活" }, { stat: "karma", value: -6, description: "心机较深" }] },
-      { trait: "仁厚", score: 78, modifiers: [{ stat: "karma", value: 23, description: "广结善缘" }, { stat: "action", value: -12, description: "优柔寡断" }] },
-      { trait: "无情", score: 20, modifiers: [{ stat: "damage", value: 5, description: "下手果断" }, { stat: "karma", value: -5, description: "冷漠疏离" }] },
-      { trait: "谨慎", score: 82, modifiers: [{ stat: "wisdom", value: 16, description: "思虑周全" }, { stat: "action", value: -16, description: "畏首畏尾" }] },
-      { trait: "勇猛", score: 35, modifiers: [{ stat: "damage", value: 11, description: "敢打敢拼" }, { stat: "wisdom", value: -7, description: "有勇无谋" }] },
-      { trait: "聪慧", score: 88, modifiers: [{ stat: "wisdom", value: 31, description: "悟性超群" }, { stat: "karma", value: -13, description: "恃才傲物" }] },
-      { trait: "执着", score: 65, modifiers: [{ stat: "cultivation", value: 16, description: "坚持不懈" }, { stat: "agility", value: -10, description: "不知变通" }] },
+      { trait: "刚毅", score: 45, modifiers: [{ stat: "vitality", value: 13, description: "体魄加成" }, { stat: "attack", value: 9, description: "攻击力加成" }, { stat: "wisdom", value: -7, description: "悟性降低" }] },
+      { trait: "狡黠", score: 30, modifiers: [{ stat: "agility", value: 8, description: "身法加成" }, { stat: "dodge", value: 6, description: "闪避加成" }, { stat: "karma", value: -6, description: "机缘降低" }] },
+      { trait: "仁厚", score: 78, modifiers: [{ stat: "karma", value: 23, description: "机缘加成" }, { stat: "defense", value: 15, description: "防御加成" }, { stat: "action", value: -12, description: "行动力降低" }] },
+      { trait: "无情", score: 20, modifiers: [{ stat: "damage", value: 5, description: "伤害加成" }, { stat: "critRate", value: 3, description: "暴击率加成" }, { stat: "karma", value: -5, description: "机缘降低" }] },
+      { trait: "谨慎", score: 82, modifiers: [{ stat: "wisdom", value: 16, description: "悟性加成" }, { stat: "defense", value: 12, description: "防御加成" }, { stat: "action", value: -16, description: "行动力降低" }] },
+      { trait: "勇猛", score: 35, modifiers: [{ stat: "damage", value: 11, description: "伤害加成" }, { stat: "attack", value: 7, description: "攻击力加成" }, { stat: "wisdom", value: -7, description: "悟性降低" }] },
+      { trait: "聪慧", score: 88, modifiers: [{ stat: "wisdom", value: 31, description: "悟性加成" }, { stat: "comprehension", value: 22, description: "领悟速度加成" }, { stat: "karma", value: -13, description: "机缘降低" }] },
+      { trait: "执着", score: 65, modifiers: [{ stat: "cultivation", value: 16, description: "修炼速度加成" }, { stat: "breakthrough", value: 10, description: "突破几率加成" }, { stat: "agility", value: -10, description: "身法降低" }] },
     ],
   },
   meridians: [
@@ -158,78 +156,53 @@ export const initialPlayer: Player = {
   activeHeartTechnique: "t1",
 };
 
-export const HEART_STAT_POOL: Array<{ stat: string; description: string }> = [
-  { stat: "vitality", description: "体魄" },
-  { stat: "soul", description: "神魂" },
-  { stat: "wisdom", description: "悟性" },
-  { stat: "agility", description: "身法" },
-  { stat: "cultivation", description: "修炼速度" },
-  { stat: "damage", description: "伤害" },
-  { stat: "action", description: "行动力" },
-  { stat: "karma", description: "机缘" },
-];
-
-export const HEART_TRAIT_DESCRIPTIONS: Record<string, string> = {
-  刚毅: "处事果断，意志坚定，不易动摇",
-  狡黠: "机智灵活，善于变通，精于算计",
-  仁厚: "心地善良，乐于助人，慈悲为怀",
-  无情: "冷酷无情，杀伐果断，不念私情",
-  谨慎: "小心谨慎，三思后行，谋定而动",
-  勇猛: "英勇无畏，敢于冲锋，不惧生死",
-  聪慧: "天资聪颖，领悟力强，过目不忘",
-  执着: "持之以恒，坚持不懈，不达目的誓不罢休",
+export const HEART_STAT_DISPLAY: Record<string, string> = {
+  vitality: "体魄", soul: "神魂", wisdom: "悟性", agility: "身法",
+  cultivation: "修炼速度", damage: "伤害", action: "行动力", karma: "机缘",
+  attack: "攻击力", defense: "防御", dodge: "闪避", speed: "速度",
+  critRate: "暴击率", critDamage: "暴击伤害", breakthrough: "突破几率",
+  comprehension: "领悟速度", meridianRepair: "经脉恢复", trading: "交易折扣",
 };
 
 export function generateHeartModifiers(trait: string, score: number): HeartModifier[] {
-  const baseModifiers: Record<string, Array<{ stat: string; coefficient: number; desc: string }>> = {
-    刚毅: [
-      { stat: "vitality", coefficient: 0.3, desc: "意志坚定" },
-      { stat: "action", coefficient: 0.15, desc: "行动果断" },
-      { stat: "wisdom", coefficient: -0.15, desc: "略显固执" },
-    ],
-    狡黠: [
-      { stat: "agility", coefficient: 0.25, desc: "反应灵活" },
-      { stat: "wisdom", coefficient: 0.15, desc: "心思缜密" },
-      { stat: "karma", coefficient: -0.2, desc: "心机较深" },
-    ],
-    仁厚: [
-      { stat: "karma", coefficient: 0.3, desc: "广结善缘" },
-      { stat: "vitality", coefficient: 0.1, desc: "气血充沛" },
-      { stat: "action", coefficient: -0.15, desc: "优柔寡断" },
-    ],
-    无情: [
-      { stat: "damage", coefficient: 0.25, desc: "下手果断" },
-      { stat: "action", coefficient: 0.15, desc: "决断迅速" },
-      { stat: "karma", coefficient: -0.25, desc: "冷漠疏离" },
-    ],
-    谨慎: [
-      { stat: "wisdom", coefficient: 0.2, desc: "思虑周全" },
-      { stat: "cultivation", coefficient: 0.15, desc: "稳扎稳打" },
-      { stat: "action", coefficient: -0.2, desc: "畏首畏尾" },
-    ],
-    勇猛: [
-      { stat: "damage", coefficient: 0.3, desc: "敢打敢拼" },
-      { stat: "vitality", coefficient: 0.15, desc: "体魄强健" },
-      { stat: "wisdom", coefficient: -0.2, desc: "有勇无谋" },
-    ],
-    聪慧: [
-      { stat: "wisdom", coefficient: 0.35, desc: "悟性超群" },
-      { stat: "cultivation", coefficient: 0.2, desc: "领悟神速" },
-      { stat: "karma", coefficient: -0.15, desc: "恃才傲物" },
-    ],
-    执着: [
-      { stat: "cultivation", coefficient: 0.25, desc: "坚持不懈" },
-      { stat: "vitality", coefficient: 0.15, desc: "毅力惊人" },
-      { stat: "agility", coefficient: -0.15, desc: "不知变通" },
-    ],
+  const seed = trait.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const allStats: BuffTargetStat[] = [
+    "vitality", "soul", "wisdom", "agility", "cultivation",
+    "damage", "action", "karma", "attack", "defense",
+    "dodge", "speed", "critRate", "critDamage", "breakthrough",
+    "comprehension", "meridianRepair", "trading",
+  ];
+
+  const rng = (n: number): number => ((seed * 1103515245 + 12345) >>> 0) % n;
+  const signedRng = (n: number): number => {
+    const v = rng(n * 2);
+    return v < n ? v - n : v - n;
   };
 
-  const mods = baseModifiers[trait] || [];
-  return mods.map((m) => ({
-    stat: m.stat as BuffTargetStat,
-    value: Math.round((score / 100) * m.coefficient * 100),
-    description: m.desc,
-  }));
+  const count = 2 + rng(3);
+  const modifiers: HeartModifier[] = [];
+  const used = new Set<string>();
+
+  for (let i = 0; i < count; i++) {
+    let statIndex = rng(allStats.length);
+    let attempts = 0;
+    while (used.has(allStats[statIndex]) && attempts < 20) {
+      statIndex = rng(allStats.length);
+      attempts++;
+    }
+    const stat = allStats[statIndex];
+    used.add(stat);
+
+    const value = Math.round((score / 100) * ((rng(26) - 5)));
+    const displayName = HEART_STAT_DISPLAY[stat] || stat;
+    modifiers.push({
+      stat,
+      value: value === 0 ? 3 : value,
+      description: value >= 0 ? `${displayName}加成` : `${displayName}降低`,
+    });
+  }
+
+  return modifiers;
 }
 
 export const initialTechniques: Technique[] = [

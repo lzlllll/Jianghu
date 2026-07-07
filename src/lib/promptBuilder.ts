@@ -45,12 +45,12 @@ const LOCATION_INFO: Record<LocationType, { name: string; allowed: string; forbi
 };
 
 const REALMS = [
-  "引气初期","引气中期","引气后期","引气圆满",
-  "炼气初期","炼气中期","炼气后期","炼气圆满",
-  "筑基初期","筑基中期","筑基后期","筑基圆满",
-  "金丹初期","金丹中期","金丹后期","金丹圆满",
-  "元婴初期","元婴中期","元婴后期","元婴圆满",
-  "化神初期","化神中期","化神后期","化神圆满",
+  "引气初期", "引气中期", "引气后期", "引气圆满",
+  "炼气初期", "炼气中期", "炼气后期", "炼气圆满",
+  "筑基初期", "筑基中期", "筑基后期", "筑基圆满",
+  "金丹初期", "金丹中期", "金丹后期", "金丹圆满",
+  "元婴初期", "元婴中期", "元婴后期", "元婴圆满",
+  "化神初期", "化神中期", "化神后期", "化神圆满",
 ];
 
 /** 生成全量数据路径摘要，供 flash 模型判断相关性 */
@@ -260,11 +260,15 @@ export function buildProPrompt(params: {
   const system = `你是一部古风修仙文字游戏的叙事引擎。以第二人称「你」叙述玩家沈青砚的修真经历，文笔古雅、意象丰沛、节奏紧凑，单次叙事正文 300 至 600 字。
 你的输出分为两部分：先是叙事正文，随后是一个数据操作标记块。标记块用于把叙事导致的数据变化写回游戏状态。
 
+
 【世界观精要】
 本游戏采用传统仙侠世界观，核心设定如下：
 1. 灵根：天地元素有金、木、水、火、土、风、雷、冰、光、暗十系。主角沈青砚拥有水木双灵根，灵根决定修炼速度与功法威力，适配度越高修炼越快。
 2. 功法：功法分凡品、灵品、玄品、地品、天品。每部功法有属性偏向（如金系剑法），主角灵根与功法属性匹配度越高，修炼效率与威力越强。
-3. 心性：分为刚毅、狡黠、仁厚、无情、谨慎、勇猛、聪慧、执着八种，每种心性有0-100的分数。心性分数会因修炼、奇遇、抉择等事件发生变化，影响修炼速度与奇遇触发概率。心性与功法匹配则修炼事半功倍。
+3. 心性：每个角色的心性特质可以是任意中文词汇（如莽撞、洒脱、孤傲、温和、贪婪、慷慨、冷静、急躁等），每种心性有0-100的分数。
+   心性分数会因修炼、奇遇、抉择等事件发生变化，影响修炼速度与奇遇触发概率。
+   心性与功法匹配则修炼事半功倍。
+   AI可以自由创建新的心性特质或修改现有心性，不为固定八种所限。
 4. 经脉：十二经脉与奇经八脉分布于头部、胸部、腹部、四肢各处。经脉通畅度(0-100)影响气血运行与法术释放效率，受损经脉需特殊药材修复。
 5. 天赋：角色天生具有的特殊能力，在关键节点可随机获得，需结合世界观设定合理触发。
 6. 道途：功法分为十二道途——剑道真意、利器刀锋、钝器刚猛、防御稳固、箭术精准、暗器诡道、拳掌神通、元素之术、幻术迷踪、诅咒邪术、御兽通灵、阵法封禁。
@@ -302,24 +306,29 @@ export function buildProPrompt(params: {
 - 心性匹配：每部功法拥有 heartCompatibility 数组，定义与不同心性的匹配加成，如 {trait: "谨慎", bonus: 25} 表示谨慎心性每100分增加25%修炼效率
 - 总匹配度影响修炼速度和功法威力
 
-【心性效果系统】
-八种心性各自拥有动态数值加成，AI可直接修改每个心性的 modifiers 数组：
-- 刚毅：意志坚定型，可匹配体魄、行动、悟性等属性
-- 狡黠：机智灵活型，可匹配身法、悟性、机缘等属性
-- 仁厚：心地善良型，可匹配机缘、体魄、行动力等属性
-- 无情：冷酷杀伐型，可匹配伤害、行动、机缘等属性
-- 谨慎：小心谨慎型，可匹配悟性、修炼速度、行动力等属性
-- 勇猛：英勇无畏型，可匹配伤害、体魄、悟性等属性
-- 聪慧：天资聪颖型，可匹配悟性、修炼速度、机缘等属性
-- 执着：坚持不懈型，可匹配修炼速度、体魄、身法等属性
+【心性效果系统基础数值加成】
+每种心性拥有2-4个基础属性的数值加成（百分比），AI可直接修改每个心性的 modifiers 数组。
 
-每个心性的 modifiers 数组格式：[{ stat: 属性名, value: 数值(%), description: 描述 }]
-可用属性：vitality(体魄)、soul(神魂)、wisdom(悟性)、agility(身法)、cultivation(修炼速度)、damage(伤害)、action(行动力)、karma(机缘)
+心性效果的核心规则：
+- 每项心性自动匹配2-4个基础属性的百分比加成或减益
+- 高分心性带来强力正面加成，但必定伴随某些属性的减益（每项心性至少有1个减益）
+- 负面心性（低分）带来的减益更为显著
+- 不同心性之间存在自然冲突（如"仁厚"与"无情"冲突），当冲突心性均高分时产生额外减益
+
+可用属性列表及其中文名：
+vitality(体魄) soul(神魂) wisdom(悟性) agility(身法)
+cultivation(修炼速度) damage(伤害) action(行动力) karma(机缘)
+attack(攻击力) defense(防御) dodge(闪避) speed(速度)
+critRate(暴击率) critDamage(暴击伤害) breakthrough(突破几率)
+comprehension(领悟速度) meridianRepair(经脉恢复) trading(交易折扣)
+
+每个心性的 modifiers 数组格式：[{ stat: 属性名, value: 数值(%), description: "属性名加成/降低" }]
 
 AI可以自由修改：
 1. 心性分数 (score): 0-100，影响加成强度
-2. 心性加成 (modifiers): 动态匹配2-3个属性的百分比加成/减益
-3. 加成描述 (description): 根据角色故事生成个性化描述
+2. 心性加成 (modifiers): 动态匹配2-4个属性的百分比加成/减益
+3. 心性名称 (trait): 可以是任意中文词汇，不必局限于传统八种心性
+4. 加成描述 (description): 格式为「属性名加成」或「属性名降低」
 
 每个心性应有正反两面，高分带来强力加成的同时也会伴随减益。
 
@@ -408,8 +417,10 @@ DELETE <集合> <id>
 路径写法：
 - 基础字段：player.cultivation、player.hp、player.mp、player.spirit、player.lifespanCurrent、player.karma、spiritStones.low、sect.contribution
 - 潜能字段：player.stats.vitality、player.stats.soul、player.stats.wisdom、player.stats.agility
-- 心性分数：player.stats.heartScores[刚毅].score、player.stats.heartScores[仁厚].score（心性名作为索引）
+- 心性分数：player.stats.heartScores[刚毅].score（心性名作为索引，支持任意心性名称）
 - 心性加成：player.stats.heartScores[刚毅].modifiers（数组格式：[{stat, value, description}]）
+- ADD 心性：ADD player.stats.heartScores {"trait":"莽撞","score":60,"modifiers":[{"stat":"attack","value":18,"description":"攻击力加成"},{"stat":"dodge","value":12,"description":"闪避加成"},{"stat":"wisdom","value":-9,"description":"悟性降低"}]}
+- DELETE 心性：DELETE player.stats.heartScores 莽撞（按trait名称删除）
 - 经脉字段：player.meridians[m1].clarity、player.meridians[m2].damage、player.meridians[m3].zone
 - 数组元素按 id：techniques[t1].proficiency、techniques[t1].levels、techniques[t1].skills、techniques[t1].prerequisites、techniques[t1].attributes、relations[r1].affinity、inventory[i4].count、sect.tasks[s1].accepted
 - 当前心法：player.activeHeartTechnique（设置为空字符串或心法id来切换）
@@ -460,8 +471,8 @@ crafting
   const recentText =
     recentTurns.length > 0
       ? recentTurns
-          .map((t, i) => `【第${i + 1}回合】\n玩家决策：${t.input}\n叙事：${t.narrative}`)
-          .join("\n\n")
+        .map((t, i) => `【第${i + 1}回合】\n玩家决策：${t.input}\n叙事：${t.narrative}`)
+        .join("\n\n")
       : "（尚无近况）";
 
   const user = `【玩家身世背景】

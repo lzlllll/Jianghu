@@ -47,7 +47,7 @@ export type DaoPath =
   | "beast_taming"
   | "array";
 
-export type HeartTrait = "刚毅" | "狡黠" | "仁厚" | "无情" | "谨慎" | "勇猛" | "聪慧" | "执着";
+export type HeartTrait = string;
 
 export interface HeartModifier {
   stat: BuffTargetStat;
@@ -95,7 +95,17 @@ export type BuffTargetStat =
   | "maxSpirit"
   | "action"
   | "karma"
-  | "damage";
+  | "damage"
+  | "attack"
+  | "defense"
+  | "dodge"
+  | "speed"
+  | "critRate"
+  | "critDamage"
+  | "breakthrough"
+  | "comprehension"
+  | "meridianRepair"
+  | "trading";
 
 export type BuffValueType = "percentage" | "fixed" | "multiplier";
 

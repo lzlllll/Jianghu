@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useGameStore } from "@/store/useGameStore";
-import { REALMS, HEART_TRAIT_DESCRIPTIONS, generateHeartModifiers } from "@/data/mockData";
+import { REALMS, HEART_STAT_DISPLAY, generateHeartModifiers } from "@/data/mockData";
 import { ScrollCard } from "@/components/ui/ScrollCard";
 import { PanelTitle } from "@/components/ui/PanelTitle";
 import { CloudDivider } from "@/components/ui/CloudDivider";
@@ -54,7 +54,7 @@ export function ProfilePanel() {
         <button
           onClick={() => setActiveTab("heart")}
           className={cn(
-            "px-6 py-3 rounded-lg font-brush text-lg tracking-widest transition-all border",
+            "px-8 py-4 rounded-lg font-brush text-xl tracking-widest transition-all border",
             activeTab === "heart"
               ? "border-gold-400/50 bg-gold-400/10 text-gold-400 shadow-glow"
               : "border-paper-400/15 bg-ink-900/40 text-paper-400/70 hover:text-paper-200",
@@ -65,7 +65,7 @@ export function ProfilePanel() {
         <button
           onClick={() => setActiveTab("body")}
           className={cn(
-            "px-6 py-3 rounded-lg font-brush text-lg tracking-widest transition-all border",
+            "px-8 py-4 rounded-lg font-brush text-xl tracking-widest transition-all border",
             activeTab === "body"
               ? "border-gold-400/50 bg-gold-400/10 text-gold-400 shadow-glow"
               : "border-paper-400/15 bg-ink-900/40 text-paper-400/70 hover:text-paper-200",
@@ -78,19 +78,21 @@ export function ProfilePanel() {
       {activeTab === "heart" && (
         <div className="space-y-6">
           <ScrollCard title="心性" subtitle="八面玲珑，一念之差">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {(player.stats?.heartScores || []).map((hs) => {
-                const modifiers = hs.modifiers || generateHeartModifiers(hs.trait, hs.score);
+                const modifiers = hs.modifiers && hs.modifiers.length > 0
+                  ? hs.modifiers
+                  : generateHeartModifiers(hs.trait, hs.score);
                 return (
                   <div
                     key={hs.trait}
-                    className="flex flex-col p-3 rounded-lg bg-ink-800/40 border border-paper-400/10"
+                    className="flex flex-col p-4 rounded-lg bg-ink-800/40 border border-paper-400/10"
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-brush text-lg text-paper-100">{hs.trait}</span>
-                      <span className="font-number text-base text-gold-400">{hs.score}</span>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="font-brush text-xl text-paper-100">{hs.trait}</span>
+                      <span className="font-number text-lg text-gold-400">{hs.score}</span>
                     </div>
-                    <div className="w-full h-2 bg-ink-900/60 rounded-full overflow-hidden mb-3">
+                    <div className="w-full h-3 bg-ink-900/60 rounded-full overflow-hidden mb-4">
                       <div
                         className={cn(
                           "h-full rounded-full transition-all",
@@ -99,23 +101,25 @@ export function ProfilePanel() {
                         style={{ width: `${hs.score}%` }}
                       />
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-1.5">
                       {modifiers.map((mod, idx) => (
                         <div
                           key={idx}
                           className={cn(
-                            "flex items-center justify-between text-xs px-2 py-1 rounded",
+                            "flex items-center justify-between text-sm px-3 py-1.5 rounded",
                             mod.value > 0
                               ? "bg-jade-500/10 text-jade-300 border border-jade-500/20"
                               : "bg-cinnabar-500/10 text-cinnabar-300 border border-cinnabar-500/20",
                           )}
                         >
-                          <span className="font-brush truncate">{mod.description}</span>
+                          <span className="font-brush">
+                            {HEART_STAT_DISPLAY[mod.stat] || mod.stat}
+                          </span>
                           <span className="font-number">{mod.value > 0 ? "+" : ""}{mod.value}%</span>
                         </div>
                       ))}
                       {modifiers.length === 0 && (
-                        <div className="text-xs text-paper-400/40 text-center py-1">暂无加成</div>
+                        <div className="text-sm text-paper-400/40 text-center py-1">暂无加成</div>
                       )}
                     </div>
                   </div>
@@ -125,18 +129,19 @@ export function ProfilePanel() {
           </ScrollCard>
 
           <ScrollCard title="心性效果概览" subtitle="祸福相依，一念之间">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {(player.stats?.heartScores || []).map((hs) => {
-                const description = HEART_TRAIT_DESCRIPTIONS[hs.trait];
-                const modifiers = hs.modifiers || generateHeartModifiers(hs.trait, hs.score);
+                const modifiers = hs.modifiers && hs.modifiers.length > 0
+                  ? hs.modifiers
+                  : generateHeartModifiers(hs.trait, hs.score);
                 return (
                   <div
                     key={hs.trait}
-                    className="p-4 rounded-lg border border-paper-400/10"
+                    className="p-5 rounded-lg border border-paper-400/10"
                   >
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className="font-brush text-xl text-paper-100">{hs.trait}</span>
-                      <div className="flex-1 h-1.5 bg-ink-900/60 rounded-full overflow-hidden">
+                    <div className="flex items-center gap-4 mb-4">
+                      <span className="font-brush text-2xl text-paper-100">{hs.trait}</span>
+                      <div className="flex-1 h-2 bg-ink-900/60 rounded-full overflow-hidden">
                         <div
                           className={cn(
                             "h-full rounded-full",
@@ -145,21 +150,21 @@ export function ProfilePanel() {
                           style={{ width: `${hs.score}%` }}
                         />
                       </div>
-                      <span className="font-number text-sm text-gold-400">{hs.score}</span>
+                      <span className="font-number text-base text-gold-400">{hs.score}</span>
                     </div>
-                    <p className="font-serif text-xs text-paper-400/60 mb-3">{description}</p>
                     <div className="flex flex-wrap gap-2">
                       {modifiers.map((mod, idx) => (
                         <span
                           key={idx}
                           className={cn(
-                            "font-number text-xs px-2 py-0.5 rounded",
+                            "font-number text-sm px-3 py-1 rounded border",
                             mod.value > 0
-                              ? "bg-jade-500/20 text-jade-300"
-                              : "bg-cinnabar-500/20 text-cinnabar-300",
+                              ? "bg-jade-500/20 text-jade-300 border-jade-500/30"
+                              : "bg-cinnabar-500/20 text-cinnabar-300 border-cinnabar-500/30",
                           )}
                         >
-                          {mod.stat}: {mod.value > 0 ? "+" : ""}{mod.value}%
+                          {HEART_STAT_DISPLAY[mod.stat] || mod.stat}
+                          {" "}{mod.value > 0 ? "+" : ""}{mod.value}%
                         </span>
                       ))}
                     </div>
@@ -167,7 +172,7 @@ export function ProfilePanel() {
                 );
               })}
               {(player.stats?.heartScores || []).length === 0 && (
-                <div className="font-serif text-sm text-paper-400/50 text-center py-8 col-span-2">
+                <div className="font-serif text-base text-paper-400/50 text-center py-8 col-span-2">
                   心性均衡，尚无显著效果显现。
                 </div>
               )}
@@ -183,15 +188,15 @@ export function ProfilePanel() {
                   <div key={idx} className="relative mb-5 last:mb-0">
                     <div
                       className={cn(
-                        "absolute -left-[16px] top-1 w-4 h-4 rounded-full border-2",
+                        "absolute -left-[16px] top-1 w-5 h-5 rounded-full border-2",
                         idx === 0
                           ? "bg-gold-400 border-gold-300 shadow-glow"
                           : "bg-ink-800 border-gold-500/40",
                       )}
                     />
-                    <div className="font-brush text-base text-gold-400/90">{event.year}</div>
-                    <div className="font-serif text-base text-paper-100 mt-1">{event.title}</div>
-                    <p className="font-serif text-sm text-paper-400/70 leading-relaxed mt-1">
+                    <div className="font-brush text-lg text-gold-400/90">{event.year}</div>
+                    <div className="font-serif text-lg text-paper-100 mt-1">{event.title}</div>
+                    <p className="font-serif text-base text-paper-400/70 leading-relaxed mt-1">
                       {event.detail}
                     </p>
                   </div>
@@ -203,18 +208,18 @@ export function ProfilePanel() {
               <span className="font-brush text-sm text-gold-400/40">本命</span>
             }>
               <div className="relative">
-                <div className="absolute -left-2 -top-2 font-brush text-6xl text-cinnabar-500/15 select-none pointer-events-none">
+                <div className="absolute -left-2 -top-2 font-brush text-7xl text-cinnabar-500/15 select-none pointer-events-none">
                   {(player.background || "").charAt(0) || "沈"}
                 </div>
-                <p className="font-serif text-base text-paper-100 leading-loose tracking-wide indent-[2em] relative z-10 whitespace-pre-wrap">
+                <p className="font-serif text-lg text-paper-100 leading-loose tracking-wide indent-[2em] relative z-10 whitespace-pre-wrap">
                   {player.background || "暂无记载。"}
                 </p>
               </div>
               <div className="mt-4 pt-4 border-t border-gold-500/15 flex items-center justify-between">
-                <span className="font-serif text-xs text-paper-400/50">
+                <span className="font-serif text-sm text-paper-400/50">
                   共 {(player.background || "").length} 字
                 </span>
-                <span className="font-brush text-sm text-gold-400/40 tracking-wider">
+                <span className="font-brush text-base text-gold-400/40 tracking-wider">
                   · 本命录 ·
                 </span>
               </div>
@@ -236,7 +241,7 @@ export function ProfilePanel() {
                     <div
                       key={idx}
                       className={cn(
-                        "flex items-center gap-3 px-3 py-2.5 rounded transition-all",
+                        "flex items-center gap-3 px-3 py-3 rounded transition-all",
                         isCurrent && "bg-gold-400/15 border border-gold-400/40 shadow-glow",
                         isPast && "opacity-40",
                         isNext && "border border-dashed border-cinnabar-500/30",
@@ -246,7 +251,7 @@ export function ProfilePanel() {
                     >
                       <div
                         className={cn(
-                          "w-8 h-8 rounded flex items-center justify-center font-brush text-base shrink-0",
+                          "w-9 h-9 rounded flex items-center justify-center font-brush text-lg shrink-0",
                           isCurrent
                             ? "bg-gold-400 text-ink-900"
                             : isPast
@@ -259,25 +264,25 @@ export function ProfilePanel() {
                       <div className="flex-1">
                         <div
                           className={cn(
-                            "font-brush text-lg",
+                            "font-brush text-xl",
                             isCurrent ? "text-gold-400" : "text-paper-300",
                           )}
                         >
                           {realm.name}
-                          <span className="font-serif text-sm text-paper-400/60 ml-1">
+                          <span className="font-serif text-base text-paper-400/60 ml-1">
                             · {realm.stage}
                           </span>
                         </div>
                         {!isPast && (
-                          <div className="font-number text-xs text-paper-400/50">
+                          <div className="font-number text-sm text-paper-400/50">
                             需修为 {realm.cultivationNeeded.toLocaleString()}
                           </div>
                         )}
                       </div>
                       {isCurrent && (
-                        <span className="text-gold-400 text-sm font-brush animate-shimmer">★</span>
+                        <span className="text-gold-400 text-base font-brush animate-shimmer">★</span>
                       )}
-                      {isPast && <span className="text-jade-400/60 text-sm">✓</span>}
+                      {isPast && <span className="text-jade-400/60 text-base">✓</span>}
                     </div>
                   );
                 })}
@@ -285,13 +290,13 @@ export function ProfilePanel() {
 
               <CloudDivider />
 
-              <div className="space-y-2">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-serif text-sm text-paper-300">
+                  <span className="font-serif text-base text-paper-300">
                     当前：{currentRealm.name}{currentRealm.stage}
                   </span>
                   {nextRealm && (
-                    <span className="font-serif text-sm text-paper-400/60">
+                    <span className="font-serif text-base text-paper-400/60">
                       下一境：{nextRealm.name}{nextRealm.stage}
                     </span>
                   )}
@@ -300,7 +305,7 @@ export function ProfilePanel() {
                   value={player.cultivation}
                   max={nextRealm?.cultivationNeeded ?? player.cultivation}
                   showText
-                  height={14}
+                  height={16}
                 />
               </div>
             </ScrollCard>
@@ -313,7 +318,7 @@ export function ProfilePanel() {
                       <div key={root.element} className="flex items-center gap-3">
                         <div
                           className={cn(
-                            "w-9 h-9 rounded flex items-center justify-center font-brush text-xl bg-gradient-to-b shrink-0",
+                            "w-10 h-10 rounded flex items-center justify-center font-brush text-2xl bg-gradient-to-b shrink-0",
                             ELEMENT_COLORS[root.element],
                           )}
                         >
@@ -324,17 +329,17 @@ export function ProfilePanel() {
                             value={root.value}
                             max={100}
                             barClassName={cn("bg-gradient-to-r", ELEMENT_COLORS[root.element])}
-                            height={12}
+                            height={14}
                           />
                         </div>
-                        <span className="font-number text-base text-paper-300 w-10 text-right">
+                        <span className="font-number text-lg text-paper-300 w-12 text-right">
                           {root.value}
                         </span>
                       </div>
                     ))}
                   </div>
                   <div className="mt-4 pt-4 border-t border-gold-500/15">
-                    <p className="font-serif text-sm text-paper-400/70 leading-relaxed">
+                    <p className="font-serif text-base text-paper-400/70 leading-relaxed">
                       <span className="text-gold-400">水木双灵根</span>，资质上佳，
                       <span className="text-jade-400">适于水系功法</span>。
                       虽非天灵根，然勤修可补。
@@ -343,7 +348,7 @@ export function ProfilePanel() {
                 </ScrollCard>
 
                 <ScrollCard title="潜能" subtitle="四大根基，定修行上限">
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {Object.entries(player.stats || {}).map(([key, val]) => {
                       if (key === "heartScores") return null;
                       const stat = STAT_LABELS[key as keyof typeof STAT_LABELS];
@@ -351,18 +356,18 @@ export function ProfilePanel() {
                       const value = val as number;
                       return (
                         <div key={key} className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded bg-ink-700/60 flex items-center justify-center font-brush text-base text-gold-400/80 border border-paper-400/10">
+                          <div className="w-10 h-10 rounded bg-ink-700/60 flex items-center justify-center font-brush text-lg text-gold-400/80 border border-paper-400/10">
                             {stat.icon}
                           </div>
                           <div className="flex-1">
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="font-serif text-sm text-paper-300">{stat.name}</span>
-                              <span className="font-number text-base text-gold-400">{value}</span>
+                            <div className="flex items-center justify-between mb-1.5">
+                              <span className="font-serif text-base text-paper-300">{stat.name}</span>
+                              <span className="font-number text-lg text-gold-400">{value}</span>
                             </div>
                             <ProgressBar
                               value={value}
                               max={100}
-                              height={8}
+                              height={10}
                             />
                           </div>
                         </div>
@@ -374,49 +379,49 @@ export function ProfilePanel() {
 
               <div className="grid grid-cols-2 gap-6">
                 <ScrollCard title="寿元" subtitle="沙漏倾泻，光阴如水">
-                  <div className="flex flex-col items-center py-4">
-                    <div className="relative w-24 h-32 mb-4">
-                      <div className="absolute inset-x-0 top-0 h-14 bg-ink-900/60 border border-gold-500/30 rounded-t-lg overflow-hidden">
+                  <div className="flex flex-col items-center py-6">
+                    <div className="relative w-28 h-36 mb-5">
+                      <div className="absolute inset-x-0 top-0 h-16 bg-ink-900/60 border border-gold-500/30 rounded-t-lg overflow-hidden">
                         <div
                           className="absolute bottom-0 left-0 right-0 bg-gold-400/60"
                           style={{ height: `${100 - (player.lifespanCurrent / player.lifespanMax) * 100}%` }}
                         />
                       </div>
-                      <div className="absolute inset-x-0 bottom-0 h-14 bg-ink-900/60 border border-gold-500/30 rounded-b-lg overflow-hidden">
+                      <div className="absolute inset-x-0 bottom-0 h-16 bg-ink-900/60 border border-gold-500/30 rounded-b-lg overflow-hidden">
                         <div
                           className="absolute bottom-0 left-0 right-0 bg-gold-400/60"
                           style={{ height: `${(player.lifespanCurrent / player.lifespanMax) * 50}%` }}
                         />
                       </div>
-                      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-px h-4 bg-gold-400/40" />
-                      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 w-0.5 h-10 bg-gold-300/60 animate-sandFall" style={{ animationDuration: "2.5s" }} />
+                      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-px h-5 bg-gold-400/40" />
+                      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 w-0.5 h-12 bg-gold-300/60 animate-sandFall" style={{ animationDuration: "2.5s" }} />
                     </div>
                     <div className="text-center">
-                      <div className="font-number text-3xl text-gold-400">
+                      <div className="font-number text-4xl text-gold-400">
                         {player.lifespanCurrent}
-                        <span className="text-paper-400/50 text-lg"> / {player.lifespanMax}</span>
+                        <span className="text-paper-400/50 text-xl"> / {player.lifespanMax}</span>
                       </div>
-                      <div className="font-serif text-sm text-paper-400/60 mt-2">岁</div>
+                      <div className="font-serif text-base text-paper-400/60 mt-3">岁</div>
                     </div>
-                    <div className="mt-3 px-4 py-2 rounded bg-jade-500/10 border border-jade-500/30">
-                      <span className="font-serif text-base text-jade-400">寿元充盈</span>
+                    <div className="mt-4 px-5 py-2 rounded bg-jade-500/10 border border-jade-500/30">
+                      <span className="font-serif text-lg text-jade-400">寿元充盈</span>
                     </div>
                   </div>
                 </ScrollCard>
 
                 <ScrollCard title="经脉" subtitle="十二经脉，气血运行">
                   <div className="relative flex justify-center">
-                    <div className="relative w-56 h-72">
+                    <div className="relative w-64 h-80">
                       <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <div className="w-14 h-14 rounded-full border-2 border-paper-400/20 bg-paper-400/5 relative">
+                        <div className="w-16 h-16 rounded-full border-2 border-paper-400/20 bg-paper-400/5 relative">
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="font-brush text-sm text-paper-400/40">头</span>
+                            <span className="font-brush text-base text-paper-400/40">头</span>
                           </div>
                           {groupedMeridians["head"]?.map((m) => (
                             <div
                               key={m.id}
                               className={cn(
-                                "absolute px-2 py-1 rounded text-xs font-brush border whitespace-nowrap",
+                                "absolute px-2 py-1 rounded text-sm font-brush border whitespace-nowrap",
                                 m.damage
                                   ? "bg-cinnabar-500/20 text-cinnabar-300 border-cinnabar-500/30"
                                   : m.clarity >= 80
@@ -424,7 +429,7 @@ export function ProfilePanel() {
                                     : "bg-paper-400/15 text-paper-300 border-paper-400/20",
                               )}
                               style={{
-                                top: "-36px",
+                                top: "-40px",
                                 left: "50%",
                                 transform: "translateX(-50%)",
                               }}
@@ -433,15 +438,15 @@ export function ProfilePanel() {
                             </div>
                           ))}
                         </div>
-                        <div className="w-20 h-24 border-2 border-paper-400/20 bg-paper-400/5 mt-1 relative">
+                        <div className="w-24 h-28 border-2 border-paper-400/20 bg-paper-400/5 mt-1 relative">
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="font-brush text-sm text-paper-400/40">胸</span>
+                            <span className="font-brush text-base text-paper-400/40">胸</span>
                           </div>
                           {groupedMeridians["chest"]?.map((m) => (
                             <div
                               key={m.id}
                               className={cn(
-                                "absolute px-2 py-1 rounded text-xs font-brush border whitespace-nowrap",
+                                "absolute px-2 py-1 rounded text-sm font-brush border whitespace-nowrap",
                                 m.damage
                                   ? "bg-cinnabar-500/20 text-cinnabar-300 border-cinnabar-500/30"
                                   : m.clarity >= 80
@@ -449,7 +454,7 @@ export function ProfilePanel() {
                                     : "bg-paper-400/15 text-paper-300 border-paper-400/20",
                               )}
                               style={{
-                                top: "-28px",
+                                top: "-32px",
                                 left: "50%",
                                 transform: "translateX(-50%)",
                               }}
@@ -461,7 +466,7 @@ export function ProfilePanel() {
                             <div
                               key={m.id}
                               className={cn(
-                                "absolute px-2 py-1 rounded text-xs font-brush border whitespace-nowrap",
+                                "absolute px-2 py-1 rounded text-sm font-brush border whitespace-nowrap",
                                 m.damage
                                   ? "bg-cinnabar-500/20 text-cinnabar-300 border-cinnabar-500/30"
                                   : m.clarity >= 80
@@ -469,7 +474,7 @@ export function ProfilePanel() {
                                     : "bg-paper-400/15 text-paper-300 border-paper-400/20",
                               )}
                               style={{
-                                bottom: "-28px",
+                                bottom: "-32px",
                                 left: "50%",
                                 transform: "translateX(-50%)",
                               }}
@@ -478,16 +483,16 @@ export function ProfilePanel() {
                             </div>
                           ))}
                         </div>
-                        <div className="flex gap-10 mt-1">
-                          <div className="w-10 h-20 border-2 border-paper-400/20 bg-paper-400/5 relative">
+                        <div className="flex gap-12 mt-1">
+                          <div className="w-12 h-24 border-2 border-paper-400/20 bg-paper-400/5 relative">
                             <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="font-brush text-sm text-paper-400/40">左</span>
+                              <span className="font-brush text-base text-paper-400/40">左</span>
                             </div>
                             {groupedMeridians["arm_left"]?.map((m) => (
                               <div
                                 key={m.id}
                                 className={cn(
-                                  "absolute px-2 py-1 rounded text-xs font-brush border whitespace-nowrap",
+                                  "absolute px-2 py-1 rounded text-sm font-brush border whitespace-nowrap",
                                   m.damage
                                     ? "bg-cinnabar-500/20 text-cinnabar-300 border-cinnabar-500/30"
                                     : m.clarity >= 80
@@ -504,15 +509,15 @@ export function ProfilePanel() {
                               </div>
                             ))}
                           </div>
-                          <div className="w-10 h-20 border-2 border-paper-400/20 bg-paper-400/5 relative">
+                          <div className="w-12 h-24 border-2 border-paper-400/20 bg-paper-400/5 relative">
                             <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="font-brush text-sm text-paper-400/40">右</span>
+                              <span className="font-brush text-base text-paper-400/40">右</span>
                             </div>
                             {groupedMeridians["arm_right"]?.map((m) => (
                               <div
                                 key={m.id}
                                 className={cn(
-                                  "absolute px-2 py-1 rounded text-xs font-brush border whitespace-nowrap",
+                                  "absolute px-2 py-1 rounded text-sm font-brush border whitespace-nowrap",
                                   m.damage
                                     ? "bg-cinnabar-500/20 text-cinnabar-300 border-cinnabar-500/30"
                                     : m.clarity >= 80
@@ -530,13 +535,13 @@ export function ProfilePanel() {
                             ))}
                           </div>
                         </div>
-                        <div className="flex gap-10 mt-1">
-                          <div className="w-10 h-20 border-2 border-paper-400/20 bg-paper-400/5 relative">
+                        <div className="flex gap-12 mt-1">
+                          <div className="w-12 h-24 border-2 border-paper-400/20 bg-paper-400/5 relative">
                             {groupedMeridians["leg_left"]?.map((m) => (
                               <div
                                 key={m.id}
                                 className={cn(
-                                  "absolute px-2 py-1 rounded text-xs font-brush border whitespace-nowrap",
+                                  "absolute px-2 py-1 rounded text-sm font-brush border whitespace-nowrap",
                                   m.damage
                                     ? "bg-cinnabar-500/20 text-cinnabar-300 border-cinnabar-500/30"
                                     : m.clarity >= 80
@@ -553,12 +558,12 @@ export function ProfilePanel() {
                               </div>
                             ))}
                           </div>
-                          <div className="w-10 h-20 border-2 border-paper-400/20 bg-paper-400/5 relative">
+                          <div className="w-12 h-24 border-2 border-paper-400/20 bg-paper-400/5 relative">
                             {groupedMeridians["leg_right"]?.map((m) => (
                               <div
                                 key={m.id}
                                 className={cn(
-                                  "absolute px-2 py-1 rounded text-xs font-brush border whitespace-nowrap",
+                                  "absolute px-2 py-1 rounded text-sm font-brush border whitespace-nowrap",
                                   m.damage
                                     ? "bg-cinnabar-500/20 text-cinnabar-300 border-cinnabar-500/30"
                                     : m.clarity >= 80
@@ -582,19 +587,19 @@ export function ProfilePanel() {
                   <div className="mt-4 pt-4 border-t border-gold-500/15 flex flex-wrap justify-center gap-4">
                     <div className="flex items-center gap-2">
                       <span className="w-3 h-3 rounded-full bg-gold-500/80"></span>
-                      <span className="font-serif text-xs text-paper-400/60">通畅(&gt;=80%)</span>
+                      <span className="font-serif text-sm text-paper-400/60">通畅(&gt;=80%)</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="w-3 h-3 rounded-full bg-paper-400/60"></span>
-                      <span className="font-serif text-xs text-paper-400/60">滞塞(40-79%)</span>
+                      <span className="font-serif text-sm text-paper-400/60">滞塞(40-79%)</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="w-3 h-3 rounded-full bg-cinnabar-500/50"></span>
-                      <span className="font-serif text-xs text-paper-400/60">阻滞(&lt;40%)</span>
+                      <span className="font-serif text-sm text-paper-400/60">阻滞(&lt;40%)</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="w-3 h-3 rounded-full bg-cinnabar-500/30 border border-cinnabar-500/50"></span>
-                      <span className="font-serif text-xs text-paper-400/60">损伤</span>
+                      <span className="font-serif text-sm text-paper-400/60">损伤</span>
                     </div>
                   </div>
                 </ScrollCard>
