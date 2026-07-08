@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useAIStore } from "@/store/useAIStore";
+import { useGameStore } from "@/store/useGameStore";
 import { chatWithModel } from "@/lib/aiClient";
 import type { AISettings } from "@/data/types";
 import { SealButton } from "@/components/ui/SealButton";
@@ -54,6 +55,7 @@ export function AISettingsModal({ open, onClose }: AISettingsModalProps) {
   const isDeveloperMode = useAIStore((s) => s.isDeveloperMode);
   const setDeveloperMode = useAIStore((s) => s.setDeveloperMode);
   const openCrafting = useAIStore((s) => s.openCrafting);
+  const startBattle = useAIStore((s) => s.startBattle);
 
   const [draft, setDraft] = useState<AISettings>(settings);
   const [showKey, setShowKey] = useState(false);
@@ -392,6 +394,53 @@ export function AISettingsModal({ open, onClose }: AISettingsModalProps) {
                     className="ghost-btn mt-2 w-full px-3 py-1.5 rounded text-xs flex items-center justify-center gap-1.5"
                   >
                     强制打开百艺窗口（测试）
+                  </button>
+                  <button
+                    onClick={() => {
+                      const player = useGameStore.getState().player;
+                      startBattle({
+                        width: 10,
+                        height: 10,
+                        entities: [
+                          {
+                            id: "player",
+                            name: player.name,
+                            type: "player",
+                            position: { x: 5, y: 5 },
+                            hp: player.hp,
+                            maxHp: player.hpMax,
+                            mp: player.mp,
+                            maxMp: player.mpMax,
+                          },
+                          {
+                            id: "enemy1",
+                            name: "妖兽",
+                            type: "enemy",
+                            position: { x: 7, y: 5 },
+                            hp: 100,
+                            maxHp: 100,
+                          },
+                          {
+                            id: "enemy2",
+                            name: "魔修",
+                            type: "enemy",
+                            position: { x: 5, y: 7 },
+                            hp: 80,
+                            maxHp: 80,
+                          },
+                          {
+                            id: "obstacle1",
+                            name: "岩石",
+                            type: "obstacle",
+                            position: { x: 6, y: 6 },
+                          },
+                        ],
+                      });
+                      onClose();
+                    }}
+                    className="ghost-btn mt-2 w-full px-3 py-1.5 rounded text-xs flex items-center justify-center gap-1.5"
+                  >
+                    强制触发战斗模式（测试）
                   </button>
                 </div>
               </div>
