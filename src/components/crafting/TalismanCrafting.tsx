@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useGameStore } from "@/store/useGameStore";
 import { ScrollCard } from "@/components/ui/ScrollCard";
 import { CloudDivider } from "@/components/ui/CloudDivider";
@@ -35,23 +35,23 @@ const MODIFIERS: TalismanModifier[] = [
   { id: "range_near", name: "近距", type: "range", effect: "1格内", mpCost: 0, paperCost: 0 },
   { id: "range_far", name: "远距", type: "range", effect: "3格内", mpCost: 20, paperCost: 1 },
   { id: "range_global", name: "全域", type: "range", effect: "全场", mpCost: 50, paperCost: 2 },
-  
+
   { id: "trigger_instant", name: "瞬发", type: "trigger", effect: "立即生效", mpCost: 10, paperCost: 0 },
   { id: "trigger_on_hit", name: "触击", type: "trigger", effect: "攻击时触发", mpCost: 5, paperCost: 0 },
   { id: "trigger_on_damage", name: "受击", type: "trigger", effect: "受击时触发", mpCost: 5, paperCost: 0 },
-  
+
   { id: "duration_short", name: "瞬刻", type: "duration", effect: "1回合", mpCost: 0, paperCost: 0 },
   { id: "duration_long", name: "持久", type: "duration", effect: "3回合", mpCost: 20, paperCost: 1 },
   { id: "duration_permanent", name: "永恒", type: "duration", effect: "持续至战斗结束", mpCost: 40, paperCost: 2 },
-  
+
   { id: "strength_weak", name: "弱化", type: "strength", effect: "效果减半", mpCost: -15, paperCost: -1 },
   { id: "strength_normal", name: "标准", type: "strength", effect: "正常效果", mpCost: 0, paperCost: 0 },
   { id: "strength_strong", name: "强化", type: "strength", effect: "效果翻倍", mpCost: 30, paperCost: 1 },
-  
+
   { id: "target_self", name: "自身", type: "target", effect: "仅作用于自身", mpCost: 0, paperCost: 0 },
   { id: "target_single", name: "单体", type: "target", effect: "作用于单个目标", mpCost: 10, paperCost: 0 },
   { id: "target_aoe", name: "范围", type: "target", effect: "作用于范围内所有目标", mpCost: 30, paperCost: 2 },
-  
+
   { id: "cost_low", name: "低耗", type: "cost", effect: "灵力消耗-30%", mpCost: 5, paperCost: 1 },
   { id: "cost_high", name: "高耗", type: "cost", effect: "灵力消耗+50%", mpCost: -20, paperCost: -1 },
 ];
@@ -72,69 +72,101 @@ export function TalismanCrafting() {
   const draw = useGameStore((s) => s.drawTalisman);
   const inventory = useGameStore((s) => s.inventory);
   const mp = useGameStore((s) => s.player.mp);
-  
+
   const [element, setElement] = useState<TalismanElement | null>(null);
   const [action, setAction] = useState<TalismanAction | null>(null);
   const [modifiers, setModifiers] = useState<string[]>([]);
   const [mode, setMode] = useState<"custom" | "preset">("custom");
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
 
-  const paperCount = inventory.find((i) => i.name === "黄表符纸")?.count ?? 0;
-  const cinnabarCount = inventory.find((i) => i.name === "朱砂")?.count ?? 0;
+  const paperCount = useMemo(() => inventory.find((i) => i.name === "黄表符纸")?.count ?? 0, [inventory]);
+  const cinnabarCount = useMemo(() => inventory.find((i) => i.name === "朱砂")?.count ?? 0, [inventory]);
 
-  const selectedModifiers = MODIFIERS.filter(m => modifiers.includes(m.id));
-  
-  const totalMpCost = 20 + selectedModifiers.reduce((sum, m) => sum + m.mpCost, 0);
-  const totalPaperCost = 1 + selectedModifiers.reduce((sum, m) => sum + m.paperCost, 0);
-  const cinnabarCost = 1;
-  
-  const successRate = Math.min(100, Math.max(30, 80 - selectedModifiers.filter(m => m.mpCost > 0).length * 5));
+  const selectedModifiers = useMemo(() => MODIFIERS.filter(m => modifiers.includes(m.id)), [modifiers]);
 
-  const talismanName = element && action 
-    ? `${ELEMENTS.find(e => e.value === element)?.name}${ACTIONS.find(a => a.value === action)?.name}符`
-    : "未命名符";
+  const calculatedStats = useMemo(() => {
+    const totalMpCost = 20 + selectedModifiers.reduce((sum, m) => sum + m.mpCost, 0);
+    const totalPaperCost = 1 + selectedModifiers.reduce((sum, m) => sum + m.paperCost, 0);
+    const cinnabarCost = 1;
+    const successRate = Math.min(100, Math.max(30, 80 - selectedModifiers.filter(m => m.mpCost > 0).length * 5));
+    return { totalMpCost, totalPaperCost, cinnabarCost, successRate };
+  }, [selectedModifiers]);
 
-  const talismanDesc = element && action
-    ? `${ELEMENTS.find(e => e.value === element)?.desc}，${ACTIONS.find(a => a.value === action)?.desc}。${selectedModifiers.map(m => m.effect).join("，")}`
-    : "请选择元素和行为";
+  const talismanName = useMemo(() => {
+    if (!element || !action) return "未命名符";
+    const elemName = ELEMENTS.find(e => e.value === element)?.name || "";
+    const actName = ACTIONS.find(a => a.value === action)?.name || "";
+    return `${elemName}${actName}符`;
+  }, [element, action]);
 
-  const canCraft = element && action && modifiers.length >= 2 && 
-    paperCount >= totalPaperCost && cinnabarCount >= cinnabarCost && mp >= totalMpCost;
+  const talismanDesc = useMemo(() => {
+    if (!element || !action) return "请选择元素和行为";
+    const elemDesc = ELEMENTS.find(e => e.value === element)?.desc || "";
+    const actDesc = ACTIONS.find(a => a.value === action)?.desc || "";
+    const effects = selectedModifiers.map(m => m.effect).join("，");
+    return `${elemDesc}，${actDesc}。${effects}`;
+  }, [element, action, selectedModifiers]);
 
-  const handleToggleModifier = (modifierId: string) => {
-    if (modifiers.includes(modifierId)) {
-      setModifiers(modifiers.filter(m => m !== modifierId));
-    } else {
-      setModifiers([...modifiers, modifierId]);
-    }
-  };
+  const canCraft = useMemo(() => {
+    return element && action && modifiers.length >= 2 &&
+      paperCount >= calculatedStats.totalPaperCost &&
+      cinnabarCount >= calculatedStats.cinnabarCost &&
+      mp >= calculatedStats.totalMpCost;
+  }, [element, action, modifiers, paperCount, cinnabarCount, mp, calculatedStats]);
 
-  const applyPreset = (preset: typeof PRESET_TEMPLATES[0]) => {
+  const getModifierType = useCallback((id: string) => {
+    const mod = MODIFIERS.find(m => m.id === id);
+    return mod?.type;
+  }, []);
+
+  const handleToggleModifier = useCallback((modifierId: string) => {
+    setModifiers(prev => {
+      if (prev.includes(modifierId)) {
+        return prev.filter(m => m !== modifierId);
+      } else {
+        const newType = getModifierType(modifierId);
+        let newModifiers = prev;
+        if (newType) {
+          newModifiers = prev.filter(m => getModifierType(m) !== newType);
+        }
+        return [...newModifiers, modifierId];
+      }
+    });
+  }, [getModifierType]);
+
+  const isModifierDisabled = useCallback((modifierId: string) => {
+    if (modifiers.includes(modifierId)) return false;
+    const modType = getModifierType(modifierId);
+    if (!modType) return false;
+    return modifiers.some(m => getModifierType(m) === modType);
+  }, [modifiers, getModifierType]);
+
+  const applyPreset = useCallback((preset: typeof PRESET_TEMPLATES[0]) => {
     setElement(preset.element);
     setAction(preset.action);
     setModifiers(preset.modifiers);
     setSelectedPreset(preset.name);
-  };
+  }, []);
 
-  const handleCraft = () => {
+  const handleCraft = useCallback(() => {
     if (!element || !action) return;
-    
+
     const recipe: TalismanRecipe = {
       id: `talisman-${Date.now()}`,
       name: talismanName,
       grade: "凡品",
-      paperCost: totalPaperCost,
-      cinnabarCost: cinnabarCost,
-      successRate: successRate,
-      mpCost: totalMpCost,
+      paperCost: calculatedStats.totalPaperCost,
+      cinnabarCost: calculatedStats.cinnabarCost,
+      successRate: calculatedStats.successRate,
+      mpCost: calculatedStats.totalMpCost,
       desc: talismanDesc,
       element,
       action,
       modifiers,
     };
-    
+
     draw(recipe);
-  };
+  }, [element, action, talismanName, calculatedStats, talismanDesc, modifiers, draw]);
 
   return (
     <div className="grid grid-cols-12 gap-4">
@@ -192,17 +224,20 @@ export function TalismanCrafting() {
             </div>
 
             <div>
-              <h4 className="font-brush text-xs text-paper-300 mb-2">修饰词条（需选2个）</h4>
+              <h4 className="font-brush text-xs text-paper-300 mb-2">修饰词条</h4>
               <div className="space-y-2 max-h-[200px] overflow-y-auto">
                 {MODIFIERS.map((mod) => (
                   <button
                     key={mod.id}
                     onClick={() => handleToggleModifier(mod.id)}
+                    disabled={isModifierDisabled(mod.id)}
                     className={cn(
                       "w-full px-3 py-1.5 rounded text-[11px] font-serif border transition-all flex items-center justify-between",
                       modifiers.includes(mod.id)
                         ? "bg-jade-500/10 border-jade-400/30 text-jade-300"
-                        : "bg-ink-900/30 border-paper-400/10 text-paper-400/60 hover:border-paper-400/30"
+                        : isModifierDisabled(mod.id)
+                          ? "bg-ink-900/20 border-paper-400/5 text-paper-400/20 cursor-not-allowed"
+                          : "bg-ink-900/30 border-paper-400/10 text-paper-400/60 hover:border-paper-400/30"
                     )}
                   >
                     <span>{mod.name} · {mod.effect}</span>
@@ -274,7 +309,7 @@ export function TalismanCrafting() {
             <div className="flex items-center justify-center gap-2 mt-1">
               <GradeTag grade="凡品" />
               <span className="font-serif text-xs text-paper-400/60">
-                成功率 {successRate}%
+                成功率 {calculatedStats.successRate}%
               </span>
             </div>
             <p className="font-serif text-xs text-paper-400/70 mt-2 max-w-md mx-auto leading-relaxed">
@@ -290,9 +325,9 @@ export function TalismanCrafting() {
                 <span className="font-serif text-xs text-paper-400/70">黄表符纸</span>
                 <span className={cn(
                   "font-number text-sm",
-                  paperCount >= totalPaperCost ? "text-jade-400" : "text-cinnabar-400"
+                  paperCount >= calculatedStats.totalPaperCost ? "text-jade-400" : "text-cinnabar-400"
                 )}>
-                  {totalPaperCost} / {paperCount}
+                  {calculatedStats.totalPaperCost} / {paperCount}
                 </span>
               </div>
             </div>
@@ -301,9 +336,9 @@ export function TalismanCrafting() {
                 <span className="font-serif text-xs text-paper-400/70">朱砂</span>
                 <span className={cn(
                   "font-number text-sm",
-                  cinnabarCount >= cinnabarCost ? "text-jade-400" : "text-cinnabar-400"
+                  cinnabarCount >= calculatedStats.cinnabarCost ? "text-jade-400" : "text-cinnabar-400"
                 )}>
-                  {cinnabarCost} / {cinnabarCount}
+                  {calculatedStats.cinnabarCost} / {cinnabarCount}
                 </span>
               </div>
             </div>
@@ -312,9 +347,9 @@ export function TalismanCrafting() {
                 <span className="font-serif text-xs text-paper-400/70">灵力</span>
                 <span className={cn(
                   "font-number text-sm",
-                  mp >= totalMpCost ? "text-jade-400" : "text-cinnabar-400"
+                  mp >= calculatedStats.totalMpCost ? "text-jade-400" : "text-cinnabar-400"
                 )}>
-                  {totalMpCost} / {mp}
+                  {calculatedStats.totalMpCost} / {mp}
                 </span>
               </div>
             </div>

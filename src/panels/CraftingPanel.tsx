@@ -29,7 +29,9 @@ export function CraftingPanel() {
         </TabButton>
       </div>
 
-      {tab === "talisman" ? <TalismanCrafting /> : <AlchemyWorkshop />}
+      <div key={tab}>
+        {tab === "talisman" ? <TalismanCrafting /> : <AlchemyWorkshop />}
+      </div>
     </div>
   );
 }

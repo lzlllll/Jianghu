@@ -9,10 +9,15 @@ import { CloudDivider } from "@/components/ui/CloudDivider";
 import { cn } from "@/lib/utils";
 import { Swords, X, Loader2 } from "lucide-react";
 
+const useIsDeveloperMode = () => {
+  return useAIStore((s) => s.isDeveloperMode);
+};
+
 export function BattlePanel() {
   const battle = useAIStore((s) => s.battle);
   const runBattleTurn = useAIStore((s) => s.runBattleTurn);
   const endBattle = useAIStore((s) => s.endBattle);
+  const isDeveloperMode = useAIStore((s) => s.isDeveloperMode);
   const player = useGameStore((s) => s.player);
 
   const [action, setAction] = useState("");
@@ -38,12 +43,14 @@ export function BattlePanel() {
         title="战斗"
         poem="黄沙百战穿金甲，不破楼兰终不还。"
       />
-      <button
-        onClick={endBattle}
-        className="flex items-center gap-1 text-[11px] font-serif text-cinnabar-400/70 hover:text-cinnabar-300 transition mb-4"
-      >
-        <X size={12} /> 结束战斗
-      </button>
+      {isDeveloperMode && (
+        <button
+          onClick={endBattle}
+          className="flex items-center gap-1 text-[11px] font-serif text-cinnabar-400/70 hover:text-cinnabar-300 transition mb-4"
+        >
+          <X size={12} /> 结束战斗（调试）
+        </button>
+      )}
 
       <div className="flex-1 flex flex-col gap-4 overflow-hidden">
         <ScrollCard

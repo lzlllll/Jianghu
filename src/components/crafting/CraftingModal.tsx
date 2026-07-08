@@ -80,7 +80,9 @@ export function CraftingModal() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
-          {tab === "talisman" ? <TalismanCrafting /> : <AlchemyWorkshop />}
+          <div key={tab}>
+            {tab === "talisman" ? <TalismanCrafting /> : <AlchemyWorkshop />}
+          </div>
         </div>
       </div>
     </div>
