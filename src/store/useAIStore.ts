@@ -46,6 +46,7 @@ const INITIAL_CONVERSATION: ConversationState = {
   errorMsg: "",
   lastFlashDuration: 0,
   lastProDuration: 0,
+  lastRawOutput: "",
 };
 
 const INITIAL_NPC_CHAT: NPCChatState = {
@@ -272,6 +273,7 @@ export const useAIStore = create<AIStore>()(
             conversation: {
               ...st.conversation,
               lastProDuration: Date.now() - proStart,
+              lastRawOutput: proRaw,
             },
           }));
         } catch (e) {

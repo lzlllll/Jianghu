@@ -15,6 +15,9 @@ import {
   Settings as SettingsIcon,
   Loader2,
   Database,
+  Code,
+  Copy,
+  Check,
 } from "lucide-react";
 
 interface StoryPanelProps {
@@ -38,6 +41,10 @@ export function StoryPanel({ onOpenSettings }: StoryPanelProps) {
   const battle = useAIStore((s) => s.battle);
   const startBattle = useAIStore((s) => s.startBattle);
   const log = useGameStore((s) => s.log);
+  const isDeveloperMode = useAIStore((s) => s.isDeveloperMode);
+
+  const [showRawOutput, setShowRawOutput] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const [decision, setDecision] = useState("");
   const narrativeRef = useRef<HTMLDivElement>(null);
@@ -259,6 +266,47 @@ export function StoryPanel({ onOpenSettings }: StoryPanelProps) {
             </div>
           )}
         </ScrollCard>
+
+        {/* 开发者模式 - AI原始输出 */}
+        {isDeveloperMode && (
+          <ScrollCard
+            title="AI原始输出"
+            subtitle="开发者模式"
+            ornament={
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(conversation.lastRawOutput);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }}
+                  className="p-1 hover:bg-paper-400/10 rounded transition"
+                  title="复制"
+                >
+                  {copied ? <Check size={14} className="text-jade-400" /> : <Copy size={14} className="text-paper-400/60" />}
+                </button>
+              </div>
+            }
+            className="shrink-0"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-serif text-xs text-paper-400/60">
+                上一轮AI原始响应
+              </span>
+              <button
+                onClick={() => setShowRawOutput(!showRawOutput)}
+                className="font-serif text-xs text-gold-400/80 hover:text-gold-400 transition"
+              >
+                {showRawOutput ? "收起" : "展开"}
+              </button>
+            </div>
+            {showRawOutput && (
+              <pre className="font-mono text-xs text-paper-400/80 bg-ink-900/50 p-3 rounded max-h-[300px] overflow-y-auto whitespace-pre-wrap">
+                {conversation.lastRawOutput || "暂无原始输出"}
+              </pre>
+            )}
+          </ScrollCard>
+        )}
       </div>
     </div>
   );
