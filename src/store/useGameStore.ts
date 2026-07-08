@@ -102,6 +102,7 @@ interface GameStore extends GameState {
   applyOps: (ops: DataOp[]) => void;
   getSnapshot: () => GameSnapshot;
   restoreSnapshot: (snap: GameSnapshot) => void;
+  updateNews: (newItems: { category: string; title: string; content: string; source: string }[]) => void;
 }
 
 const initialState: GameState = {
@@ -118,6 +119,14 @@ const initialState: GameState = {
   currentLocation: "home",
   log: ["庚子年春，你拜入云栖宗，自此踏上漫漫修真路。"],
   pillCache: {},
+  news: {
+    items: [
+      { id: "n1", category: "官府公告", title: "朝廷招贤", content: "大炎朝廷发布告示，广招天下修士前往北境抵御妖兽入侵，有功者赏七品官职。", date: "今日", source: "青阳城告示" },
+      { id: "n2", category: "宗门布告", title: "大比将至", content: "宗门大比将于三日后举行，各峰弟子需提前报名，优胜者可获筑基丹奖励。", date: "今日", source: "云栖宗传讯符" },
+      { id: "n3", category: "市井传言", title: "血煞异动", content: "近日青阳城周边出现血煞门弟子踪迹，疑似在打探云栖宗矿脉消息。", date: "今日", source: "酒楼食客" },
+    ],
+    lastUpdate: "今日",
+  },
 };
 
 export const useGameStore = create<GameStore>()(
@@ -137,6 +146,44 @@ export const useGameStore = create<GameStore>()(
 
       addLog: (msg) =>
         set((s) => ({ log: [msg, ...s.log].slice(0, 30) })),
+
+      updateNews: (newItems) =>
+        set((s) => {
+          const categoryLimits: Record<string, number> = {
+            "官府公告": 3,
+            "宗门布告": 3,
+            "市井传言": 3,
+          };
+
+          let newNews = [...s.news.items];
+
+          newItems.forEach((item) => {
+            const newItem = {
+              id: `news-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              category: item.category as import("@/data/types").NewsCategory,
+              title: item.title,
+              content: item.content,
+              date: "今日",
+              source: item.source,
+            };
+            newNews = [newItem, ...newNews];
+          });
+
+          const grouped = newNews.reduce((acc, item) => {
+            if (!acc[item.category]) acc[item.category] = [];
+            if (acc[item.category].length < (categoryLimits[item.category] || 3)) {
+              acc[item.category].push(item);
+            }
+            return acc;
+          }, {} as Record<string, typeof newNews>);
+
+          return {
+            news: {
+              items: Object.values(grouped).flat(),
+              lastUpdate: "今日",
+            },
+          };
+        }),
 
       cultivate: () => {
         const s = get();
@@ -829,6 +876,7 @@ EFFECT: [效果描述]`,
             currentLocation: st.currentLocation,
             log: st.log,
             pillCache: st.pillCache,
+            news: st.news,
           };
           const next = applyOpsToState(dataView, ops);
           return {

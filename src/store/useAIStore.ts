@@ -182,6 +182,7 @@ export const useAIStore = create<AIStore>()(
           craftingTab: game.craftingTab,
           currentLocation: game.currentLocation,
           log: game.log,
+          news: game.news,
           pillCache: game.pillCache,
         };
 

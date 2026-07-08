@@ -437,6 +437,65 @@ export interface SectResource {
   unit: string;
 }
 
+export interface SectIndustry {
+  id: string;
+  name: string;
+  production: string;
+  investment: number;
+  description: string;
+  level: number;
+}
+
+export interface SectActivity {
+  id: string;
+  name: string;
+  type: "大比" | "试炼" | "庆典" | "祭祀" | "远征";
+  status: "筹备中" | "进行中" | "已结束";
+  target: string;
+  description: string;
+}
+
+export interface SectHall {
+  id: string;
+  name: string;
+  master: string;
+  masterRealm: string;
+  currentTask: string;
+  memberCount: number;
+  maxMembers: number;
+  description: string;
+}
+
+export interface SectManagement {
+  industries: SectIndustry[];
+  activities: SectActivity[];
+  halls: SectHall[];
+  treasury: {
+    spiritStones: number;
+    materials: { name: string; amount: number }[];
+  };
+  consumption: {
+    dailyCost: number;
+    recentConsumption: { date: string; cost: number }[];
+  };
+}
+
+export type NewsCategory = "官府公告" | "宗门布告" | "市井传言";
+
+export interface NewsItem {
+  id: string;
+  category: NewsCategory;
+  title: string;
+  content: string;
+  date: string;
+  source: string;
+}
+
+export interface NewsState {
+  items: NewsItem[];
+  lastUpdate: string;
+}
+
 export interface Sect {
   name: string;
   level: number;
@@ -451,6 +510,7 @@ export interface Sect {
   shop: SectShopItem[];
   heritage: SectHeritage[];
   resources: SectResource[];
+  management: SectManagement;
 }
 
 export interface Relation {
@@ -486,6 +546,7 @@ export interface GameState {
   currentLocation: LocationType;
   log: string[];
   pillCache: Record<string, PillCacheEntry>;
+  news: NewsState;
 }
 
 // ===== AI 叙事系统类型 =====

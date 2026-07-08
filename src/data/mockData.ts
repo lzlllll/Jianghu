@@ -646,6 +646,47 @@ export const initialSect: Sect = {
     { name: "黄表符纸", amount: 12000, unit: "张" },
     { name: "妖兽内丹", amount: 320, unit: "颗" },
   ],
+  management: {
+    industries: [
+      { id: "ind1", name: "灵田", production: "聚灵草、百年灵芝", investment: 5000, description: "云栖山脉南麓千亩灵田，由外门弟子轮值照料。", level: 3 },
+      { id: "ind2", name: "矿脉", production: "寒潭玄铁、精金", investment: 8000, description: "黑风岭矿脉，出产上等炼器材料。", level: 4 },
+      { id: "ind3", name: "丹房", production: "筑基丹、凝元丹", investment: 12000, description: "宗门丹房，由执事长老掌管，每月产出丹药供弟子兑换。", level: 5 },
+      { id: "ind4", name: "商铺", production: "灵石收入", investment: 6000, description: "青阳城云栖商行，经营灵材丹药买卖。", level: 3 },
+    ],
+    activities: [
+      { id: "act1", name: "宗门大比", type: "大比", status: "筹备中", target: "选拔天才弟子，奖励丰厚", description: "每五年一度的宗门大比即将举行，各峰弟子摩拳擦掌。" },
+      { id: "act2", name: "秘境试炼", type: "试炼", status: "进行中", target: "探索紫云秘境", description: "紫云秘境开启，筑基期弟子可入内探寻机缘。" },
+    ],
+    halls: [
+      { id: "hall1", name: "青云峰", master: "玄清真人", masterRealm: "元婴期", currentTask: "筹备宗门大比", memberCount: 156, maxMembers: 200, description: "主峰，掌门居所，宗门核心之地。" },
+      { id: "hall2", name: "青鸾峰", master: "苏婉清", masterRealm: "筑基后期", currentTask: "照料灵田", memberCount: 89, maxMembers: 120, description: "主掌灵植培育，盛产灵药。" },
+      { id: "hall3", name: "铁剑峰", master: "铁剑真人", masterRealm: "金丹期", currentTask: "锻造法器", memberCount: 124, maxMembers: 150, description: "主掌炼器，门下弟子多为剑修。" },
+      { id: "hall4", name: "碧水峰", master: "水灵子", masterRealm: "金丹期", currentTask: "镇守水阵", memberCount: 78, maxMembers: 100, description: "主掌阵法，护山大阵由其掌控。" },
+      { id: "hall5", name: "藏经阁", master: "玄空子", masterRealm: "元婴期", currentTask: "整理典籍", memberCount: 45, maxMembers: 60, description: "宗门典籍所在，收藏无数功法秘术。" },
+    ],
+    treasury: {
+      spiritStones: 166200,
+      materials: [
+        { name: "百年灵芝", amount: 580 },
+        { name: "千年雪莲", amount: 36 },
+        { name: "寒潭玄铁", amount: 1240 },
+        { name: "聚灵草", amount: 8600 },
+        { name: "朱砂", amount: 2400 },
+        { name: "黄表符纸", amount: 12000 },
+        { name: "妖兽内丹", amount: 320 },
+      ],
+    },
+    consumption: {
+      dailyCost: 2400,
+      recentConsumption: [
+        { date: "第1天", cost: 2400 },
+        { date: "第2天", cost: 2600 },
+        { date: "第3天", cost: 2300 },
+        { date: "第4天", cost: 2500 },
+        { date: "第5天", cost: 2400 },
+      ],
+    },
+  },
 };
 
 export const initialRelations: Relation[] = [

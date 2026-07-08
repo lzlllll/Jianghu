@@ -1,18 +1,25 @@
 import { useState } from "react";
 import { useGameStore } from "@/store/useGameStore";
+import { useAIStore } from "@/store/useAIStore";
 import { ScrollCard } from "@/components/ui/ScrollCard";
 import { PanelTitle } from "@/components/ui/PanelTitle";
 import { CloudDivider } from "@/components/ui/CloudDivider";
 import { SealButton } from "@/components/ui/SealButton";
 import { GradeTag } from "@/components/ui/GradeTag";
+import { NewsPanel } from "@/components/news/NewsPanel";
+import { SectManagement } from "@/components/sect/SectManagement";
 import { cn } from "@/lib/utils";
 import type { SectTask, SectShopItem, SectHeritage } from "@/data/types";
 
-type SubTab = "overview" | "position" | "task" | "shop" | "heritage";
+type SubTab = "overview" | "position" | "task" | "shop" | "heritage" | "news" | "management";
 
 export function SectPanel() {
   const sect = useGameStore((s) => s.sect);
   const [tab, setTab] = useState<SubTab>("overview");
+
+  const player = useGameStore((s) => s.player);
+  const isDeveloperMode = useAIStore((s) => s.isDeveloperMode);
+  const isLeader = player.position === "掌门" || player.position === "副掌门" || isDeveloperMode;
 
   const TABS: { id: SubTab; label: string }[] = [
     { id: "overview", label: "门派概览" },
@@ -20,6 +27,8 @@ export function SectPanel() {
     { id: "task", label: "门派任务" },
     { id: "shop", label: "贡献商店" },
     { id: "heritage", label: "门派底蕴" },
+    { id: "news", label: "江湖快报" },
+    ...(isLeader ? [{ id: "management" as SubTab, label: "宗门管理" }] : []),
   ];
 
   return (
@@ -91,6 +100,8 @@ export function SectPanel() {
       {tab === "task" && <TaskBoard />}
       {tab === "shop" && <ShopBoard />}
       {tab === "heritage" && <HeritageBoard />}
+      {tab === "news" && <NewsPanel />}
+      {tab === "management" && <SectManagement />}
     </div>
   );
 }
@@ -240,7 +251,6 @@ function PositionTree() {
 
 function TaskBoard() {
   const tasks = useGameStore((s) => s.sect.tasks);
-  const accept = useGameStore((s) => s.acceptTask);
 
   const DIFFICULTY: Record<SectTask["difficulty"], { color: string; bg: string }> = {
     易: { color: "text-jade-400", bg: "border-jade-500/30 bg-jade-500/10" },
@@ -251,6 +261,9 @@ function TaskBoard() {
 
   return (
     <ScrollCard title="门派任务" subtitle="为宗出力，积攒贡献">
+      <p className="font-serif text-xs text-paper-400/50 mb-3">
+        请在宗门叙事中提及接取任务，系统将自动记录。
+      </p>
       <div className="space-y-2">
         {tasks.map((task) => {
           const d = DIFFICULTY[task.difficulty];
@@ -261,7 +274,7 @@ function TaskBoard() {
                 "flex items-center gap-3 p-3 rounded border",
                 task.accepted
                   ? "border-jade-500/30 bg-jade-500/5 opacity-70"
-                  : "border-paper-400/10 bg-ink-900/30 hover:border-paper-400/30",
+                  : "border-paper-400/10 bg-ink-900/30",
               )}
             >
               <div
@@ -294,14 +307,6 @@ function TaskBoard() {
                   </span>
                 </div>
               </div>
-              <SealButton
-                onClick={() => accept(task.id)}
-                disabled={task.accepted}
-                variant={task.accepted ? "ghost" : "seal"}
-                className="px-3 py-1.5 text-xs"
-              >
-                {task.accepted ? "已完成" : "接取"}
-              </SealButton>
             </div>
           );
         })}
@@ -313,13 +318,15 @@ function TaskBoard() {
 function ShopBoard() {
   const shop = useGameStore((s) => s.sect.shop);
   const contribution = useGameStore((s) => s.sect.contribution);
-  const buy = useGameStore((s) => s.buyShop);
 
   return (
     <ScrollCard
       title="贡献商店"
       subtitle={`现有贡献 ${contribution.toLocaleString()}`}
     >
+      <p className="font-serif text-xs text-paper-400/50 mb-3">
+        请在宗门叙事中提及兑换物品，系统将自动扣除贡献并发放物品。
+      </p>
       <div className="grid grid-cols-2 gap-3">
         {shop.map((item: SectShopItem) => {
           const canBuy = contribution >= item.cost;
@@ -329,7 +336,7 @@ function ShopBoard() {
               className={cn(
                 "p-3 rounded border",
                 canBuy
-                  ? "border-paper-400/15 bg-ink-900/30 hover:border-gold-400/40"
+                  ? "border-paper-400/15 bg-ink-900/30"
                   : "border-paper-400/10 bg-ink-900/20 opacity-60",
               )}
             >
@@ -342,17 +349,15 @@ function ShopBoard() {
                   {item.cost.toLocaleString()}
                 </span>
               </div>
-              <p className="font-serif text-xs text-paper-400/60 leading-relaxed mb-2">
+              <p className="font-serif text-xs text-paper-400/60 leading-relaxed">
                 {item.desc}
               </p>
-              <SealButton
-                onClick={() => buy(item.id)}
-                disabled={!canBuy}
-                variant="ghost"
-                className="w-full py-1 text-xs"
-              >
-                {canBuy ? "兑换" : "贡献不足"}
-              </SealButton>
+              <div className={cn(
+                "mt-2 font-serif text-xs text-center py-1 rounded",
+                canBuy ? "text-jade-400/80" : "text-paper-400/30"
+              )}>
+                {canBuy ? "可兑换" : "贡献不足"}
+              </div>
             </div>
           );
         })}
