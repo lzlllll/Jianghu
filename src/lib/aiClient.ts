@@ -43,6 +43,7 @@ export async function chatComplete(
         messages,
         temperature: settings.temperature,
         stream: false,
+        max_tokens: 8192,
       }),
       signal: controller.signal,
     });
@@ -112,6 +113,7 @@ export async function chatWithModel(
         messages,
         temperature: settings.temperature,
         stream: false,
+        max_tokens: 8192,
       }),
       signal: controller.signal,
     });

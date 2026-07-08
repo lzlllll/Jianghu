@@ -132,7 +132,7 @@ export function StartSetup() {
 
       useGameStore.getState().setPlayer(newPlayer);
 
-      const firstInput = `我是${setup.name}，${setup.title || "一名修士"}，${setup.description}。${setup.personality ? "性格" + setup.personality + "。" : ""}${setup.background || ""}`;
+      const firstInput = `我是${setup.name}，${setup.title || "一名修士"}，${setup.description}。${setup.personality ? "性格" + setup.personality + "。" : ""}${setup.background || ""}\n\n请为我生成完整的开局游戏数据，包括：\n1. 我的详细属性（灵根、经脉、体魄、气运、寿元、HP、MP等）\n2. 1-2个初始功法/技能\n3. 几件初始物品（武器、丹药、材料等）\n4. 一些灵石\n5. 宗门信息（如果我属于宗门）\n6. 几位初始关系人物\n7. 今日的江湖新闻（官府公告、宗门布告、市井传言各一条）\n8. 开篇叙事\n请以游戏数据操作的方式返回所有内容。`;
 
       await runTurn(firstInput);
     } catch (e) {
