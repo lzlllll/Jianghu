@@ -95,13 +95,15 @@ export function SectPanel() {
         ))}
       </div>
 
-      {tab === "overview" && <SectOverview />}
-      {tab === "position" && <PositionTree />}
-      {tab === "task" && <TaskBoard />}
-      {tab === "shop" && <ShopBoard />}
-      {tab === "heritage" && <HeritageBoard />}
-      {tab === "news" && <NewsPanel />}
-      {tab === "management" && <SectManagement />}
+      <div key={tab}>
+        {tab === "overview" && <SectOverview />}
+        {tab === "position" && <PositionTree />}
+        {tab === "task" && <TaskBoard />}
+        {tab === "shop" && <ShopBoard />}
+        {tab === "heritage" && <HeritageBoard />}
+        {tab === "news" && <NewsPanel />}
+        {tab === "management" && <SectManagement />}
+      </div>
     </div>
   );
 }
