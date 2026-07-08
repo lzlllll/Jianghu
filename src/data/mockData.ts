@@ -496,12 +496,12 @@ export const initialSpiritStones: SpiritStones = {
 };
 
 export const initialTalismanRecipes: TalismanRecipe[] = [
-  { id: "tr1", name: "冰封符", grade: "凡品", paperCost: 1, cinnabarCost: 1, successRate: 85, mpCost: 20, desc: "凝水成冰，封敌经脉。" },
-  { id: "tr2", name: "雷火符", grade: "灵品", paperCost: 1, cinnabarCost: 3, successRate: 55, mpCost: 50, desc: "引雷挟火，攻敌要害。" },
-  { id: "tr3", name: "护身符", grade: "灵品", paperCost: 1, cinnabarCost: 2, successRate: 65, mpCost: 40, desc: "可挡同阶一击，护身保命。" },
-  { id: "tr4", name: "遁地符", grade: "凡品", paperCost: 1, cinnabarCost: 2, successRate: 70, mpCost: 30, desc: "贴地而遁，瞬移百丈。" },
-  { id: "tr5", name: "传音符", grade: "凡品", paperCost: 1, cinnabarCost: 1, successRate: 90, mpCost: 15, desc: "千里传音，互通音讯。" },
-  { id: "tr6", name: "九霄神雷符", grade: "玄品", paperCost: 2, cinnabarCost: 8, successRate: 28, mpCost: 120, desc: "引九霄神雷，灭邪破魔，威力惊人。" },
+  { id: "tr1", name: "冰封符", grade: "凡品", paperCost: 1, cinnabarCost: 1, successRate: 85, mpCost: 20, desc: "凝水成冰，封敌经脉。", element: "冰", action: "封", modifiers: ["range_far", "trigger_instant"] },
+  { id: "tr2", name: "雷火符", grade: "灵品", paperCost: 1, cinnabarCost: 3, successRate: 55, mpCost: 50, desc: "引雷挟火，攻敌要害。", element: "雷", action: "灭", modifiers: ["range_far", "trigger_instant"] },
+  { id: "tr3", name: "护身符", grade: "灵品", paperCost: 1, cinnabarCost: 2, successRate: 65, mpCost: 40, desc: "可挡同阶一击，护身保命。", element: "土", action: "保", modifiers: ["trigger_instant", "duration_long"] },
+  { id: "tr4", name: "遁地符", grade: "凡品", paperCost: 1, cinnabarCost: 2, successRate: 70, mpCost: 30, desc: "贴地而遁，瞬移百丈。", element: "土", action: "遁", modifiers: ["range_global", "trigger_instant"] },
+  { id: "tr5", name: "传音符", grade: "凡品", paperCost: 1, cinnabarCost: 1, successRate: 90, mpCost: 15, desc: "千里传音，互通音讯。", element: "风", action: "引", modifiers: ["range_global", "trigger_instant"] },
+  { id: "tr6", name: "九霄神雷符", grade: "玄品", paperCost: 2, cinnabarCost: 8, successRate: 28, mpCost: 120, desc: "引九霄神雷，灭邪破魔，威力惊人。", element: "雷", action: "灭", modifiers: ["range_global", "trigger_instant"] },
 ];
 
 export const initialAlchemyRecipes: AlchemyRecipe[] = [

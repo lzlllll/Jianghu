@@ -67,6 +67,7 @@ const INITIAL_BATTLE: BattleState = {
   narrative: "",
   isResolving: false,
   errorMsg: "",
+  context: [],
 };
 
 interface AIStore {
@@ -703,6 +704,7 @@ ${chatHistory || "暂无"}`,
             narrative: "",
             isResolving: false,
             errorMsg: "",
+            context: [],
           },
         }));
       },
@@ -761,6 +763,12 @@ ${chatHistory || "暂无"}`,
           const player = useGameStore.getState().player;
           const battleState = get().battle;
 
+          const inventory = useGameStore.getState().inventory;
+          const techniques = useGameStore.getState().techniques;
+          const playerWeapons = inventory.filter((i) => i.type === "法宝");
+          const playerTalismans = inventory.filter((i) => i.type === "符箓");
+          const playerPills = inventory.filter((i) => i.type === "丹药");
+
           const prompt: import("@/lib/aiClient").ChatMessage[] = [
             {
               role: "system" as const,
@@ -770,11 +778,21 @@ ${chatHistory || "暂无"}`,
 - 回合：${battleState.round}
 - 当前行动方：${battleState.turn}
 - 玩家状态：气血=${player.hp}/${player.hpMax}，灵力=${player.mp}/${player.mpMax}
+- 玩家属性：体魄=${player.stats.vitality}，神魂=${player.stats.soul}，悟性=${player.stats.wisdom}，身法=${player.stats.agility}
+- 玩家境界：${player.cultivation}
+- 玩家法宝：${playerWeapons.map((w) => `${w.name}(${w.grade})`).join(", ") || "无"}
+- 当前功法：${techniques.map((t) => `${t.name}(${t.grade})：${t.description}`).join("；") || "无"}
+- 当前心法：${player.activeHeartTechnique ? techniques.find((t) => t.id === player.activeHeartTechnique)?.name || player.activeHeartTechnique : "无"}
+- 玩家符箓：${playerTalismans.map((t) => `${t.name}(${t.count}张)`).join(", ") || "无"}
+- 玩家丹药：${playerPills.map((p) => `${p.name}(${p.count}颗)`).join(", ") || "无"}
 - 地图实体：${JSON.stringify(battleState.map.entities)}
+
+战斗上下文：
+${battleState.context.join("\n")}
 
 玩家行动：${action}
 
-请根据玩家的行动，判断可行性并返回：
+请根据玩家的行动、属性、法宝、功法、符箓和丹药，判断行动可行性并返回：
 1. 战斗叙事文本
 2. 数据操作（增减气血、灵力、buff等）
 3. 更新后的实体位置
@@ -815,8 +833,12 @@ MODIFY player.mp - 10
             e => e.type === "player" && e.isDead
           ) ?? false;
 
+          const actionContext = `回合${battleState.round} ${battleState.turn === "player" ? "玩家" : "敌人"}行动：${action}`;
+          const resultContext = parsed.narrative ? `结果：${parsed.narrative}` : "";
+
           set((st) => {
             const nextTurn: "player" | "enemy" = isPlayerTurn ? "enemy" : "player";
+            const newContext = [...st.battle.context, actionContext, resultContext].slice(-20);
             return {
               battle: {
                 ...st.battle,
@@ -828,6 +850,7 @@ MODIFY player.mp - 10
                   ? { ...st.battle.map, entities: parsed.battleEntities }
                   : st.battle.map,
                 isActive: !(allEnemiesDead || playerDead),
+                context: newContext,
               },
             };
           });

@@ -5,6 +5,7 @@ import { PanelTitle } from "@/components/ui/PanelTitle";
 import { CloudDivider } from "@/components/ui/CloudDivider";
 import { SealButton } from "@/components/ui/SealButton";
 import { GradeTag } from "@/components/ui/GradeTag";
+import { TalismanCrafting } from "@/components/crafting/TalismanCrafting";
 import { cn } from "@/lib/utils";
 import type { TalismanRecipe, AlchemyRecipe } from "@/data/types";
 
@@ -28,7 +29,7 @@ export function CraftingPanel() {
         </TabButton>
       </div>
 
-      {tab === "talisman" ? <TalismanWorkshop /> : <AlchemyWorkshop />}
+      {tab === "talisman" ? <TalismanCrafting /> : <AlchemyWorkshop />}
     </div>
   );
 }
@@ -142,7 +143,7 @@ function TalismanWorkshop() {
               </div>
 
               <SealButton
-                onClick={() => draw(selected.id)}
+                onClick={() => draw(selected)}
                 disabled={
                   paperCount < selected.paperCost ||
                   cinnabarCount < selected.cinnabarCost ||

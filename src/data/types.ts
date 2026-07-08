@@ -349,6 +349,19 @@ export interface SpiritStones {
   supreme: number;
 }
 
+export type TalismanElement = "金" | "木" | "水" | "火" | "土" | "风" | "雷" | "冰" | "暗";
+
+export type TalismanAction = "引" | "保" | "封" | "助" | "破" | "灭" | "惑" | "愈" | "遁";
+
+export interface TalismanModifier {
+  id: string;
+  name: string;
+  type: "range" | "trigger" | "duration" | "strength" | "target" | "cost";
+  effect: string;
+  mpCost: number;
+  paperCost: number;
+}
+
 export interface TalismanRecipe {
   id: string;
   name: string;
@@ -358,6 +371,15 @@ export interface TalismanRecipe {
   successRate: number;
   mpCost: number;
   desc: string;
+  element: TalismanElement;
+  action: TalismanAction;
+  modifiers: string[];
+}
+
+export interface TalismanCraftState {
+  element: TalismanElement | null;
+  action: TalismanAction | null;
+  modifiers: string[];
 }
 
 export interface AlchemyRecipe {
@@ -522,6 +544,7 @@ export interface BattleState {
   narrative: string;
   isResolving: boolean;
   errorMsg: string;
+  context: string[];
 }
 
 export interface Turn {

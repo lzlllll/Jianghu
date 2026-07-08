@@ -9,6 +9,7 @@ import type {
   Location,
   LocationType,
   ElementType,
+  TalismanRecipe,
 } from "@/data/types";
 import { applyOpsToState } from "@/lib/dataOps";
 import {
@@ -90,7 +91,7 @@ interface GameStore extends GameState {
   cultivate: () => void;
   breakthrough: () => void;
   comprehendTechnique: (id: string) => void;
-  drawTalisman: (recipeId: string) => void;
+  drawTalisman: (recipe: TalismanRecipe) => void;
   brewAlchemy: (selectedHerbs: { name: string; count: number }[], fire: number, duration: number) => void;
   acceptTask: (id: string) => void;
   promote: (id: string) => void;
@@ -336,10 +337,8 @@ export const useGameStore = create<GameStore>()(
         }));
       },
 
-      drawTalisman: (recipeId) => {
+      drawTalisman: (recipe) => {
         const s = get();
-        const recipe = s.talismanRecipes.find((r) => r.id === recipeId);
-        if (!recipe) return;
         const paper = s.inventory.find((i) => i.name === "黄表符纸");
         const cinnabar = s.inventory.find((i) => i.name === "朱砂");
         if (!paper || paper.count < recipe.paperCost || !cinnabar || cinnabar.count < recipe.cinnabarCost) {

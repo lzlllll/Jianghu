@@ -5,9 +5,10 @@ import { ScrollCard } from "@/components/ui/ScrollCard";
 import { CloudDivider } from "@/components/ui/CloudDivider";
 import { SealButton } from "@/components/ui/SealButton";
 import { GradeTag } from "@/components/ui/GradeTag";
+import { TalismanCrafting } from "@/components/crafting/TalismanCrafting";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
-import type { TalismanRecipe, AlchemyRecipe } from "@/data/types";
+import type { AlchemyRecipe, TalismanRecipe } from "@/data/types";
 
 export function CraftingModal() {
   const isOpen = useAIStore((s) => s.isCraftingOpen);
@@ -79,7 +80,7 @@ export function CraftingModal() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-6">
-          {tab === "talisman" ? <TalismanWorkshop /> : <AlchemyWorkshop />}
+          {tab === "talisman" ? <TalismanCrafting /> : <AlchemyWorkshop />}
         </div>
       </div>
     </div>
@@ -171,7 +172,7 @@ function TalismanWorkshop() {
               </div>
 
               <SealButton
-                onClick={() => draw(selected.id)}
+                onClick={() => draw(selected)}
                 disabled={
                   paperCount < selected.paperCost ||
                   cinnabarCount < selected.cinnabarCost ||
