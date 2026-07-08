@@ -16,7 +16,7 @@ const MODE_END = "<<<END>>>";
 /** 从模型输出中提取叙事正文、模式标记与 <<<OPS>>> 标记块 */
 export function parseModelOutput(raw: string): ParsedTurn {
   let text = raw.replace(/```[a-zA-Z]*\n?/g, "");
-  
+
   let mode: string | null = null;
   const modeStartIdx = text.indexOf(MODE_START);
   if (modeStartIdx !== -1) {
@@ -50,12 +50,18 @@ export function parseModelOutput(raw: string): ParsedTurn {
 
 function parseOpLines(block: string): DataOp[] {
   const ops: DataOp[] = [];
-  for (const rawLine of block.split("\n")) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#") || line.startsWith("//")) continue;
+  const lines = block.split("\n");
+  let i = 0;
 
-    if (/^MODIFY\b/i.test(line)) {
-      const rest = line.replace(/^MODIFY\s+/i, "").trim();
+  while (i < lines.length) {
+    const rawLine = lines[i].trim();
+    if (!rawLine || rawLine.startsWith("#") || rawLine.startsWith("//")) {
+      i++;
+      continue;
+    }
+
+    if (/^MODIFY\b/i.test(rawLine)) {
+      const rest = rawLine.replace(/^MODIFY\s+/i, "").trim();
       const m = rest.match(/^(\S+)\s*([+\-=])\s*(.+)$/);
       if (m) {
         ops.push({
@@ -65,18 +71,39 @@ function parseOpLines(block: string): DataOp[] {
           value: m[3].trim(),
         });
       }
-    } else if (/^ADD\b/i.test(line)) {
-      const rest = line.replace(/^ADD\s+/i, "").trim();
+      i++;
+    } else if (/^ADD\b/i.test(rawLine)) {
+      const rest = rawLine.replace(/^ADD\s+/i, "").trim();
       const sp = rest.search(/\s/);
+
       if (sp !== -1) {
+        const collection = rest.slice(0, sp).trim();
+        let payload = rest.slice(sp + 1).trim();
+
+        i++;
+        while (i < lines.length) {
+          const nextLine = lines[i].trim();
+          if (nextLine.startsWith("-- ") || nextLine.startsWith("--- ")) {
+            payload += "\n" + lines[i];
+            i++;
+          } else if (nextLine && !/^(MODIFY|ADD|DELETE)\b/i.test(nextLine)) {
+            payload += "\n" + lines[i];
+            i++;
+          } else {
+            break;
+          }
+        }
+
         ops.push({
           kind: "add",
-          collection: rest.slice(0, sp).trim(),
-          payload: rest.slice(sp + 1).trim(),
+          collection,
+          payload,
         });
+      } else {
+        i++;
       }
-    } else if (/^DELETE\b/i.test(line)) {
-      const rest = line.replace(/^DELETE\s+/i, "").trim();
+    } else if (/^DELETE\b/i.test(rawLine)) {
+      const rest = rawLine.replace(/^DELETE\s+/i, "").trim();
       const sp = rest.search(/\s/);
       if (sp !== -1) {
         ops.push({
@@ -85,6 +112,9 @@ function parseOpLines(block: string): DataOp[] {
           id: rest.slice(sp + 1).trim(),
         });
       }
+      i++;
+    } else {
+      i++;
     }
   }
   return ops;
@@ -152,6 +182,64 @@ export function applyOpsToState(state: GameState, ops: DataOp[]): GameState {
   return next;
 }
 
+function parseMarkdownBlockToJson(block: string): any {
+  const result: Record<string, unknown> = {};
+  const lines = block.split("\n");
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+
+    if (trimmed.startsWith("-- ")) {
+      const content = trimmed.slice(3).trim();
+      const colonIdx = content.indexOf(":");
+      if (colonIdx !== -1) {
+        const key = content.slice(0, colonIdx).trim();
+        const rawValue = content.slice(colonIdx + 1).trim();
+        let value: unknown = rawValue;
+
+        if (rawValue.startsWith('"') && rawValue.endsWith('"')) {
+          value = rawValue.slice(1, -1);
+        } else if (!isNaN(Number(rawValue))) {
+          value = Number(rawValue);
+        } else if (rawValue === "true") {
+          value = true;
+        } else if (rawValue === "false") {
+          value = false;
+        }
+
+        result[key] = value;
+      }
+    } else if (trimmed.startsWith("--- ")) {
+      const content = trimmed.slice(4).trim();
+      const colonIdx = content.indexOf(":");
+      if (colonIdx !== -1) {
+        const key = content.slice(0, colonIdx).trim();
+        const valueStr = content.slice(colonIdx + 1).trim();
+
+        try {
+          result[key] = JSON.parse(valueStr);
+        } catch {
+          result[key] = valueStr;
+        }
+      }
+    } else if (!result.id && !result.name) {
+      if (!result.text) {
+        result.text = trimmed;
+      } else {
+        result.text += "\n" + trimmed;
+      }
+    }
+  }
+
+  if (result.text && !result.desc) {
+    result.desc = result.text;
+    delete result.text;
+  }
+
+  return Object.keys(result).length > 0 ? result : block;
+}
+
 function applyOne(root: any, op: DataOp): void {
   if (op.kind === "modify") {
     const segs = parsePath(op.path);
@@ -165,7 +253,6 @@ function applyOne(root: any, op: DataOp): void {
     if (typeof last === "string") {
       applyModify(parent, last, op);
     } else {
-      // 用 id 定位数组元素整体替换
       const arr = parent;
       if (Array.isArray(arr)) {
         const idx = arr.findIndex((x: any) => String(x?.id) === last.id || String(x?.trait) === last.id);
@@ -175,11 +262,17 @@ function applyOne(root: any, op: DataOp): void {
   } else if (op.kind === "add") {
     const arr = resolveCollection(root, op.collection);
     let payload: unknown;
-    try {
-      payload = JSON.parse(op.payload);
-    } catch {
-      payload = op.payload;
+
+    if (op.payload.trim().startsWith("-- ")) {
+      payload = parseMarkdownBlockToJson(op.payload);
+    } else {
+      try {
+        payload = JSON.parse(op.payload);
+      } catch {
+        payload = op.payload;
+      }
     }
+
     arr.push(payload);
   } else if (op.kind === "delete") {
     const arr = resolveCollection(root, op.collection);

@@ -516,6 +516,7 @@ export interface GameSnapshot {
   sect: Sect;
   relations: Relation[];
   log: string[];
+  pillCache?: Record<string, PillCacheEntry>;
 }
 
 export interface ConversationState {

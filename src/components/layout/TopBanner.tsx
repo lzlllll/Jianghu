@@ -101,15 +101,13 @@ export function TopBanner({ onOpenSettings }: TopBannerProps) {
         >
           <Settings
             size={18}
-            className={`text-paper-300 group-hover:text-gold-400 transition ${
-              stage === "flash" || stage === "pro" ? "animate-spin" : ""
-            }`}
+            className={`text-paper-300 group-hover:text-gold-400 transition ${stage === "flash" || stage === "pro" ? "animate-spin" : ""
+              }`}
             strokeWidth={1.5}
           />
           <span
-            className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-ink-900 ${
-              hasApiKey ? "bg-jade-400" : "bg-cinnabar-500"
-            }`}
+            className={`absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border border-ink-900 ${hasApiKey ? "bg-jade-400" : "bg-cinnabar-500"
+              }`}
             title={hasApiKey ? "已配置" : "未配置"}
           />
         </button>

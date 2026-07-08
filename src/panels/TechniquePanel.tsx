@@ -158,7 +158,7 @@ export function TechniquePanel() {
     const avgMeridianClarity =
       player.meridians.reduce((sum, m) => sum + m.clarity, 0) / player.meridians.length;
     if (avgMeridianClarity < 50) {
-      list.push({ label: "经脉滞塞(<50%)", value: "×0.5", impact: "negative" });
+      list.push({ label: "经脉滞塞", value: "×0.5", impact: "negative" });
     }
 
     const wisdomBonus = Math.max(0, (player.stats.wisdom - 50) * 0.5);

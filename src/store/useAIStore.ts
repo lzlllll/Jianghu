@@ -186,11 +186,16 @@ export const useAIStore = create<AIStore>()(
           }));
         } catch (e) {
           if (signal.aborted) return;
+          const errorMsg = (e as Error).message;
+          const isNetworkError = errorMsg.includes("网络") || errorMsg.includes("CORS") ||
+            errorMsg.includes("请求超时") || errorMsg.includes("不可达");
           set((st) => ({
             conversation: {
               ...st.conversation,
               stage: "error",
-              errorMsg: `数据判断失败：${(e as Error).message}`,
+              errorMsg: isNetworkError
+                ? `网络连接失败：${errorMsg}\n请检查网络连接或在设置中更换Base URL。`
+                : `数据判断失败：${errorMsg}`,
             },
           }));
           abortController = null;
@@ -244,11 +249,16 @@ export const useAIStore = create<AIStore>()(
           }));
         } catch (e) {
           if (signal.aborted) return;
+          const errorMsg = (e as Error).message;
+          const isNetworkError = errorMsg.includes("网络") || errorMsg.includes("CORS") ||
+            errorMsg.includes("请求超时") || errorMsg.includes("不可达");
           set((st) => ({
             conversation: {
               ...st.conversation,
               stage: "error",
-              errorMsg: `叙事生成失败：${(e as Error).message}`,
+              errorMsg: isNetworkError
+                ? `网络连接失败：${errorMsg}\n请检查网络连接或在设置中更换Base URL。`
+                : `叙事生成失败：${errorMsg}`,
             },
           }));
           abortController = null;
@@ -614,11 +624,16 @@ ${chatHistory || "暂无"}`,
           }));
         } catch (e) {
           if (signal.aborted) return;
+          const errorMsg = (e as Error).message;
+          const isNetworkError = errorMsg.includes("网络") || errorMsg.includes("CORS") ||
+            errorMsg.includes("请求超时") || errorMsg.includes("不可达");
           set((st) => ({
             npcChat: {
               ...st.npcChat,
               isTyping: false,
-              errorMsg: `发送失败：${(e as Error).message}`,
+              errorMsg: isNetworkError
+                ? `网络连接失败：${errorMsg}\n请检查网络连接或在设置中更换Base URL。`
+                : `发送失败：${errorMsg}`,
             },
           }));
         }

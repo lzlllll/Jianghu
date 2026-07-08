@@ -221,9 +221,11 @@ function AlchemyWorkshop() {
     const result: Record<string, number> = {};
     for (const herb of selectedHerbs) {
       const item = inventory.find((i) => i.name === herb.name);
-      if (item?.elements) {
-        for (const [elem, val] of Object.entries(item.elements)) {
-          result[elem] = (result[elem] || 0) + val * herb.count;
+      if (item) {
+        if (item.elements) {
+          for (const [elem, val] of Object.entries(item.elements)) {
+            result[elem] = (result[elem] || 0) + val * herb.count;
+          }
         }
       }
     }

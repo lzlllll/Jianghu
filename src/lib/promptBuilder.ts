@@ -284,18 +284,18 @@ export function buildProPrompt(params: {
 【世界观精要】
 本游戏采用传统仙侠世界观，核心设定如下：
 1. 灵根：天地元素有金、木、水、火、土、风、雷、冰、暗九系。主角沈青砚拥有水木双灵根，灵根决定修炼速度与功法威力，适配度越高修炼越快。
-2. 功法：功法分凡品、灵品、玄品、地品、天品。每部功法有属性偏向（如金系剑法），主角灵根与功法属性匹配度越高，修炼效率与威力越强。
-3. 心性：每个角色的心性特质可以是任意中文词汇（如莽撞、洒脱、孤傲、温和、贪婪、慷慨、冷静、急躁等），每种心性有0-100的分数。
+2. 功法：功法分凡品、灵品、玄品、地品、天品。每部功法有属性偏向，如金系剑法，主角灵根与功法属性匹配度越高，修炼效率与威力越强。
+3. 心性：每个角色的心性特质可以是任意中文词汇，如莽撞、洒脱、孤傲、温和、贪婪、慷慨、冷静、急躁等，每种心性有0-100的分数。
    心性分数会因修炼、奇遇、抉择等事件发生变化，影响修炼速度与奇遇触发概率。
    心性与功法匹配则修炼事半功倍。
    AI可以自由创建新的心性特质或修改现有心性，不为固定八种所限。
-4. 经脉：十二经脉与奇经八脉分布于头部、胸部、腹部、四肢各处。经脉通畅度(0-100)影响气血运行与法术释放效率，受损经脉需特殊药材修复。
+4. 经脉：十二经脉与奇经八脉分布于头部、胸部、腹部、四肢各处。经脉通畅度：0-100，影响气血运行与法术释放效率，受损经脉需特殊药材修复。
 5. 天赋：角色天生具有的特殊能力，在关键节点可随机获得，需结合世界观设定合理触发。
 6. 道途：功法分为十二道途——剑道真意、利器刀锋、钝器刚猛、防御稳固、箭术精准、暗器诡道、拳掌神通、元素之术、幻术迷踪、诅咒邪术、御兽通灵、阵法封禁。
 
 【功法分类】
 功法分为五大类别，各有其独特作用：
-- 心法：修炼相关增益，包括灵力循环、修炼速度、基础属性提升等，是修士修炼的根基。心法只能同时生效一个，切换需在文字推演中进行。每种心法拥有 basePracticeSpeed（基础修炼速度）和 heartCompatibility（心性匹配度）属性，影响实际修炼效率。
+- 心法：修炼相关增益，包括灵力循环、修炼速度、基础属性提升等，是修士修炼的根基。心法只能同时生效一个，切换需在文字推演中进行。每种心法拥有 basePracticeSpeed:基础修炼速度 和 heartCompatibility:心性匹配度 属性，影响实际修炼效率。
 - 炼体：肉身强化，提升气血上限、肉身强度、抗性等，增强生存能力
 - 神通：主动战斗能力，如剑诀、雷法、掌法等，可在战斗中主动释放攻击敌人
 - 身法：移动与闪避能力，包括遁术、闪避、追击等，影响战斗中的出手顺序与生存
@@ -303,13 +303,13 @@ export function buildProPrompt(params: {
 
 【功法十重境界系统】
 每部功法拥有十重境界，每重境界需要达到一定熟练度才能突破：
-1. 第1重（初窥门径）：基础属性提升
-2. 第2重（登堂入室）：属性继续增长
-3. 第3重（融会贯通）：获得第一个招式/技能
+1. 第1重：初窥门径，基础属性提升
+2. 第2重：登堂入室，属性继续增长
+3. 第3重：融会贯通，获得第一个招式/技能
 4. 第4-5重：属性持续增长
-5. 第6重（登峰造极）：获得第二个招式/技能
+5. 第6重：登峰造极，获得第二个招式/技能
 6. 第7-9重：属性持续增长
-7. 第10重（道成）：获得终极招式/技能，属性大幅提升
+7. 第10重：道成，获得终极招式/技能，属性大幅提升
 
 每重境界都有独特的境界名称和属性增长，3/6/10重是关键节点，会解锁新技能。
 
@@ -321,7 +321,7 @@ export function buildProPrompt(params: {
 - 心性要求：需要某种心性达到一定分数
 
 【功法属性与匹配度】
-每部功法拥有自身属性（如金、木、水、火、土、风、雷、冰、暗九种元素属性，以及悟性、体魄、身法等属性），用来计算与玩家灵根、心性的匹配度：
+每部功法拥有自身属性，如金、木、水、火、土、风、雷、冰、暗九种元素属性，以及悟性、体魄、身法等属性，用来计算与玩家灵根、心性的匹配度：
 - 灵根匹配：相同元素灵根+25%匹配度，相生+10%，相克-15%
 - 心性匹配：每部功法拥有 heartCompatibility 数组，定义与不同心性的匹配加成，如 {trait: "谨慎", bonus: 25} 表示谨慎心性每100分增加25%修炼效率
 - 总匹配度影响修炼速度和功法威力
@@ -336,19 +336,19 @@ export function buildProPrompt(params: {
 - 不同心性之间存在自然冲突（如"仁厚"与"无情"冲突），当冲突心性均高分时产生额外减益
 
 可用属性列表及其中文名：
-vitality(体魄) soul(神魂) wisdom(悟性) agility(身法)
-cultivation(修炼速度) damage(伤害) action(行动力) karma(机缘)
-attack(攻击力) defense(防御) dodge(闪避) speed(速度)
-critRate(暴击率) critDamage(暴击伤害) breakthrough(突破几率)
-comprehension(领悟速度) meridianRepair(经脉恢复) trading(交易折扣)
+vitality:体魄 soul:神魂 wisdom:悟性 agility:身法
+cultivation:修炼速度 damage:伤害 action:行动力 karma:机缘
+attack:攻击力 defense:防御 dodge:闪避 speed:速度
+critRate:暴击率 critDamage:暴击伤害 breakthrough:突破几率
+comprehension:领悟速度 meridianRepair:经脉恢复 trading:交易折扣
 
-每个心性的 modifiers 数组格式：[{ stat: 属性名, value: 数值(%), description: "属性名加成/降低" }]
+每个心性的 modifiers 数组格式：[{ stat: 属性名, value: 数值%, description: "属性名加成/降低" }]
 
 AI可以自由修改：
-1. 心性分数 (score): 0-100，影响加成强度
-2. 心性加成 (modifiers): 动态匹配2-4个属性的百分比加成/减益
-3. 心性名称 (trait): 可以是任意中文词汇，不必局限于传统八种心性
-4. 加成描述 (description): 格式为「属性名加成」或「属性名降低」
+1. 心性分数 score: 0-100，影响加成强度
+2. 心性加成 modifiers: 动态匹配2-4个属性的百分比加成/减益
+3. 心性名称 trait: 可以是任意中文词汇，不必局限于传统八种心性
+4. 加成描述 description: 格式为「属性名加成」或「属性名降低」
 
 每个心性应有正反两面，高分带来强力加成的同时也会伴随减益。
 
@@ -362,7 +362,7 @@ AI可以自由修改：
 
 【个体适配度与修炼效率计算规则】
 1. 功法与灵根匹配度：同属性+25%效率，相生属性+10%，相克属性-15%
-2. 功法与心性匹配度：根据功法 heartCompatibility 数组计算，每个心性按 (心性分数/100) * (bonus/100) 叠加
+2. 功法与心性匹配度：根据功法 heartCompatibility 数组计算，每个心性按 心性分数除以100 乘以 bonus除以100 叠加
 3. 经脉通畅度影响：通畅度<50%时效率减半，受损经脉降低对应属性
 4. 悟性加成：悟性每超过50一点，增加0.5%修炼效率
 5. 心法基础速度：每种心法拥有 basePracticeSpeed，影响基础修炼收益
@@ -382,15 +382,22 @@ AI可以自由修改：
 【炼丹系统】
 炼丹时玩家可自由选择放入的药材，无固定配方限制：
 - 从储物袋选择任意材料放入丹炉，可调整每种药材的数量
-- 设置火候（0-100）和时长（0-100），影响最终丹药的元素属性
-- 材料属性（herbs.elements）：材料的元素值总和（金、木、水、火、土、风、雷、冰、暗）
-- 最终元素值 = 材料元素 × (火候系数 + 时长系数)，归一化到-100~100
+- 设置火候：0-100 和时长：0-100，影响最终丹药的元素属性
+- 材料属性 herbs.elements：材料的元素值总和，金、木、水、火、土、风、雷、冰、暗
+- 最终元素值 = 材料元素 × 火候系数加时长系数，归一化到-100~100
 - 成功率：基础40% + 药材总元素值/5，火候<20或>80降为60%，时长<10或>90降为70%
 
 丹药效果由AI根据选中药材和元素属性动态生成，元素值越高对应属性效果越强。
 
+【材料元素属性规则】
+当通过ADD操作添加新的原材料物品 type为材料时，必须为其指定elements属性：
+- elements是一个对象，包含1-3个元素及其数值：10-100
+- 根据材料的名称和描述合理分配元素属性
+- 例如：草药类通常属木，矿石类通常属金，火焰类属火，冰晶类属冰等
+- 元素属性直接影响炼丹结果和丹药效果，必须准确设置
+
 【Buff系统】
-角色可获得各种增益(Buff)和减益(Debuff)效果，持续影响角色属性与战斗表现：
+角色可获得各种增益Buff和减益Debuff效果，持续影响角色属性与战斗表现：
 
 1. 基础属性修正：
 - 临时提升：属性 = 基础属性 × (1 + Σ提升百分比)
@@ -419,7 +426,7 @@ AI可以自由修改：
 - 灵力消耗：实际消耗 = 基础消耗 × (1 - Σ消耗降低%)，上限50%
 - 气血/寿元消耗：固定值不可减免，或特殊减免不超过30%
 
-7. 持续伤害/治疗(DoT/HoT)：
+7. 持续伤害/治疗DoT/HoT：
 - 持续伤害：每回合伤害 = 攻击力 × 伤害系数% × (1 + 增伤修正)
 - 持续治疗：每回合恢复 = 神魂 × 恢复系数% × (1 + 治疗加成%)
 
@@ -441,35 +448,73 @@ Buff操作：
 在叙事正文之后，另起一行输出：
 <<<OPS>>>
 MODIFY <路径> <操作符> <值>
-ADD <集合> <JSON对象或JSON字符串>
+ADD <集合>
+-- <字段名>: <字段值>
+-- <字段名>: <字段值>
 DELETE <集合> <id>
 <<<END>>>
 
 操作符：
-= 设置为新值（数值 / 字符串 / 布尔）
+= 设置为新值：数值 / 字符串 / 布尔
 + 数值增加，或字符串拼接
 - 数值减少
 
 路径写法：
 - 基础字段：player.cultivation、player.hp、player.mp、player.spirit、player.lifespanCurrent、player.karma、spiritStones.low、sect.contribution
 - 潜能字段：player.stats.vitality、player.stats.soul、player.stats.wisdom、player.stats.agility
-- 心性分数：player.stats.heartScores[刚毅].score（心性名作为索引，支持任意心性名称）
-- 心性加成：player.stats.heartScores[刚毅].modifiers（数组格式：[{stat, value, description}]）
-- ADD 心性：ADD player.stats.heartScores {"trait":"莽撞","score":60,"modifiers":[{"stat":"attack","value":18,"description":"攻击力加成"},{"stat":"dodge","value":12,"description":"闪避加成"},{"stat":"wisdom","value":-9,"description":"悟性降低"}]}
-- DELETE 心性：DELETE player.stats.heartScores 莽撞（按trait名称删除）
+- 心性分数：player.stats.heartScores[刚毅].score，心性名作为索引，支持任意心性名称
+- 心性加成：player.stats.heartScores[刚毅].modifiers，数组格式：[{"stat":属性名,"value":数值,"description":"描述"}]
+- ADD 心性：ADD player.stats.heartScores 然后用 -- trait: 莽撞 -- score: 60 -- modifiers: [{"stat":"attack","value":18,"description":"攻击力加成"}]
+- DELETE 心性：DELETE player.stats.heartScores 莽撞，按trait名称删除
 - 经脉字段：player.meridians[m1].clarity、player.meridians[m2].damage、player.meridians[m3].zone
 - 数组元素按 id：techniques[t1].proficiency、techniques[t1].levels、techniques[t1].skills、techniques[t1].prerequisites、techniques[t1].attributes、relations[r1].affinity、inventory[i4].count、sect.tasks[s1].accepted
-- 当前心法：player.activeHeartTechnique（设置为空字符串或心法id来切换）
-- 集合名（用于 ADD / DELETE）：inventory、log、techniques、relations、sect.tasks、sect.heritage
+- 当前心法：player.activeHeartTechnique，设置为空字符串或心法id来切换
+- 集合名，用于 ADD / DELETE：inventory、log、techniques、relations、sect.tasks、sect.heritage
 
-ADD 示例（值必须是合法 JSON）：
-ADD inventory {"id":"i99","name":"玄铁碎片","type":"材料","grade":"凡品","count":1,"icon":"铁","desc":"一块寒潭玄铁碎片。"}
-ADD log "你在寒潭边静坐，忽有所悟。"
-ADD relations {"id":"r99","name":"路人甲","title":"散修","type":"friend","affinity":10,"affinityMax":100,"realm":"炼气七层","note":"偶遇的散修。"}
+ADD 示例（使用标记块格式，每行一个字段）：
+ADD inventory
+-- id: i99
+-- name: 玄铁碎片
+-- type: 材料
+-- grade: 凡品
+-- count: 1
+-- icon: 铁
+-- desc: 一块寒潭玄铁碎片。
+-- elements: {"金":60,"水":20}
 
-DELETE 示例（按 id；字符串数组 log 按内容）：
+ADD inventory
+-- id: i100
+-- name: 千年灵草
+-- type: 材料
+-- grade: 灵品
+-- count: 1
+-- icon: 草
+-- desc: 生长千年的灵草，蕴含浓郁木属性灵气。
+-- elements: {"木":80,"土":30}
+
+ADD log
+-- text: 你在寒潭边静坐，忽有所悟。
+
+ADD relations
+-- id: r99
+-- name: 路人甲
+-- title: 散修
+-- type: friend
+-- affinity: 10
+-- affinityMax: 100
+-- realm: 炼气七层
+-- note: 偶遇的散修。
+
+DELETE 示例：按 id；字符串数组 log 按内容
 DELETE inventory i10
 DELETE log "旧的日志内容"
+
+标记块格式规则：
+1. ADD 命令后换行，每行以 -- 开头，后面跟字段名冒号字段值
+2. 字段值为字符串时不需要引号，除非包含冒号或特殊字符
+3. 复杂对象如 elements 使用 JSON 格式
+4. log 集合使用 text 字段
+5. 每行一个字段，字段名和值之间用冒号分隔
 
 【场所约束（严格遵守）】
 你必须根据玩家当前所在场所来判断哪些行为是合理的，严禁生成与场所不符的剧情和操作：
@@ -486,13 +531,13 @@ DELETE log "旧的日志内容"
 3. 不执行任何与场所冲突的数据操作
 
 【模式切换标记】
-当玩家的决策需要进入特定模式（如制作百艺）时，在叙事正文之后、<<<OPS>>> 标记之前，输出：
+当玩家的决策需要进入特定模式，如制作百艺时，在叙事正文之后、<<<OPS>>> 标记之前，输出：
 <<<MODE>>>
 crafting
 <<<END>>>
 
 可用模式值：
-- crafting：制作百艺（画符/炼丹）模式，适用于玩家决定进行画符、炼丹等制作行为时
+- crafting：制作百艺，画符/炼丹模式，适用于玩家决定进行画符、炼丹等制作行为时
 
 【重要约束】
 1. 仅输出叙事实际导致的数据变化，不要凭空大幅改动玩家数值

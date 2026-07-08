@@ -867,12 +867,13 @@ EFFECT: [效果描述]`,
           sect: structuredClone(snap.sect),
           relations: structuredClone(snap.relations),
           log: structuredClone(snap.log),
+          pillCache: structuredClone(snap.pillCache || {}),
         });
       },
     }),
     {
       name: "xiuxian-save",
-      version: 6,
+      version: 7,
       migrate: (state: any, version: number) => {
         if (version < 2) {
           if (state.techniques) {
@@ -1007,6 +1008,35 @@ EFFECT: [效果描述]`,
               }
               return t;
             });
+          }
+        }
+
+        if (version < 7) {
+          const defaultElements: Record<string, Record<string, number>> = {
+            "百年灵芝": { 木: 80, 土: 20 },
+            "寒潭水精": { 水: 90, 冰: 40 },
+            "朱砂": { 火: 60, 土: 30 },
+            "黄表符纸": { 木: 70, 火: 20 },
+            "千年雪莲": { 冰: 85, 水: 50, 木: 20 },
+            "妖兽内丹": { 火: 50, 雷: 30 },
+            "聚气丹": { 水: 40, 木: 30 },
+            "筑基丹": { 火: 40, 土: 30, 金: 20 },
+            "回春丹": { 木: 50, 水: 30 },
+            "雷火符": { 雷: 60, 火: 40 },
+            "冰封符": { 冰: 70, 水: 30 },
+            "寒潭玄铁剑": { 金: 80, 水: 30 },
+            "云水佩": { 水: 60, 木: 20 },
+          };
+          if (state.inventory) {
+            state.inventory = state.inventory.map((item: any) => {
+              if (!item.elements && defaultElements[item.name]) {
+                return { ...item, elements: defaultElements[item.name] };
+              }
+              return item;
+            });
+          }
+          if (!state.pillCache) {
+            state.pillCache = {};
           }
         }
         return state;
