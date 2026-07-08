@@ -26,7 +26,7 @@ const CATEGORY_CONFIG: Record<NewsCategory, { icon: React.ReactNode; color: stri
 export function NewsPanel() {
   const news = useGameStore((s) => s.news);
 
-  const groupedNews = news.items.reduce((acc, item) => {
+  const groupedNews = (news?.items || []).reduce((acc, item) => {
     if (!acc[item.category]) acc[item.category] = [];
     acc[item.category].push(item);
     return acc;
@@ -63,7 +63,7 @@ export function NewsPanel() {
           </div>
         ))}
 
-        {news.items.length === 0 && (
+        {(news?.items || []).length === 0 && (
           <div className="text-center py-8">
             <Scroll size={32} className="mx-auto text-paper-500/30 mb-2" />
             <p className="font-serif text-sm text-paper-400/50">暂无新闻</p>

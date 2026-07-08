@@ -575,9 +575,9 @@ ${background ? `【背景】${background}\n` : ""}
         set((st) => ({
           npcChat: {
             ...st.npcChat,
-            profiles: st.npcChat.profiles.map((p) =>
+            profiles: (st.npcChat.profiles || []).map((p) =>
               p.npcId === npcId
-                ? { ...p, messages: [...p.messages, playerMsg], lastUpdated: Date.now() }
+                ? { ...p, messages: [...(p.messages || []), playerMsg], lastUpdated: Date.now() }
                 : p,
             ),
           },
@@ -644,9 +644,9 @@ ${chatHistory || "暂无"}`,
             npcChat: {
               ...st.npcChat,
               isTyping: false,
-              profiles: st.npcChat.profiles.map((p) =>
+              profiles: (st.npcChat.profiles || []).map((p) =>
                 p.npcId === npcId
-                  ? { ...p, messages: [...p.messages, npcMsg], lastUpdated: Date.now() }
+                  ? { ...p, messages: [...(p.messages || []), npcMsg], lastUpdated: Date.now() }
                   : p,
               ),
             },
@@ -685,7 +685,7 @@ ${chatHistory || "暂无"}`,
         set((st) => ({
           npcChat: {
             ...st.npcChat,
-            profiles: st.npcChat.profiles.map((p) =>
+            profiles: (st.npcChat.profiles || []).map((p) =>
               p.npcId === npcId ? { ...p, messages: [], lastUpdated: Date.now() } : p,
             ),
           },
