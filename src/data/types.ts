@@ -442,6 +442,14 @@ export interface Relation {
   note: string;
 }
 
+export interface PillCacheEntry {
+  name: string;
+  grade: ItemGrade;
+  desc: string;
+  elements: Record<string, number>;
+  outputCount: number;
+}
+
 export interface GameState {
   player: Player;
   techniques: Technique[];
@@ -455,6 +463,7 @@ export interface GameState {
   craftingTab: CraftingTab;
   currentLocation: LocationType;
   log: string[];
+  pillCache: Record<string, PillCacheEntry>;
 }
 
 // ===== AI 叙事系统类型 =====

@@ -91,7 +91,7 @@ interface GameStore extends GameState {
   breakthrough: () => void;
   comprehendTechnique: (id: string) => void;
   drawTalisman: (recipeId: string) => void;
-  brewAlchemy: (recipeId: string, fire: number, duration: number) => void;
+  brewAlchemy: (selectedHerbs: { name: string; count: number }[], fire: number, duration: number) => void;
   acceptTask: (id: string) => void;
   promote: (id: string) => void;
   buyShop: (id: string) => void;
@@ -116,6 +116,7 @@ const initialState: GameState = {
   craftingTab: "talisman",
   currentLocation: "home",
   log: ["庚子年春，你拜入云栖宗，自此踏上漫漫修真路。"],
+  pillCache: {},
 };
 
 export const useGameStore = create<GameStore>()(
@@ -392,15 +393,20 @@ export const useGameStore = create<GameStore>()(
         });
       },
 
-      brewAlchemy: async (recipeId, fire, duration) => {
+      brewAlchemy: async (selectedHerbs, fire, duration) => {
         const s = get();
-        const recipe = s.alchemyRecipes.find((r) => r.id === recipeId);
-        if (!recipe) return;
-        if (s.player.mp < recipe.mpCost) {
+        if (selectedHerbs.length === 0) {
+          set((st) => ({ log: ["请先选择药材。", ...st.log].slice(0, 30) }));
+          return;
+        }
+
+        const mpCost = 30 + selectedHerbs.reduce((sum, h) => sum + h.count * 10, 0);
+        if (s.player.mp < mpCost) {
           set((st) => ({ log: ["灵力不足，难控丹火。", ...st.log].slice(0, 30) }));
           return;
         }
-        for (const herb of recipe.herbs) {
+
+        for (const herb of selectedHerbs) {
           const item = s.inventory.find((i) => i.name === herb.name);
           if (!item || item.count < herb.count) {
             set((st) => ({
@@ -413,146 +419,170 @@ export const useGameStore = create<GameStore>()(
         const ELEMENTS = ["金", "木", "水", "火", "土", "风", "雷", "冰", "暗"] as const;
 
         const herbElements: Record<string, number> = {};
-        for (const herb of recipe.herbs) {
+        let totalHerbValue = 0;
+        for (const herb of selectedHerbs) {
           const item = s.inventory.find((i) => i.name === herb.name);
           if (item?.elements) {
             for (const [elem, val] of Object.entries(item.elements)) {
               herbElements[elem] = (herbElements[elem] || 0) + val * herb.count;
+              totalHerbValue += Math.abs(val * herb.count);
             }
           }
         }
 
         const fireFactor = fire / 100;
         const durFactor = duration / 100;
+
+        const FIRE_BOOST_ELEMS = ["火", "雷"];
+        const ICE_BOOST_ELEMS = ["冰", "水"];
+        const fireBoost = Math.max(0, (fire - 50) / 50);
+        const iceBoost = Math.max(0, (50 - fire) / 50);
+
         const finalElements: Record<string, number> = {};
         for (const elem of ELEMENTS) {
-          const furnaceVal = recipe.furnaceElements?.[elem] ?? 0;
           const herbVal = herbElements[elem] ?? 0;
-          const rawVal = furnaceVal * fireFactor + herbVal * durFactor;
-          finalElements[elem] = Math.round(Math.max(-100, Math.min(100, rawVal * 2)));
-        }
-
-        const fireInRange = fire >= recipe.fireRange[0] && fire <= recipe.fireRange[1];
-        const durInRange = duration >= (recipe.durationRange?.[0] || 10) && duration <= (recipe.durationRange?.[1] || 50);
-        let actualSuccessRate = recipe.successRate;
-        if (!fireInRange) actualSuccessRate *= 0.7;
-        if (!durInRange) actualSuccessRate *= 0.8;
-        const success = Math.random() * 100 < actualSuccessRate;
-
-        set((st) => {
-          let newInventory = st.inventory.map((i) => {
-            const herb = recipe.herbs.find((h) => h.name === i.name);
-            if (herb) return { ...i, count: Math.max(0, i.count - herb.count) };
-            return i;
-          });
-          return {
-            inventory: newInventory,
-            player: { ...st.player, mp: Math.max(0, st.player.mp - recipe.mpCost) },
-          };
-        });
-
-        if (!success) {
-          set((st) => ({
-            log: ["丹炉轰鸣，丹药化为飞灰，功亏一篑。", ...st.log].slice(0, 30),
-          }));
-          return;
-        }
-
-        try {
-          const { chatWithModel } = await import("@/lib/aiClient");
-          const { useAIStore } = await import("@/store/useAIStore");
-          const aiSettings = useAIStore.getState().settings;
-
-          if (!aiSettings.apiKey) {
-            const outputName = recipe.output.split("×")[0];
-            const outputCount = parseInt(recipe.output.split("×")[1] || "1", 10);
-            set((st) => {
-              let newInventory = st.inventory.map((i) => i);
-              const existing = newInventory.find((i) => i.name === outputName);
-              if (existing) {
-                newInventory = newInventory.map((i) =>
-                  i.name === outputName ? { ...i, count: i.count + outputCount } : i,
-                );
-              } else {
-                newInventory = [
-                  ...newInventory,
-                  {
-                    id: `pill-${Date.now()}`,
-                    name: outputName,
-                    type: "丹药" as const,
-                    grade: recipe.grade,
-                    count: outputCount,
-                    icon: "丹",
-                    desc: recipe.desc,
-                    elements: finalElements,
-                  },
-                ];
-              }
-              return {
-                inventory: newInventory,
-                log: [`丹成！得 ${recipe.output}，丹香四溢。`, ...st.log].slice(0, 30),
-              };
-            });
-            return;
+          let fireMod = 1;
+          if (FIRE_BOOST_ELEMS.includes(elem)) {
+            fireMod += fireBoost * 0.5;
           }
+          if (ICE_BOOST_ELEMS.includes(elem)) {
+            fireMod += iceBoost * 0.5;
+            fireMod -= fireBoost * 0.3;
+          }
+          const rawVal = (herbVal * fireFactor + herbVal * durFactor) * fireMod;
+          finalElements[elem] = Math.round(Math.max(-100, Math.min(100, rawVal)));
+        }
 
-          const elementsText = ELEMENTS.map((e) => `${e}:${finalElements[e]}`).join(",");
-          const prompt = [
-            {
-              role: "system" as const,
-              content: `你是一位修真界的炼丹大师。根据以下炼丹结果，推演丹药的名称和效果。
+        let baseSuccessRate = Math.min(95, 40 + totalHerbValue / 5);
+        if (fire < 20 || fire > 80) baseSuccessRate *= 0.6;
+        if (duration < 10 || duration > 90) baseSuccessRate *= 0.7;
+        const success = Math.random() * 100 < baseSuccessRate;
+
+        const sortedHerbs = [...selectedHerbs].sort((a, b) => a.name.localeCompare(b.name));
+        const cacheKey = `herbs:${sortedHerbs.map((h) => `${h.name}×${h.count}`).join(",")}|fire:${fire}|dur:${duration}`;
+        const cached = s.pillCache[cacheKey];
+
+        let pillName = "无名丹药";
+        let pillGrade: import("@/data/types").ItemGrade = "凡品";
+        let pillDesc = "一枚不知功效的丹药。";
+        let outputCount = 1;
+        let shouldCache = false;
+
+        if (success) {
+          if (cached) {
+            pillName = cached.name;
+            pillGrade = cached.grade;
+            pillDesc = cached.desc;
+            outputCount = cached.outputCount;
+          } else {
+            shouldCache = true;
+            try {
+              const { chatWithModel } = await import("@/lib/aiClient");
+              const { useAIStore } = await import("@/store/useAIStore");
+              const aiSettings = useAIStore.getState().settings;
+
+              if (aiSettings.apiKey) {
+                const herbsText = selectedHerbs.map((h) => `${h.name}×${h.count}`).join(",");
+                const elementsText = ELEMENTS.map((e) => `${e}:${finalElements[e]}`).join(",");
+
+                let fireType = "中火";
+                if (fire <= 30) fireType = "文火";
+                else if (fire >= 70) fireType = "武火";
+
+                const prompt = [
+                  {
+                    role: "system" as const,
+                    content: `你是一位修真界的炼丹大师。根据以下炼丹结果，推演丹药的名称和效果。
 
 输入参数：
-- 配方名称：${recipe.name}
-- 配方品级：${recipe.grade}
-- 配方描述：${recipe.desc}
-- 火候：${fire}（适宜范围：${recipe.fireRange[0]}-${recipe.fireRange[1]}）
-- 时长：${duration}息（适宜范围：${recipe.durationRange?.[0] || 10}-${recipe.durationRange?.[1] || 50}）
+- 放入药材：${herbsText}
+- 火候：${fire}（${fireType}）
+- 时长：${duration}息
 - 元素属性值（-100~100）：${elementsText}
 
-元素说明：
-金：锐利、坚韧、金属性
-木：生机、恢复、木属性
-水：柔和、流动、水属性
-火：灼热、爆发、火属性
-土：稳固、防御、土属性
-风：迅捷、灵动、风属性
-雷：迅猛、破敌、雷属性
-冰：寒冷、迟缓、冰属性
-暗：诡异、隐匿、暗属性
+火候对丹药效果的影响规则：
+- 文火（0-30）：温和、缓慢、调理类效果，适合治疗、恢复、持久增益类丹药
+- 中火（30-70）：平衡、标准效果，适合通用增益类丹药
+- 武火（70-100）：猛烈、爆发、攻伐类效果，适合伤害、爆发、控制类丹药
 
-请生成：
-1. 丹药名称（2-4个字，古风韵味）
-2. 丹药效果描述（50-100字，描述服用后的效果）
-3. 丹药品级（从凡品/灵品/玄品/天品/仙品中选择，通常不高于配方品级）
+元素说明：
+金：锐利、坚韧、金属性，适合攻击类丹药
+木：生机、恢复、木属性，适合治疗类丹药
+水：柔和、流动、水属性，适合灵力恢复类丹药
+火：灼热、爆发、火属性，适合伤害类丹药
+土：稳固、防御、土属性，适合防御类丹药
+风：迅捷、灵动、风属性，适合身法速度类丹药
+雷：迅猛、破敌、雷属性，适合爆发攻击类丹药
+冰：寒冷、迟缓、冰属性，适合控制类丹药
+暗：诡异、隐匿、暗属性，适合特殊效果类丹药
+
+请根据火候类型和元素属性生成：
+1. 丹药名称（2-4个字，古风韵味，符合元素特性和火候类型）
+2. 丹药效果描述（50-100字，描述服用后的效果，与元素属性和火候类型相符）
+3. 丹药品级（从凡品/灵品/玄品/天品/仙品中选择，根据药材品质和元素纯度决定）
 
 格式要求：
 NAME: [丹药名称]
 GRADE: [品级]
 EFFECT: [效果描述]`,
-            },
-          ];
+                  },
+                ];
 
-          const raw = await chatWithModel(aiSettings, aiSettings.proModel, prompt, {
-            timeoutMs: 30000,
+                const raw = await chatWithModel(aiSettings, aiSettings.proModel, prompt, {
+                  timeoutMs: 30000,
+                });
+
+                const nameMatch = raw.match(/NAME:\s*(.+)/);
+                const gradeMatch = raw.match(/GRADE:\s*(.+)/);
+                const effectMatch = raw.match(/EFFECT:\s*(.+)/);
+
+                if (nameMatch) pillName = nameMatch[1].trim();
+                if (gradeMatch) pillGrade = gradeMatch[1].trim() as any;
+                if (effectMatch) pillDesc = effectMatch[1].trim();
+
+                const maxElement = Math.max(...Object.values(finalElements).map(Math.abs));
+                if (maxElement > 60) outputCount = 1;
+                else if (maxElement > 30) outputCount = 2;
+                else outputCount = Math.min(3, selectedHerbs.length);
+              } else {
+                const maxElement = Math.max(...Object.values(finalElements).map(Math.abs));
+                if (maxElement > 70) {
+                  pillName = "极品灵丹";
+                  pillGrade = "灵品";
+                  pillDesc = "药力精纯，服之可大幅提升修为。";
+                } else if (maxElement > 40) {
+                  pillName = "上乘丹药";
+                  pillGrade = "凡品";
+                  pillDesc = "品质尚佳，略有补益之效。";
+                }
+                outputCount = Math.min(2, selectedHerbs.length);
+              }
+            } catch (e) {
+              console.error("AI生成丹药失败:", e);
+              shouldCache = false;
+            }
+          }
+        }
+
+        set((st) => {
+          let newInventory = st.inventory.map((i) => {
+            const herb = selectedHerbs.find((h) => h.name === i.name);
+            if (herb) return { ...i, count: Math.max(0, i.count - herb.count) };
+            return i;
           });
 
-          let pillName = recipe.output.split("×")[0];
-          let pillGrade = recipe.grade;
-          let pillDesc = recipe.desc;
+          let newPillCache = { ...st.pillCache };
+          if (success && shouldCache) {
+            newPillCache[cacheKey] = {
+              name: pillName,
+              grade: pillGrade,
+              desc: pillDesc,
+              elements: finalElements,
+              outputCount,
+            };
+          }
 
-          const nameMatch = raw.match(/NAME:\s*(.+)/);
-          const gradeMatch = raw.match(/GRADE:\s*(.+)/);
-          const effectMatch = raw.match(/EFFECT:\s*(.+)/);
-
-          if (nameMatch) pillName = nameMatch[1].trim();
-          if (gradeMatch) pillGrade = gradeMatch[1].trim() as any;
-          if (effectMatch) pillDesc = effectMatch[1].trim();
-
-          const outputCount = parseInt(recipe.output.split("×")[1] || "1", 10);
-
-          set((st) => {
-            let newInventory = st.inventory.map((i) => i);
+          if (success) {
             const existing = newInventory.find((i) => i.name === pillName);
             if (existing) {
               newInventory = newInventory.map((i) =>
@@ -575,41 +605,18 @@ EFFECT: [效果描述]`,
             }
             return {
               inventory: newInventory,
+              player: { ...st.player, mp: Math.max(0, st.player.mp - mpCost) },
               log: [`丹成！得「${pillName}」×${outputCount}，${pillDesc.slice(0, 20)}...`, ...st.log].slice(0, 30),
+              pillCache: newPillCache,
             };
-          });
-        } catch (e) {
-          console.error("AI生成丹药失败:", e);
-          const outputName = recipe.output.split("×")[0];
-          const outputCount = parseInt(recipe.output.split("×")[1] || "1", 10);
-          set((st) => {
-            let newInventory = st.inventory.map((i) => i);
-            const existing = newInventory.find((i) => i.name === outputName);
-            if (existing) {
-              newInventory = newInventory.map((i) =>
-                i.name === outputName ? { ...i, count: i.count + outputCount } : i,
-              );
-            } else {
-              newInventory = [
-                ...newInventory,
-                {
-                  id: `pill-${Date.now()}`,
-                  name: outputName,
-                  type: "丹药" as const,
-                  grade: recipe.grade,
-                  count: outputCount,
-                  icon: "丹",
-                  desc: recipe.desc,
-                  elements: finalElements,
-                },
-              ];
-            }
-            return {
-              inventory: newInventory,
-              log: [`丹成！得 ${recipe.output}，丹香四溢。`, ...st.log].slice(0, 30),
-            };
-          });
-        }
+          }
+
+          return {
+            inventory: newInventory,
+            player: { ...st.player, mp: Math.max(0, st.player.mp - mpCost) },
+            log: ["丹炉轰鸣，丹药化为飞灰，功亏一篑。", ...st.log].slice(0, 30),
+          };
+        });
       },
 
       acceptTask: (id) => {
@@ -822,6 +829,7 @@ EFFECT: [效果描述]`,
             craftingTab: st.craftingTab,
             currentLocation: st.currentLocation,
             log: st.log,
+            pillCache: st.pillCache,
           };
           const next = applyOpsToState(dataView, ops);
           return {
@@ -832,6 +840,7 @@ EFFECT: [效果描述]`,
             sect: next.sect,
             relations: next.relations,
             log: next.log,
+            pillCache: next.pillCache,
           };
         });
       },
@@ -1010,6 +1019,7 @@ EFFECT: [效果描述]`,
         sect: s.sect,
         relations: s.relations,
         log: s.log,
+        pillCache: s.pillCache,
       }),
     },
   ),

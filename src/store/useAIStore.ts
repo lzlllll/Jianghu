@@ -156,6 +156,7 @@ export const useAIStore = create<AIStore>()(
           craftingTab: game.craftingTab,
           currentLocation: game.currentLocation,
           log: game.log,
+          pillCache: game.pillCache,
         };
 
         const snapshot = game.getSnapshot();
@@ -230,11 +231,11 @@ export const useAIStore = create<AIStore>()(
           narrative = parsed.narrative;
           ops = parsed.ops;
           opsRaw = parsed.opsRaw;
-          
+
           if (parsed.mode && (parsed.mode.includes("crafting") || parsed.mode.includes("制作百艺"))) {
             set({ isCraftingOpen: true });
           }
-          
+
           set((st) => ({
             conversation: {
               ...st.conversation,
