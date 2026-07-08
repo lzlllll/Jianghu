@@ -274,7 +274,7 @@ export interface Player {
   activeHeartTechnique: string | null;
 }
 
-export type ElementType = "金" | "木" | "水" | "火" | "土" | "风" | "雷" | "冰" | "光" | "暗";
+export type ElementType = "金" | "木" | "水" | "火" | "土" | "风" | "雷" | "冰" | "暗";
 
 export type TechniqueNature = "刚" | "柔" | "奇" | "毒" | "速" | "稳" | "幻" | "霸";
 
@@ -339,6 +339,7 @@ export interface InventoryItem {
   desc: string;
   equipped?: boolean;
   slot?: "命" | "护" | "辅";
+  elements?: Partial<Record<ElementType, number>>;
 }
 
 export interface SpiritStones {
@@ -365,10 +366,12 @@ export interface AlchemyRecipe {
   grade: ItemGrade;
   herbs: { name: string; count: number }[];
   fireRange: [number, number];
+  durationRange: [number, number];
   successRate: number;
   mpCost: number;
   output: string;
   desc: string;
+  furnaceElements?: Partial<Record<ElementType, number>>;
 }
 
 export interface SectPosition {

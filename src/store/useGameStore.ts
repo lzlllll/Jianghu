@@ -91,7 +91,7 @@ interface GameStore extends GameState {
   breakthrough: () => void;
   comprehendTechnique: (id: string) => void;
   drawTalisman: (recipeId: string) => void;
-  brewAlchemy: (recipeId: string) => void;
+  brewAlchemy: (recipeId: string, fire: number, duration: number) => void;
   acceptTask: (id: string) => void;
   promote: (id: string) => void;
   buyShop: (id: string) => void;
@@ -164,7 +164,7 @@ export const useGameStore = create<GameStore>()(
 
           const ELEMENT_GENERATE: Record<ElementType, ElementType> = {
             "金": "水", "木": "火", "土": "金", "水": "木", "火": "土",
-            "风": "雷", "雷": "火", "冰": "水", "光": "火", "暗": "土",
+            "风": "雷", "雷": "火", "冰": "水", "暗": "土",
           };
           if (playerRootElements.includes(ELEMENT_GENERATE[techElement])) {
             efficiency += 0.1;
@@ -172,7 +172,7 @@ export const useGameStore = create<GameStore>()(
 
           const ELEMENT_COUNTER: Record<ElementType, ElementType> = {
             "金": "木", "木": "土", "土": "水", "水": "火", "火": "金",
-            "风": "土", "雷": "水", "冰": "火", "光": "暗", "暗": "光",
+            "风": "土", "雷": "水", "冰": "火", "暗": "风",
           };
           if (playerRootElements.includes(ELEMENT_COUNTER[techElement])) {
             efficiency -= 0.15;
@@ -304,7 +304,7 @@ export const useGameStore = create<GameStore>()(
 
         const ELEMENT_GENERATE: Record<ElementType, ElementType> = {
           "金": "水", "木": "火", "土": "金", "水": "木", "火": "土",
-          "风": "雷", "雷": "火", "冰": "水", "光": "火", "暗": "土",
+          "风": "雷", "雷": "火", "冰": "水", "暗": "土",
         };
         if (playerRootElements.includes(ELEMENT_GENERATE[techElement])) {
           efficiency += 0.1;
@@ -392,7 +392,7 @@ export const useGameStore = create<GameStore>()(
         });
       },
 
-      brewAlchemy: (recipeId) => {
+      brewAlchemy: async (recipeId, fire, duration) => {
         const s = get();
         const recipe = s.alchemyRecipes.find((r) => r.id === recipeId);
         if (!recipe) return;
@@ -409,16 +409,181 @@ export const useGameStore = create<GameStore>()(
             return;
           }
         }
-        const success = Math.random() * 100 < recipe.successRate;
+
+        const ELEMENTS = ["金", "木", "水", "火", "土", "风", "雷", "冰", "暗"] as const;
+
+        const herbElements: Record<string, number> = {};
+        for (const herb of recipe.herbs) {
+          const item = s.inventory.find((i) => i.name === herb.name);
+          if (item?.elements) {
+            for (const [elem, val] of Object.entries(item.elements)) {
+              herbElements[elem] = (herbElements[elem] || 0) + val * herb.count;
+            }
+          }
+        }
+
+        const fireFactor = fire / 100;
+        const durFactor = duration / 100;
+        const finalElements: Record<string, number> = {};
+        for (const elem of ELEMENTS) {
+          const furnaceVal = recipe.furnaceElements?.[elem] ?? 0;
+          const herbVal = herbElements[elem] ?? 0;
+          const rawVal = furnaceVal * fireFactor + herbVal * durFactor;
+          finalElements[elem] = Math.round(Math.max(-100, Math.min(100, rawVal * 2)));
+        }
+
+        const fireInRange = fire >= recipe.fireRange[0] && fire <= recipe.fireRange[1];
+        const durInRange = duration >= (recipe.durationRange?.[0] || 10) && duration <= (recipe.durationRange?.[1] || 50);
+        let actualSuccessRate = recipe.successRate;
+        if (!fireInRange) actualSuccessRate *= 0.7;
+        if (!durInRange) actualSuccessRate *= 0.8;
+        const success = Math.random() * 100 < actualSuccessRate;
+
         set((st) => {
           let newInventory = st.inventory.map((i) => {
             const herb = recipe.herbs.find((h) => h.name === i.name);
             if (herb) return { ...i, count: Math.max(0, i.count - herb.count) };
             return i;
           });
-          if (success) {
+          return {
+            inventory: newInventory,
+            player: { ...st.player, mp: Math.max(0, st.player.mp - recipe.mpCost) },
+          };
+        });
+
+        if (!success) {
+          set((st) => ({
+            log: ["丹炉轰鸣，丹药化为飞灰，功亏一篑。", ...st.log].slice(0, 30),
+          }));
+          return;
+        }
+
+        try {
+          const { chatWithModel } = await import("@/lib/aiClient");
+          const { useAIStore } = await import("@/store/useAIStore");
+          const aiSettings = useAIStore.getState().settings;
+
+          if (!aiSettings.apiKey) {
             const outputName = recipe.output.split("×")[0];
             const outputCount = parseInt(recipe.output.split("×")[1] || "1", 10);
+            set((st) => {
+              let newInventory = st.inventory.map((i) => i);
+              const existing = newInventory.find((i) => i.name === outputName);
+              if (existing) {
+                newInventory = newInventory.map((i) =>
+                  i.name === outputName ? { ...i, count: i.count + outputCount } : i,
+                );
+              } else {
+                newInventory = [
+                  ...newInventory,
+                  {
+                    id: `pill-${Date.now()}`,
+                    name: outputName,
+                    type: "丹药" as const,
+                    grade: recipe.grade,
+                    count: outputCount,
+                    icon: "丹",
+                    desc: recipe.desc,
+                    elements: finalElements,
+                  },
+                ];
+              }
+              return {
+                inventory: newInventory,
+                log: [`丹成！得 ${recipe.output}，丹香四溢。`, ...st.log].slice(0, 30),
+              };
+            });
+            return;
+          }
+
+          const elementsText = ELEMENTS.map((e) => `${e}:${finalElements[e]}`).join(",");
+          const prompt = [
+            {
+              role: "system" as const,
+              content: `你是一位修真界的炼丹大师。根据以下炼丹结果，推演丹药的名称和效果。
+
+输入参数：
+- 配方名称：${recipe.name}
+- 配方品级：${recipe.grade}
+- 配方描述：${recipe.desc}
+- 火候：${fire}（适宜范围：${recipe.fireRange[0]}-${recipe.fireRange[1]}）
+- 时长：${duration}息（适宜范围：${recipe.durationRange?.[0] || 10}-${recipe.durationRange?.[1] || 50}）
+- 元素属性值（-100~100）：${elementsText}
+
+元素说明：
+金：锐利、坚韧、金属性
+木：生机、恢复、木属性
+水：柔和、流动、水属性
+火：灼热、爆发、火属性
+土：稳固、防御、土属性
+风：迅捷、灵动、风属性
+雷：迅猛、破敌、雷属性
+冰：寒冷、迟缓、冰属性
+暗：诡异、隐匿、暗属性
+
+请生成：
+1. 丹药名称（2-4个字，古风韵味）
+2. 丹药效果描述（50-100字，描述服用后的效果）
+3. 丹药品级（从凡品/灵品/玄品/天品/仙品中选择，通常不高于配方品级）
+
+格式要求：
+NAME: [丹药名称]
+GRADE: [品级]
+EFFECT: [效果描述]`,
+            },
+          ];
+
+          const raw = await chatWithModel(aiSettings, aiSettings.proModel, prompt, {
+            timeoutMs: 30000,
+          });
+
+          let pillName = recipe.output.split("×")[0];
+          let pillGrade = recipe.grade;
+          let pillDesc = recipe.desc;
+
+          const nameMatch = raw.match(/NAME:\s*(.+)/);
+          const gradeMatch = raw.match(/GRADE:\s*(.+)/);
+          const effectMatch = raw.match(/EFFECT:\s*(.+)/);
+
+          if (nameMatch) pillName = nameMatch[1].trim();
+          if (gradeMatch) pillGrade = gradeMatch[1].trim() as any;
+          if (effectMatch) pillDesc = effectMatch[1].trim();
+
+          const outputCount = parseInt(recipe.output.split("×")[1] || "1", 10);
+
+          set((st) => {
+            let newInventory = st.inventory.map((i) => i);
+            const existing = newInventory.find((i) => i.name === pillName);
+            if (existing) {
+              newInventory = newInventory.map((i) =>
+                i.name === pillName ? { ...i, count: i.count + outputCount } : i,
+              );
+            } else {
+              newInventory = [
+                ...newInventory,
+                {
+                  id: `pill-${Date.now()}`,
+                  name: pillName,
+                  type: "丹药" as const,
+                  grade: pillGrade,
+                  count: outputCount,
+                  icon: "丹",
+                  desc: pillDesc,
+                  elements: finalElements,
+                },
+              ];
+            }
+            return {
+              inventory: newInventory,
+              log: [`丹成！得「${pillName}」×${outputCount}，${pillDesc.slice(0, 20)}...`, ...st.log].slice(0, 30),
+            };
+          });
+        } catch (e) {
+          console.error("AI生成丹药失败:", e);
+          const outputName = recipe.output.split("×")[0];
+          const outputCount = parseInt(recipe.output.split("×")[1] || "1", 10);
+          set((st) => {
+            let newInventory = st.inventory.map((i) => i);
             const existing = newInventory.find((i) => i.name === outputName);
             if (existing) {
               newInventory = newInventory.map((i) =>
@@ -435,21 +600,16 @@ export const useGameStore = create<GameStore>()(
                   count: outputCount,
                   icon: "丹",
                   desc: recipe.desc,
+                  elements: finalElements,
                 },
               ];
             }
             return {
               inventory: newInventory,
-              player: { ...st.player, mp: Math.max(0, st.player.mp - recipe.mpCost) },
               log: [`丹成！得 ${recipe.output}，丹香四溢。`, ...st.log].slice(0, 30),
             };
-          }
-          return {
-            inventory: newInventory,
-            player: { ...st.player, mp: Math.max(0, st.player.mp - recipe.mpCost) },
-            log: ["丹炉轰鸣，丹药化为飞灰，功亏一篑。", ...st.log].slice(0, 30),
-          };
-        });
+          });
+        }
       },
 
       acceptTask: (id) => {

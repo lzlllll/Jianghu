@@ -196,7 +196,26 @@ function AlchemyWorkshop() {
   const mp = useGameStore((s) => s.player.mp);
   const [selectedId, setSelectedId] = useState<string>(recipes[0]?.id ?? "");
   const [fire, setFire] = useState(50);
+  const [duration, setDuration] = useState(30);
   const selected = recipes.find((r) => r.id === selectedId);
+
+  const ELEMENTS = ["金", "木", "水", "火", "土", "风", "雷", "冰", "暗"] as const;
+
+  const getHerbElements = () => {
+    if (!selected) return {};
+    const result: Record<string, number> = {};
+    for (const herb of selected.herbs) {
+      const item = inventory.find((i) => i.name === herb.name);
+      if (item?.elements) {
+        for (const [elem, val] of Object.entries(item.elements)) {
+          result[elem] = (result[elem] || 0) + val * herb.count;
+        }
+      }
+    }
+    return result;
+  };
+
+  const herbElements = getHerbElements();
 
   return (
     <div className="grid grid-cols-12 gap-4">
@@ -224,13 +243,12 @@ function AlchemyWorkshop() {
                       className="absolute bottom-0 left-0 right-0 transition-all duration-300"
                       style={{
                         height: `${fire}%`,
-                        background: `linear-gradient(0deg, ${
-                          fire < 35
-                            ? "rgba(90,138,114,0.6)"
-                            : fire > 70
-                              ? "rgba(168,50,50,0.7)"
-                              : "rgba(201,169,97,0.7)"
-                        } 0%, transparent 100%)`,
+                        background: `linear-gradient(0deg, ${fire < 35
+                          ? "rgba(90,138,114,0.6)"
+                          : fire > 70
+                            ? "rgba(168,50,50,0.7)"
+                            : "rgba(201,169,97,0.7)"
+                          } 0%, transparent 100%)`,
                       }}
                     />
                     <div className="absolute inset-x-0 top-2 text-center">
@@ -260,6 +278,10 @@ function AlchemyWorkshop() {
               <div className="space-y-2 mb-4">
                 {selected.herbs.map((herb) => {
                   const have = inventory.find((i) => i.name === herb.name)?.count ?? 0;
+                  const item = inventory.find((i) => i.name === herb.name);
+                  const elemStr = item?.elements
+                    ? `(${Object.entries(item.elements).map(([e, v]) => `${e}:${v}`).join(',')})`
+                    : '';
                   return (
                     <MaterialSlot
                       key={herb.name}
@@ -267,6 +289,7 @@ function AlchemyWorkshop() {
                       need={herb.count}
                       have={have}
                       icon="药"
+                      extra={elemStr}
                     />
                   );
                 })}
@@ -299,6 +322,61 @@ function AlchemyWorkshop() {
                 />
               </div>
 
+              <CloudDivider label="时长" />
+
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-serif text-xs text-paper-400/70">短时</span>
+                  <span
+                    className={cn(
+                      "font-number text-sm",
+                      duration >= (selected.durationRange?.[0] || 10) && duration <= (selected.durationRange?.[1] || 50)
+                        ? "text-jade-400"
+                        : "text-cinnabar-400",
+                    )}
+                  >
+                    {duration}息 · 适宜 {(selected.durationRange?.[0] || 10)}-{(selected.durationRange?.[1] || 50)}息
+                  </span>
+                  <span className="font-serif text-xs text-paper-400/70">长时</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={duration}
+                  onChange={(e) => setDuration(Number(e.target.value))}
+                  className="fire-slider w-full"
+                />
+              </div>
+
+              <CloudDivider label="元素属性预览" />
+
+              <div className="grid grid-cols-9 gap-1 mb-4">
+                {ELEMENTS.map((elem) => {
+                  const furnaceVal = selected.furnaceElements?.[elem] ?? 0;
+                  const herbVal = herbElements[elem] ?? 0;
+                  const fireFactor = fire / 100;
+                  const durFactor = duration / 100;
+                  const rawVal = furnaceVal * fireFactor + herbVal * durFactor;
+                  const normalized = Math.round(Math.max(-100, Math.min(100, rawVal * 2)));
+                  return (
+                    <div
+                      key={elem}
+                      className="flex flex-col items-center p-1 rounded border border-paper-400/10 bg-ink-900/30"
+                    >
+                      <span className="font-brush text-xs text-paper-300">{elem}</span>
+                      <span className={cn(
+                        "font-number text-[10px]",
+                        normalized > 0 ? "text-jade-400" :
+                          normalized < 0 ? "text-cinnabar-400" : "text-paper-500",
+                      )}>
+                        {normalized > 0 ? "+" : ""}{normalized}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
               <div className="flex items-center justify-between mb-3 px-3 py-2 rounded bg-ink-900/40 border border-paper-400/10">
                 <span className="font-serif text-xs text-paper-400/70">消耗灵力</span>
                 <span
@@ -312,7 +390,7 @@ function AlchemyWorkshop() {
               </div>
 
               <SealButton
-                onClick={() => brew(selected.id)}
+                onClick={() => brew(selected.id, fire, duration)}
                 disabled={
                   mp < selected.mpCost ||
                   selected.herbs.some((h) => {
@@ -375,11 +453,13 @@ function MaterialSlot({
   need,
   have,
   icon,
+  extra = "",
 }: {
   name: string;
   need: number;
   have: number;
   icon: string;
+  extra?: string;
 }) {
   const enough = have >= need;
   return (
@@ -396,13 +476,16 @@ function MaterialSlot({
       </div>
       <div className="flex-1 min-w-0">
         <div className="font-serif text-xs text-paper-200 truncate">{name}</div>
-        <div
-          className={cn(
-            "font-number text-xs",
-            enough ? "text-jade-400" : "text-cinnabar-400",
-          )}
-        >
-          {have} / {need}
+        <div className="flex items-center gap-1">
+          <span
+            className={cn(
+              "font-number text-xs",
+              enough ? "text-jade-400" : "text-cinnabar-400",
+            )}
+          >
+            {have} / {need}
+          </span>
+          {extra && <span className="font-number text-[10px] text-paper-500">{extra}</span>}
         </div>
       </div>
       {!enough && <span className="text-cinnabar-400 text-xs">缺</span>}

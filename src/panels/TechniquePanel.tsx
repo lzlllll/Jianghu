@@ -75,11 +75,11 @@ export function TechniquePanel() {
 
   const ELEMENT_GENERATE: Record<string, ElementType> = {
     金: "水", 木: "火", 土: "金", 水: "木", 火: "土",
-    风: "雷", 雷: "火", 冰: "水", 光: "火", 暗: "土",
+    风: "雷", 雷: "火", 冰: "水", 暗: "土",
   };
   const ELEMENT_COUNTER: Record<string, ElementType> = {
     金: "木", 木: "土", 土: "水", 水: "火", 火: "金",
-    风: "土", 雷: "水", 冰: "火", 光: "暗", 暗: "光",
+    风: "土", 雷: "水", 冰: "火", 暗: "风",
   };
 
   interface MatchSource {
@@ -102,15 +102,13 @@ export function TechniquePanel() {
       sources.push({ label: "灵根相克", value: -15, detail: `${tech.element}→${ELEMENT_COUNTER[tech.element]}相克` });
     }
 
-    const base = 50 + sources.reduce((s, src) => s + src.value, 0);
-
     for (const compat of tech.heartCompatibility || []) {
       const heartScore = player.stats.heartScores.find((hs) => hs.trait === compat.trait)?.score || 0;
-      const contribution = (heartScore / 100) * (compat.bonus / 100) * 100;
-      if (contribution !== 0) {
+      const rounded = Math.round((heartScore / 100) * (compat.bonus / 100) * 100);
+      if (rounded !== 0) {
         sources.push({
           label: `心性「${compat.trait}」`,
-          value: Math.round(contribution),
+          value: rounded,
           detail: `${heartScore}分 × ${compat.bonus}%加成`,
         });
       }
