@@ -1,8 +1,9 @@
 import { useGameStore } from "@/store/useGameStore";
-import { REALMS } from "@/data/mockData";
-import { Settings } from "lucide-react";
 import { useAIStore } from "@/store/useAIStore";
+import { REALMS } from "@/data/mockData";
+import { Settings, Download, Upload, RotateCcw } from "lucide-react";
 import { LocationSelector } from "./LocationSelector";
+import type { GameSnapshot } from "@/data/types";
 
 interface TopBannerProps {
   onOpenSettings: () => void;
@@ -92,6 +93,73 @@ export function TopBanner({ onOpenSettings }: TopBannerProps) {
         </div>
         <div className="w-px h-10 bg-gold-500/20" />
         <LocationSelector />
+
+        {/* 存档管理 */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => {
+              const snapshot = useGameStore.getState().getSnapshot();
+              const saveData = {
+                game: snapshot,
+                ai: useAIStore.getState(),
+                timestamp: Date.now(),
+              };
+              const blob = new Blob([JSON.stringify(saveData, null, 2)], { type: "application/json" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `save_${new Date().toISOString().slice(0, 10)}.json`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="w-10 h-10 rounded flex items-center justify-center border border-gold-500/25 hover:border-gold-400/60 hover:bg-gold-400/10 transition group"
+            title="导出存档"
+          >
+            <Download size={18} className="text-paper-300 group-hover:text-gold-400 transition" strokeWidth={1.5} />
+          </button>
+          <button
+            onClick={() => {
+              const input = document.createElement("input");
+              input.type = "file";
+              input.accept = ".json";
+              input.onchange = async (e) => {
+                const file = (e.target as HTMLInputElement).files?.[0];
+                if (!file) return;
+                try {
+                  const text = await file.text();
+                  const saveData = JSON.parse(text);
+                  if (saveData.game) {
+                    useGameStore.getState().restoreSnapshot(saveData.game as GameSnapshot);
+                  }
+                  if (saveData.ai?.settings) {
+                    useAIStore.getState().updateSettings(saveData.ai.settings);
+                  }
+                  window.location.reload();
+                } catch (err) {
+                  alert(`导入存档失败：${(err as Error).message}`);
+                }
+              };
+              input.click();
+            }}
+            className="w-10 h-10 rounded flex items-center justify-center border border-gold-500/25 hover:border-gold-400/60 hover:bg-gold-400/10 transition group"
+            title="导入存档"
+          >
+            <Upload size={18} className="text-paper-300 group-hover:text-gold-400 transition" strokeWidth={1.5} />
+          </button>
+          <button
+            onClick={() => {
+              if (confirm("确定要开启新游戏吗？当前进度将丢失。")) {
+                useGameStore.getState().resetGame();
+                useAIStore.getState().clearConversation();
+                window.location.reload();
+              }
+            }}
+            className="w-10 h-10 rounded flex items-center justify-center border border-gold-500/25 hover:border-gold-400/60 hover:bg-gold-400/10 transition group"
+            title="新游戏"
+          >
+            <RotateCcw size={18} className="text-paper-300 group-hover:text-gold-400 transition" strokeWidth={1.5} />
+          </button>
+        </div>
 
         {/* 通灵设置 */}
         <button

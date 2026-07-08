@@ -10,6 +10,7 @@ import type {
   LocationType,
   ElementType,
   TalismanRecipe,
+  Player,
 } from "@/data/types";
 import { applyOpsToState } from "@/lib/dataOps";
 import {
@@ -88,6 +89,7 @@ interface GameStore extends GameState {
   setCraftingTab: (tab: CraftingTab) => void;
   setLocation: (location: LocationType) => void;
   setActiveHeartTechnique: (id: string | null) => void;
+  setPlayer: (player: Player) => void;
   cultivate: () => void;
   breakthrough: () => void;
   comprehendTechnique: (id: string) => void;
@@ -143,6 +145,8 @@ export const useGameStore = create<GameStore>()(
           player: { ...st.player, activeHeartTechnique: id },
           log: [`切换心法为「${st.techniques.find((t) => t.id === id)?.name || "无"}」。`, ...st.log].slice(0, 30),
         })),
+
+      setPlayer: (player) => set({ player }),
 
       addLog: (msg) =>
         set((s) => ({ log: [msg, ...s.log].slice(0, 30) })),

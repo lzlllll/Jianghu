@@ -269,6 +269,8 @@ export interface Player {
   karma: number;
   timeline: TimelineEvent[];
   background: string;
+  description: string;
+  personality: string;
   buffs: Buff[];
   shields: ShieldData[];
   activeHeartTechnique: string | null;
