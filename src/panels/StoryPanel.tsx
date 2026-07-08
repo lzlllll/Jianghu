@@ -7,6 +7,7 @@ import { SealButton } from "@/components/ui/SealButton";
 import { CloudDivider } from "@/components/ui/CloudDivider";
 import { summarizeOps } from "@/lib/dataOps";
 import { cn } from "@/lib/utils";
+import { BattlePanel } from "@/components/battle/BattlePanel";
 import {
   Sparkles,
   Square,
@@ -34,10 +35,37 @@ export function StoryPanel({ onOpenSettings }: StoryPanelProps) {
   const regenerate = useAIStore((s) => s.regenerate);
   const cancel = useAIStore((s) => s.cancel);
   const clearConversation = useAIStore((s) => s.clearConversation);
+  const battle = useAIStore((s) => s.battle);
+  const startBattle = useAIStore((s) => s.startBattle);
   const log = useGameStore((s) => s.log);
 
   const [decision, setDecision] = useState("");
   const narrativeRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (conversation.stage === "done") {
+      const lastTurn = conversation.turns[conversation.turns.length - 1];
+      if (lastTurn?.mode === "battle") {
+        const player = useGameStore.getState().player;
+        startBattle({
+          width: 10,
+          height: 10,
+          entities: [
+            {
+              id: "player",
+              name: "沈青砚",
+              type: "player",
+              position: { x: 5, y: 5 },
+              hp: player.hp,
+              maxHp: player.hpMax,
+              mp: player.mp,
+              maxMp: player.mpMax,
+            },
+          ],
+        });
+      }
+    }
+  }, [conversation.stage, startBattle]);
 
   const stage = conversation.stage;
   const isGenerating = stage === "flash" || stage === "pro";
@@ -64,6 +92,10 @@ export function StoryPanel({ onOpenSettings }: StoryPanelProps) {
       handleSubmit();
     }
   };
+
+  if (battle.isActive) {
+    return <BattlePanel />;
+  }
 
   return (
     <div className="paper-texture">

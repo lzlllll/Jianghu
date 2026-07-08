@@ -488,6 +488,42 @@ export type GenStage =
   | "done"
   | "error";
 
+export interface BattlePosition {
+  x: number;
+  y: number;
+}
+
+export type BattleEntityType = "player" | "ally" | "enemy" | "obstacle";
+
+export interface BattleEntity {
+  id: string;
+  name: string;
+  type: BattleEntityType;
+  position: BattlePosition;
+  hp?: number;
+  maxHp?: number;
+  mp?: number;
+  maxMp?: number;
+  icon?: string;
+  isDead?: boolean;
+}
+
+export interface BattleMap {
+  width: number;
+  height: number;
+  entities: BattleEntity[];
+}
+
+export interface BattleState {
+  isActive: boolean;
+  map: BattleMap;
+  round: number;
+  turn: "player" | "enemy";
+  narrative: string;
+  isResolving: boolean;
+  errorMsg: string;
+}
+
 export interface Turn {
   id: string;
   playerInput: string;
@@ -506,6 +542,7 @@ export interface Turn {
   snapshot: GameSnapshot | null;
   timestamp: number;
   error?: string;
+  mode?: string;
 }
 
 export interface GameSnapshot {

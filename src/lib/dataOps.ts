@@ -1,13 +1,15 @@
-import type { DataOp, GameState } from "@/data/types";
+import type { DataOp, GameState, BattleEntity } from "@/data/types";
 
 const START_MARKER = "<<<OPS>>>";
 const END_MARKER = "<<<END>>>";
+const BATTLE_START = "<<<BATTLE>>>";
 
 export interface ParsedTurn {
   narrative: string;
   ops: DataOp[];
   opsRaw: string;
   mode: string | null;
+  battleEntities: BattleEntity[] | null;
 }
 
 const MODE_START = "<<<MODE>>>";
@@ -28,6 +30,18 @@ export function parseModelOutput(raw: string): ParsedTurn {
     }
   }
 
+  let battleEntities: BattleEntity[] | null = null;
+  const battleStartIdx = text.indexOf(BATTLE_START);
+  if (battleStartIdx !== -1) {
+    const afterBattleStart = text.slice(battleStartIdx + BATTLE_START.length);
+    const battleEndIdx = afterBattleStart.indexOf(END_MARKER);
+    if (battleEndIdx !== -1) {
+      const battleContent = afterBattleStart.slice(0, battleEndIdx);
+      battleEntities = parseBattleEntities(battleContent);
+      text = text.slice(0, battleStartIdx) + afterBattleStart.slice(battleEndIdx + END_MARKER.length);
+    }
+  }
+
   const startIdx = text.indexOf(START_MARKER);
   let opsRaw = "";
   let narrative = text;
@@ -45,7 +59,29 @@ export function parseModelOutput(raw: string): ParsedTurn {
   }
   narrative = narrative.trim();
   const ops = parseOpLines(opsRaw);
-  return { narrative, ops, opsRaw: opsRaw.trim(), mode };
+  return { narrative, ops, opsRaw: opsRaw.trim(), mode, battleEntities };
+}
+
+function parseBattleEntities(content: string): BattleEntity[] {
+  const entities: BattleEntity[] = [];
+  const lines = content.split("\n");
+  
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("-- entities: ")) {
+      const jsonStr = trimmed.slice(14).trim();
+      try {
+        const parsed = JSON.parse(jsonStr);
+        if (Array.isArray(parsed)) {
+          entities.push(...parsed);
+        }
+      } catch {
+        console.warn("Failed to parse battle entities:", jsonStr);
+      }
+    }
+  }
+  
+  return entities;
 }
 
 function parseOpLines(block: string): DataOp[] {

@@ -8,6 +8,9 @@ import type {
   NPCChatState,
   NPCProfile,
   NPCMessage,
+  BattleState,
+  BattleMap,
+  BattleEntity,
 } from "@/data/types";
 import { useGameStore } from "@/store/useGameStore";
 import { chatWithModel } from "@/lib/aiClient";
@@ -52,10 +55,25 @@ const INITIAL_NPC_CHAT: NPCChatState = {
   errorMsg: "",
 };
 
+const INITIAL_BATTLE: BattleState = {
+  isActive: false,
+  map: {
+    width: 10,
+    height: 10,
+    entities: [],
+  },
+  round: 1,
+  turn: "player",
+  narrative: "",
+  isResolving: false,
+  errorMsg: "",
+};
+
 interface AIStore {
   settings: AISettings;
   conversation: ConversationState;
   npcChat: NPCChatState;
+  battle: BattleState;
   isDeveloperMode: boolean;
   isCraftingOpen: boolean;
   updateSettings: (patch: Partial<AISettings>) => void;
@@ -75,6 +93,12 @@ interface AIStore {
   openNPCChat: (npcId: string) => void;
   closeNPCChat: () => void;
   clearNPCChat: (npcId: string) => void;
+
+  startBattle: (map?: BattleMap) => void;
+  endBattle: () => void;
+  setBattleNarrative: (narrative: string) => void;
+  updateBattleMap: (entities: BattleEntity[]) => void;
+  runBattleTurn: (action: string) => Promise<void>;
 }
 
 let abortController: AbortController | null = null;
@@ -85,6 +109,7 @@ export const useAIStore = create<AIStore>()(
       settings: DEFAULT_SETTINGS,
       conversation: INITIAL_CONVERSATION,
       npcChat: INITIAL_NPC_CHAT,
+      battle: INITIAL_BATTLE,
       isDeveloperMode: false,
       isCraftingOpen: false,
 
@@ -662,6 +687,165 @@ ${chatHistory || "暂无"}`,
           },
         }));
       },
+
+      startBattle: (map) => {
+        set((st) => ({
+          battle: {
+            ...st.battle,
+            isActive: true,
+            map: map || {
+              width: 10,
+              height: 10,
+              entities: [],
+            },
+            round: 1,
+            turn: "player",
+            narrative: "",
+            isResolving: false,
+            errorMsg: "",
+          },
+        }));
+      },
+
+      endBattle: () => {
+        set((st) => ({
+          battle: {
+            ...INITIAL_BATTLE,
+            isActive: false,
+          },
+        }));
+      },
+
+      setBattleNarrative: (narrative) => {
+        set((st) => ({
+          battle: {
+            ...st.battle,
+            narrative,
+          },
+        }));
+      },
+
+      updateBattleMap: (entities) => {
+        set((st) => ({
+          battle: {
+            ...st.battle,
+            map: {
+              ...st.battle.map,
+              entities,
+            },
+          },
+        }));
+      },
+
+      runBattleTurn: async (action) => {
+        const { battle, settings } = get();
+        if (!settings.apiKey) {
+          set((st) => ({
+            battle: {
+              ...st.battle,
+              errorMsg: "尚未配置 API Key。",
+            },
+          }));
+          return;
+        }
+
+        set((st) => ({
+          battle: {
+            ...st.battle,
+            isResolving: true,
+            errorMsg: "",
+          },
+        }));
+
+        try {
+          const player = useGameStore.getState().player;
+          const battleState = get().battle;
+
+          const prompt: import("@/lib/aiClient").ChatMessage[] = [
+            {
+              role: "system" as const,
+              content: `你是一个仙侠战斗模拟器。当前处于战斗模式，地图为10x10瓦片。
+
+当前战斗状态：
+- 回合：${battleState.round}
+- 当前行动方：${battleState.turn}
+- 玩家状态：气血=${player.hp}/${player.hpMax}，灵力=${player.mp}/${player.mpMax}
+- 地图实体：${JSON.stringify(battleState.map.entities)}
+
+玩家行动：${action}
+
+请根据玩家的行动，判断可行性并返回：
+1. 战斗叙事文本
+2. 数据操作（增减气血、灵力、buff等）
+3. 更新后的实体位置
+
+输出格式：
+<<<BATTLE>>>
+-- narrative: 战斗叙事文本
+-- entities: [{"id":"player","name":"沈青砚","type":"player","position":{"x":5,"y":5},"hp":100,"maxHp":100},{"id":"enemy1","name":"妖兽","type":"enemy","position":{"x":7,"y":5},"hp":80,"maxHp":100}]
+<<<OPS>>>
+MODIFY player.hp - 20
+MODIFY player.mp - 10
+<<<END>>>`,
+            },
+            {
+              role: "user" as const,
+              content: action,
+            },
+          ];
+
+          const raw = await chatWithModel(
+            settings,
+            settings.proModel,
+            prompt,
+            { timeoutMs: 60000 },
+          );
+
+          const parsed = parseModelOutput(raw);
+
+          if (parsed.ops.length > 0) {
+            useGameStore.getState().applyOps(parsed.ops);
+          }
+
+          const isPlayerTurn = get().battle.turn === "player";
+          const allEnemiesDead = parsed.battleEntities?.every(
+            e => e.type === "enemy" && e.isDead
+          ) ?? false;
+          const playerDead = parsed.battleEntities?.find(
+            e => e.type === "player" && e.isDead
+          ) ?? false;
+
+          set((st) => {
+            const nextTurn: "player" | "enemy" = isPlayerTurn ? "enemy" : "player";
+            return {
+              battle: {
+                ...st.battle,
+                isResolving: false,
+                turn: nextTurn,
+                round: !isPlayerTurn ? st.battle.round + 1 : st.battle.round,
+                narrative: parsed.narrative || st.battle.narrative,
+                map: parsed.battleEntities && parsed.battleEntities.length > 0
+                  ? { ...st.battle.map, entities: parsed.battleEntities }
+                  : st.battle.map,
+                isActive: !(allEnemiesDead || playerDead),
+              },
+            };
+          });
+        } catch (e) {
+          const errorMsg = (e as Error).message;
+          const isNetworkError = errorMsg.includes("网络") || errorMsg.includes("CORS") ||
+            errorMsg.includes("请求超时") || errorMsg.includes("不可达");
+          set((st) => ({
+            battle: {
+              ...st.battle,
+              isResolving: false,
+              errorMsg: isNetworkError
+                ? `网络连接失败：${errorMsg}\n请检查网络连接或在设置中更换Base URL。`
+                : errorMsg,
+            },
+          }));
+        }
+      },
     }),
     {
       name: "xiuxian-ai",
@@ -669,6 +853,7 @@ ${chatHistory || "暂无"}`,
         settings: s.settings,
         conversation: s.conversation,
         npcChat: s.npcChat,
+        battle: s.battle,
         isDeveloperMode: s.isDeveloperMode,
       }),
     },
