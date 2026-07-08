@@ -255,7 +255,7 @@ export function buildProPrompt(params: {
 }): ChatMessage[] {
   const { state, summary, recentTurns, decision, relevantData } = params;
   const realm = REALMS[state.player.realmIndex] ?? "未知";
-  const location = LOCATION_INFO[state.currentLocation];
+  const location = LOCATION_INFO[state.currentLocation] || { name: "未知场所", allowed: "所有行为", forbidden: "无" };
 
   const system = `你是一部古风修仙文字游戏的叙事引擎。以第二人称「你」叙述玩家的修真经历，文笔古雅、意象丰沛、节奏紧凑，单次叙事正文 1000 至 3000 字。
 你的输出分为两部分：先是叙事正文，随后是一个数据操作标记块。标记块用于把叙事导致的数据变化写回游戏状态。
