@@ -875,6 +875,32 @@ MODIFY player.mp - 10
     }),
     {
       name: "xiuxian-ai",
+      version: 1,
+      migrate: (state: any, version: number) => {
+        if (version < 1) {
+          if (state.conversation && !Array.isArray(state.conversation.turns)) {
+            state.conversation.turns = [];
+          }
+          if (state.npcChat && state.npcChat.profiles) {
+            if (!Array.isArray(state.npcChat.profiles)) {
+              state.npcChat.profiles = [];
+            } else {
+              state.npcChat.profiles.forEach((p: any) => {
+                if (!Array.isArray(p.messages)) {
+                  p.messages = [];
+                }
+              });
+            }
+          }
+          if (state.battle && state.battle.map && !Array.isArray(state.battle.map.entities)) {
+            state.battle.map.entities = [];
+          }
+          if (state.battle && !Array.isArray(state.battle.context)) {
+            state.battle.context = [];
+          }
+        }
+        return state;
+      },
       partialize: (s) => ({
         settings: s.settings,
         conversation: s.conversation,

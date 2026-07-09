@@ -962,7 +962,7 @@ EFFECT: [效果描述]`,
     }),
     {
       name: "xiuxian-save",
-      version: 7,
+      version: 8,
       migrate: (state: any, version: number) => {
         if (version < 2) {
           if (state.techniques && Array.isArray(state.techniques)) {
@@ -1126,6 +1126,45 @@ EFFECT: [效果描述]`,
           }
           if (!state.pillCache) {
             state.pillCache = {};
+          }
+        }
+
+        if (version < 8) {
+          if (!Array.isArray(state.techniques)) state.techniques = [];
+          if (!Array.isArray(state.inventory)) state.inventory = [];
+          if (!Array.isArray(state.relations)) state.relations = [];
+          if (!Array.isArray(state.log)) state.log = [];
+          if (state.player) {
+            if (!Array.isArray(state.player.spiritRoots)) state.player.spiritRoots = [];
+            if (!Array.isArray(state.player.meridians)) state.player.meridians = [];
+            if (!Array.isArray(state.player.buffs)) state.player.buffs = [];
+            if (!Array.isArray(state.player.shields)) state.player.shields = [];
+            if (!Array.isArray(state.player.timeline)) state.player.timeline = [];
+            if (state.player.stats) {
+              if (!Array.isArray(state.player.stats.heartScores)) state.player.stats.heartScores = [];
+              if (!Array.isArray(state.player.stats.heartTraits)) state.player.stats.heartTraits = [];
+            }
+          }
+          if (state.sect) {
+            if (!Array.isArray(state.sect.tasks)) state.sect.tasks = [];
+            if (!Array.isArray(state.sect.positions)) state.sect.positions = [];
+            if (!Array.isArray(state.sect.shop)) state.sect.shop = [];
+            if (!Array.isArray(state.sect.heritage)) state.sect.heritage = [];
+            if (!Array.isArray(state.sect.resources)) state.sect.resources = [];
+            if (state.sect.management) {
+              if (!Array.isArray(state.sect.management.industries)) state.sect.management.industries = [];
+              if (!Array.isArray(state.sect.management.activities)) state.sect.management.activities = [];
+              if (!Array.isArray(state.sect.management.halls)) state.sect.management.halls = [];
+              if (state.sect.management.treasury && !Array.isArray(state.sect.management.treasury.materials)) {
+                state.sect.management.treasury.materials = [];
+              }
+              if (state.sect.management.consumption && !Array.isArray(state.sect.management.consumption.recentConsumption)) {
+                state.sect.management.consumption.recentConsumption = [];
+              }
+            }
+          }
+          if (state.news && !Array.isArray(state.news.items)) {
+            state.news.items = [];
           }
         }
         return state;

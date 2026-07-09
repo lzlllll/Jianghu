@@ -65,7 +65,7 @@ export function parseModelOutput(raw: string): ParsedTurn {
 function parseBattleEntities(content: string): BattleEntity[] {
   const entities: BattleEntity[] = [];
   const lines = content.split("\n");
-  
+
   for (const line of lines) {
     const trimmed = line.trim();
     if (trimmed.startsWith("-- entities: ")) {
@@ -80,7 +80,7 @@ function parseBattleEntities(content: string): BattleEntity[] {
       }
     }
   }
-  
+
   return entities;
 }
 
