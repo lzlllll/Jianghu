@@ -254,10 +254,10 @@ function resolveCollection(root: any, collection: string): any[] {
 export function applyOpsToState(state: GameState, ops: DataOp[]): GameState {
   let next: GameState;
   try {
-    next = structuredClone(state);
-  } catch (e) {
-    console.warn("[dataOps] structuredClone failed, using shallow copy:", e);
     next = JSON.parse(JSON.stringify(state));
+  } catch (e) {
+    console.warn("[dataOps] clone failed, using shallow copy:", e);
+    next = { ...state };
   }
   for (const op of ops) {
     try {

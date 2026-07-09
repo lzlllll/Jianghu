@@ -884,7 +884,7 @@ MODIFY player.mp - 10
     }),
     {
       name: "xiuxian-ai",
-      version: 1,
+      version: 2,
       migrate: (state: any, version: number) => {
         if (version < 1) {
           if (state.conversation && !Array.isArray(state.conversation.turns)) {
@@ -908,13 +908,66 @@ MODIFY player.mp - 10
             state.battle.context = [];
           }
         }
+        if (version < 2) {
+          if (state.conversation && Array.isArray(state.conversation.turns)) {
+            state.conversation.turns = state.conversation.turns
+              .slice(-4)
+              .map((t: any) => ({
+                ...t,
+                snapshot: null,
+                flashRaw: "",
+                opsRaw: "",
+                proRequest: {
+                  summary: t.proRequest?.summary || "",
+                  recentTurns: [],
+                  decision: t.proRequest?.decision || "",
+                  relevantData: "",
+                },
+              }));
+          }
+          if (state.npcChat && Array.isArray(state.npcChat.profiles)) {
+            state.npcChat.profiles = state.npcChat.profiles
+              .slice(-5)
+              .map((p: any) => ({
+                ...p,
+                messages: Array.isArray(p.messages) ? p.messages.slice(-20) : [],
+              }));
+          }
+          if (state.battle) {
+            state.battle.context = [];
+          }
+        }
         return state;
       },
       partialize: (s) => ({
         settings: s.settings,
-        conversation: s.conversation,
-        npcChat: s.npcChat,
-        battle: s.battle,
+        conversation: {
+          ...s.conversation,
+          turns: (Array.isArray(s.conversation.turns) ? s.conversation.turns : [])
+            .slice(-4)
+            .map((t) => ({
+              ...t,
+              snapshot: null,
+              flashRaw: "",
+              opsRaw: "",
+              proRequest: {
+                summary: t.proRequest?.summary || "",
+                recentTurns: [],
+                decision: t.proRequest?.decision || "",
+                relevantData: "",
+              },
+            })),
+        },
+        npcChat: {
+          ...s.npcChat,
+          profiles: (Array.isArray(s.npcChat.profiles) ? s.npcChat.profiles : [])
+            .slice(-5)
+            .map((p) => ({
+              ...p,
+              messages: (Array.isArray(p.messages) ? p.messages : []).slice(-20),
+            })),
+        },
+        battle: { ...s.battle, context: [] },
         isDeveloperMode: s.isDeveloperMode,
       }),
     },

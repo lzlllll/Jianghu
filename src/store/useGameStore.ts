@@ -938,39 +938,60 @@ EFFECT: [效果描述]`,
 
       getSnapshot: () => {
         const st = get();
-        return structuredClone({
-          player: st.player,
-          techniques: st.techniques,
-          inventory: st.inventory,
-          spiritStones: st.spiritStones,
-          sect: st.sect,
-          relations: st.relations,
-          log: st.log,
-        });
+        try {
+          return JSON.parse(JSON.stringify({
+            player: st.player,
+            techniques: st.techniques,
+            inventory: st.inventory,
+            spiritStones: st.spiritStones,
+            sect: st.sect,
+            relations: st.relations,
+            log: st.log,
+          }));
+        } catch (e) {
+          console.warn("[getSnapshot] Failed to snapshot:", e);
+          return {
+            player: st.player,
+            techniques: st.techniques,
+            inventory: st.inventory,
+            spiritStones: st.spiritStones,
+            sect: st.sect,
+            relations: st.relations,
+            log: st.log,
+          };
+        }
       },
 
       restoreSnapshot: (snap) => {
+        const clone = (obj: any) => {
+          if (obj == null) return obj;
+          try {
+            return JSON.parse(JSON.stringify(obj));
+          } catch {
+            return obj;
+          }
+        };
         set({
-          player: structuredClone(snap.player),
-          techniques: structuredClone(snap.techniques),
-          inventory: structuredClone(snap.inventory),
-          spiritStones: structuredClone(snap.spiritStones),
+          player: clone(snap.player),
+          techniques: Array.isArray(snap.techniques) ? clone(snap.techniques) : [],
+          inventory: Array.isArray(snap.inventory) ? clone(snap.inventory) : [],
+          spiritStones: clone(snap.spiritStones),
           talismanRecipes: [],
           alchemyRecipes: [],
-          sect: structuredClone(snap.sect),
-          relations: structuredClone(snap.relations),
+          sect: clone(snap.sect),
+          relations: Array.isArray(snap.relations) ? clone(snap.relations) : [],
           currentPanel: "profile",
           craftingTab: "talisman",
           currentLocation: "home",
-          log: structuredClone(snap.log),
-          pillCache: structuredClone(snap.pillCache || {}),
+          log: Array.isArray(snap.log) ? clone(snap.log) : [],
+          pillCache: clone(snap.pillCache || {}),
           news: { items: [], lastUpdate: "" },
         });
       },
     }),
     {
       name: "xiuxian-save",
-      version: 8,
+      version: 9,
       migrate: (state: any, version: number) => {
         if (version < 2) {
           if (state.techniques && Array.isArray(state.techniques)) {
@@ -1173,6 +1194,39 @@ EFFECT: [效果描述]`,
           }
           if (state.news && !Array.isArray(state.news.items)) {
             state.news.items = [];
+          }
+        }
+        if (version < 9) {
+          const MAX_ARRAY = 200;
+          if (Array.isArray(state.techniques)) state.techniques = state.techniques.slice(0, MAX_ARRAY);
+          if (Array.isArray(state.inventory)) state.inventory = state.inventory.slice(0, MAX_ARRAY);
+          if (Array.isArray(state.relations)) state.relations = state.relations.slice(0, MAX_ARRAY);
+          if (Array.isArray(state.log)) state.log = state.log.slice(0, 30);
+          if (state.player) {
+            if (Array.isArray(state.player.meridians)) state.player.meridians = state.player.meridians.slice(0, 30);
+            if (Array.isArray(state.player.timeline)) state.player.timeline = state.player.timeline.slice(0, 50);
+            if (Array.isArray(state.player.buffs)) state.player.buffs = state.player.buffs.slice(0, 50);
+            if (Array.isArray(state.player.shields)) state.player.shields = state.player.shields.slice(0, 50);
+            if (state.player.stats && Array.isArray(state.player.stats.heartScores)) {
+              state.player.stats.heartScores = state.player.stats.heartScores.slice(0, 20);
+            }
+          }
+          if (state.sect) {
+            if (Array.isArray(state.sect.tasks)) state.sect.tasks = state.sect.tasks.slice(0, 50);
+            if (Array.isArray(state.sect.positions)) state.sect.positions = state.sect.positions.slice(0, 30);
+            if (Array.isArray(state.sect.shop)) state.sect.shop = state.sect.shop.slice(0, 50);
+            if (Array.isArray(state.sect.heritage)) state.sect.heritage = state.sect.heritage.slice(0, 50);
+            if (Array.isArray(state.sect.resources)) state.sect.resources = state.sect.resources.slice(0, 50);
+          }
+          if (state.pillCache && typeof state.pillCache === "object") {
+            const keys = Object.keys(state.pillCache);
+            if (keys.length > 100) {
+              const newCache: Record<string, any> = {};
+              for (const k of keys.slice(0, 100)) {
+                newCache[k] = state.pillCache[k];
+              }
+              state.pillCache = newCache;
+            }
           }
         }
         return state;
