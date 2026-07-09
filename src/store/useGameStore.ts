@@ -932,6 +932,7 @@ EFFECT: [效果描述]`,
             relations: next.relations,
             log: next.log,
             pillCache: next.pillCache,
+            news: next.news,
           };
         });
       },

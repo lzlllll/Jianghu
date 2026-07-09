@@ -106,9 +106,14 @@ function parseOpLines(block: string): DataOp[] {
   const lines = block.split("\n");
   let i = 0;
   const MAX_LINES_PER_OP = 100;
-  const MAX_VALUE_LENGTH = 100000;
+  const MAX_VALUE_LENGTH = 50000;
+  const MAX_TOTAL_OPS = 200;
 
   while (i < lines.length) {
+    if (ops.length >= MAX_TOTAL_OPS) {
+      console.warn(`[parseOpLines] Too many ops, truncating at ${MAX_TOTAL_OPS}`);
+      break;
+    }
     const rawLine = lines[i].trim();
     if (!rawLine || rawLine.startsWith("#") || rawLine.startsWith("//")) {
       i++;
@@ -252,14 +257,36 @@ function resolveCollection(root: any, collection: string): any[] {
 
 /** 深拷贝并应用所有数据操作，返回新状态 */
 export function applyOpsToState(state: GameState, ops: DataOp[]): GameState {
-  let next: GameState;
-  try {
-    next = JSON.parse(JSON.stringify(state));
-  } catch (e) {
-    console.warn("[dataOps] clone failed, using shallow copy:", e);
-    next = { ...state };
+  if (ops.length === 0) return state;
+  const MAX_OPS = 200;
+  const limitedOps = ops.slice(0, MAX_OPS);
+  if (ops.length > MAX_OPS) {
+    console.warn(`[dataOps] Too many ops (${ops.length}), truncating to ${MAX_OPS}`);
   }
-  for (const op of ops) {
+
+  const clone = <T>(obj: T): T => {
+    if (obj == null) return obj;
+    try {
+      return JSON.parse(JSON.stringify(obj));
+    } catch {
+      return obj;
+    }
+  };
+
+  const next: GameState = {
+    ...state,
+    player: clone(state.player),
+    techniques: Array.isArray(state.techniques) ? state.techniques.map((t) => ({ ...t })) : [],
+    inventory: Array.isArray(state.inventory) ? state.inventory.map((i) => ({ ...i })) : [],
+    spiritStones: { ...state.spiritStones },
+    sect: clone(state.sect),
+    relations: Array.isArray(state.relations) ? state.relations.map((r) => ({ ...r })) : [],
+    log: Array.isArray(state.log) ? [...state.log] : [],
+    pillCache: state.pillCache ? { ...state.pillCache } : {},
+    news: state.news ? clone(state.news) : { items: [], lastUpdate: "" },
+  };
+
+  for (const op of limitedOps) {
     try {
       applyOne(next, op);
     } catch (e) {

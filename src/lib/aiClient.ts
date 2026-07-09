@@ -61,6 +61,10 @@ export async function chatComplete(
     if (!content) {
       throw new Error("接口返回空内容，请检查模型名称与配额。");
     }
+    if (content.length > 100000) {
+      console.warn(`[aiClient] Response too large (${content.length} chars), truncating`);
+      return content.slice(0, 100000);
+    }
     return content;
   } catch (e: unknown) {
     if (e instanceof DOMException && e.name === "AbortError") {
@@ -130,6 +134,10 @@ export async function chatWithModel(
       "";
     if (!content) {
       throw new Error("接口返回空内容，请检查模型名称与配额。");
+    }
+    if (content.length > 100000) {
+      console.warn(`[chatWithModel] Response too large (${content.length} chars), truncating`);
+      return content.slice(0, 100000);
     }
     return content;
   } catch (e: unknown) {
