@@ -17,6 +17,7 @@ export function NPCChatModal() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isMountedRef = useRef(true);
 
   const activeNpcId = npcChat.activeNpcId;
   const profile = npcChat.profiles.find((p) => p.npcId === activeNpcId);
@@ -24,26 +25,41 @@ export function NPCChatModal() {
   const isTyping = npcChat.isTyping;
 
   useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (activeNpcId && relation && !profile) {
       setLoading(true);
       setError("");
       getOrCreateNPCProfile(activeNpcId, relation.name, relation.title)
-        .then(() => setLoading(false))
+        .then(() => {
+          if (isMountedRef.current) setLoading(false);
+        })
         .catch((e) => {
-          setError(e.message);
-          setLoading(false);
+          if (isMountedRef.current) {
+            setError(e.message);
+            setLoading(false);
+          }
         });
     }
   }, [activeNpcId, relation, profile, getOrCreateNPCProfile]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (isMountedRef.current && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
   }, [profile?.messages.length]);
 
   useEffect(() => {
     if (npcChat.errorMsg) {
       setError(npcChat.errorMsg);
-      setTimeout(() => setError(""), 5000);
+      setTimeout(() => {
+        if (isMountedRef.current) setError("");
+      }, 5000);
     }
   }, [npcChat.errorMsg]);
 

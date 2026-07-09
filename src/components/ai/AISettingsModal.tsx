@@ -62,6 +62,14 @@ export function AISettingsModal({ open, onClose }: AISettingsModalProps) {
   const [test, setTest] = useState<TestState>({ status: "idle" });
   const [saved, setSaved] = useState(false);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // 每次打开时同步最新设置
   useEffect(() => {
@@ -120,6 +128,7 @@ export function AISettingsModal({ open, onClose }: AISettingsModalProps) {
         ],
         { timeoutMs: 15000 },
       );
+      if (!isMountedRef.current) return;
       const elapsed = Date.now() - start;
       setTest({
         status: "ok",
@@ -127,6 +136,7 @@ export function AISettingsModal({ open, onClose }: AISettingsModalProps) {
         model: which,
       });
     } catch (e) {
+      if (!isMountedRef.current) return;
       setTest({
         status: "error",
         msg: (e as Error).message,
@@ -139,7 +149,9 @@ export function AISettingsModal({ open, onClose }: AISettingsModalProps) {
     updateSettings(draft);
     setSaved(true);
     setTimeout(() => {
-      onClose();
+      if (isMountedRef.current) {
+        onClose();
+      }
     }, 600);
   };
 
