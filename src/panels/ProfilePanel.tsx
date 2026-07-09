@@ -263,7 +263,7 @@ export function ProfilePanel() {
               <div className="grid grid-cols-2 gap-6">
                 <ScrollCard title="灵根" subtitle="五行资质，天生注定">
                   <div className="space-y-3">
-                    {player.spiritRoots.map((root) => (
+                    {(player.spiritRoots || []).map((root) => (
                       <div key={root.element} className="flex items-center gap-3">
                         <div
                           className={cn(

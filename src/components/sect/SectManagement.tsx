@@ -62,10 +62,10 @@ export function SectManagement() {
       </div>
 
       <div key={tab}>
-        {tab === "industries" && <IndustryPanel industries={sect.management.industries} />}
-        {tab === "activities" && <ActivityPanel activities={sect.management.activities} />}
-        {tab === "halls" && <HallsPanel halls={sect.management.halls} />}
-        {tab === "treasury" && <TreasuryPanel treasury={sect.management.treasury} consumption={sect.management.consumption} />}
+        {tab === "industries" && <IndustryPanel industries={sect?.management?.industries || []} />}
+        {tab === "activities" && <ActivityPanel activities={sect?.management?.activities || []} />}
+        {tab === "halls" && <HallsPanel halls={sect?.management?.halls || []} />}
+        {tab === "treasury" && <TreasuryPanel treasury={sect?.management?.treasury || { spiritStones: 0, materials: [] }} consumption={sect?.management?.consumption || { dailyCost: 0, recentConsumption: [] }} />}
       </div>
     </div>
   );

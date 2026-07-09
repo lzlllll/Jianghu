@@ -417,7 +417,7 @@ export const useGameStore = create<GameStore>()(
 
         set((st) => ({
           player: { ...st.player, mp: Math.max(0, st.player.mp - mpCost) },
-          techniques: st.techniques.map((t) =>
+          techniques: (st.techniques || []).map((t) =>
             t.id === id
               ? { ...t, proficiency: Math.min(t.proficiencyMax, t.proficiency + finalGain) }
               : t,
@@ -440,7 +440,7 @@ export const useGameStore = create<GameStore>()(
         }
         const success = Math.random() * 100 < recipe.successRate;
         set((st) => {
-          const newInventory = st.inventory.map((i) => {
+          const newInventory = (st.inventory || []).map((i) => {
             if (i.name === "黄表符纸") return { ...i, count: i.count - recipe.paperCost };
             if (i.name === "朱砂") return { ...i, count: i.count - recipe.cinnabarCost };
             return i;
@@ -653,7 +653,7 @@ EFFECT: [效果描述]`,
         }
 
         set((st) => {
-          let newInventory = st.inventory.map((i) => {
+          let newInventory = (st.inventory || []).map((i) => {
             const herb = selectedHerbs.find((h) => h.name === i.name);
             if (herb) return { ...i, count: Math.max(0, i.count - herb.count) };
             return i;
@@ -714,10 +714,10 @@ EFFECT: [效果描述]`,
         set((st) => ({
           sect: {
             ...st.sect,
-            tasks: st.sect.tasks.map((t) =>
+            tasks: (st.sect?.tasks || []).map((t) =>
               t.id === id ? { ...t, accepted: true } : t,
             ),
-            contribution: st.sect.contribution + task.contribution,
+            contribution: (st.sect?.contribution || 0) + task.contribution,
           },
           spiritStones: {
             ...st.spiritStones,
@@ -746,8 +746,8 @@ EFFECT: [效果描述]`,
         set((st) => ({
           sect: {
             ...st.sect,
-            contribution: st.sect.contribution - pos.contributionNeeded,
-            positions: st.sect.positions.map((p) => ({
+            contribution: (st.sect?.contribution || 0) - pos.contributionNeeded,
+            positions: (st.sect?.positions || []).map((p) => ({
               ...p,
               unlocked: p.level <= pos.level ? true : p.unlocked,
               isCurrent: p.id === id ? true : p.isCurrent ? false : p.isCurrent,
@@ -783,7 +783,7 @@ EFFECT: [效果描述]`,
           const cultGain = Math.floor(40 + Math.random() * 60);
           set((st) => ({
             player: { ...st.player, cultivation: st.player.cultivation + cultGain },
-            relations: st.relations.map((r) =>
+            relations: (st.relations || []).map((r) =>
               r.id === relationId
                 ? { ...r, affinity: Math.min(r.affinityMax, r.affinity + gain) }
                 : r,
@@ -793,7 +793,7 @@ EFFECT: [效果描述]`,
           return;
         }
         set((st) => ({
-          relations: st.relations.map((r) =>
+          relations: (st.relations || []).map((r) =>
             r.id === relationId
               ? { ...r, affinity: Math.min(r.affinityMax, r.affinity + gain) }
               : r,
@@ -804,13 +804,13 @@ EFFECT: [效果描述]`,
 
       addBuff: (buff) => {
         set((st) => {
-          const existing = st.player.buffs.find((b) => b.id === buff.id);
+          const existing = (st.player.buffs || []).find((b) => b.id === buff.id);
           if (existing) {
             const newStacks = Math.min(existing.stacks + buff.stacks, existing.maxStacks);
             return {
               player: {
                 ...st.player,
-                buffs: st.player.buffs.map((b) =>
+                buffs: (st.player.buffs || []).map((b) =>
                   b.id === buff.id ? { ...b, stacks: newStacks } : b,
                 ),
               },
@@ -819,7 +819,7 @@ EFFECT: [效果描述]`,
           return {
             player: {
               ...st.player,
-              buffs: [...st.player.buffs, { ...buff, stacks: Math.min(buff.stacks, buff.maxStacks) }],
+              buffs: [...(st.player.buffs || []), { ...buff, stacks: Math.min(buff.stacks, buff.maxStacks) }],
             },
           };
         });
@@ -836,13 +836,13 @@ EFFECT: [效果描述]`,
 
       addShield: (shield) => {
         set((st) => {
-          const existing = st.player.shields.find((s) => s.id === shield.id);
+          const existing = (st.player.shields || []).find((s) => s.id === shield.id);
           if (existing) {
             const newValue = Math.min(existing.value + shield.value, existing.maxValue);
             return {
               player: {
                 ...st.player,
-                shields: st.player.shields.map((s) =>
+                shields: (st.player.shields || []).map((s) =>
                   s.id === shield.id ? { ...s, value: newValue } : s,
                 ),
               },
@@ -851,7 +851,7 @@ EFFECT: [效果描述]`,
           return {
             player: {
               ...st.player,
-              shields: [...st.player.shields, { ...shield }],
+              shields: [...(st.player.shields || []), { ...shield }],
             },
           };
         });
@@ -965,7 +965,7 @@ EFFECT: [效果描述]`,
       version: 7,
       migrate: (state: any, version: number) => {
         if (version < 2) {
-          if (state.techniques) {
+          if (state.techniques && Array.isArray(state.techniques)) {
             state.techniques = state.techniques.map((t: any) => {
               if (t.category === "主修") {
                 return { ...t, category: "心法" };
@@ -1053,7 +1053,7 @@ EFFECT: [效果描述]`,
               "阴跷脉": "leg_left",
               "阳跷脉": "leg_right",
             };
-            state.player.meridians = state.player.meridians.map((m: any) => ({
+            state.player.meridians = (state.player.meridians || []).map((m: any) => ({
               ...m,
               zone: ZONE_MAP[m.name] || "chest",
             }));
@@ -1076,7 +1076,7 @@ EFFECT: [效果描述]`,
         }
 
         if (version < 6) {
-          if (state.techniques) {
+          if (state.techniques && Array.isArray(state.techniques)) {
             state.techniques = state.techniques.map((t: any) => {
               if (!t.heartCompatibility) {
                 const defaultCompat: Record<string, { trait: string; bonus: number }[]> = {
@@ -1116,7 +1116,7 @@ EFFECT: [效果描述]`,
             "寒潭玄铁剑": { 金: 80, 水: 30 },
             "云水佩": { 水: 60, 木: 20 },
           };
-          if (state.inventory) {
+          if (state.inventory && Array.isArray(state.inventory)) {
             state.inventory = state.inventory.map((item: any) => {
               if (!item.elements && defaultElements[item.name]) {
                 return { ...item, elements: defaultElements[item.name] };

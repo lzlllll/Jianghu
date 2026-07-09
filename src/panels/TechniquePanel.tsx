@@ -90,7 +90,7 @@ export function TechniquePanel() {
 
   const getMatchBreakdown = (tech: Technique): MatchSource[] => {
     const sources: MatchSource[] = [];
-    const rootElements = player.spiritRoots.map((r) => r.element);
+    const rootElements = (player.spiritRoots || []).map((r) => r.element);
 
     if (rootElements.includes(tech.element)) {
       sources.push({ label: "灵根同属性", value: 25, detail: `${tech.element}系匹配` });
@@ -131,7 +131,7 @@ export function TechniquePanel() {
 
   const getCultivationModifiers = (tech: Technique): CultivationModifier[] => {
     const list: CultivationModifier[] = [];
-    const rootElements = player.spiritRoots.map((r) => r.element);
+    const rootElements = (player.spiritRoots || []).map((r) => r.element);
 
     if (rootElements.includes(tech.element)) {
       list.push({ label: "灵根同属性", value: "+25%", impact: "positive" });

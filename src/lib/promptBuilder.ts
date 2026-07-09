@@ -72,13 +72,13 @@ export function buildDataSchema(state: GameState): string {
   lines.push(`player.position = ${p.position}`);
   lines.push(`player.background = ${p.background}`);
   lines.push(
-    `player.spiritRoots = ${p.spiritRoots.map((r) => `${r.element}${r.value}`).join(" ")}`,
+    `player.spiritRoots = ${(p.spiritRoots || []).map((r) => `${r.element}${r.value}`).join(" ")}`,
   );
   lines.push(
     `player.stats = 体力${p.stats.vitality} 神魂${p.stats.soul} 悟性${p.stats.wisdom} 身法${p.stats.agility} 心性[${(p.stats.heartScores || []).map((hs) => `${hs.trait}${hs.score}`).join(",")}]`,
   );
   lines.push(
-    `player.meridians = ${p.meridians.map((m) => `${m.name}${m.clarity}/${m.maxClarity}${m.damage ? "[伤]" : ""}`).join(" ")}`,
+    `player.meridians = ${(p.meridians || []).map((m) => `${m.name}${m.clarity}/${m.maxClarity}${m.damage ? "[伤]" : ""}`).join(" ")}`,
   );
 
   lines.push(`spiritStones.low = ${state.spiritStones.low}`);
@@ -187,13 +187,13 @@ export function resolveRelevantData(state: GameState, paths: string[]): string {
 function describePath(state: GameState, path: string): string {
   // 集合名
   if (path === "inventory") {
-    return "inventory:\n" + state.inventory.map((i) => `  [${i.id}] ${i.name} ${i.type} ${i.grade} ×${i.count}${i.equipped ? ` 已装备${i.slot}` : ""}`).join("\n");
+    return "inventory:\n" + (state.inventory || []).map((i) => `  [${i.id}] ${i.name} ${i.type} ${i.grade} ×${i.count}${i.equipped ? ` 已装备${i.slot}` : ""}`).join("\n");
   }
   if (path === "techniques") {
-    return "techniques:\n" + state.techniques.map((t) => `  [${t.id}] ${t.name} ${t.category} ${t.grade} 熟练${t.proficiency}/${t.proficiencyMax}`).join("\n");
+    return "techniques:\n" + (state.techniques || []).map((t) => `  [${t.id}] ${t.name} ${t.category} ${t.grade} 熟练${t.proficiency}/${t.proficiencyMax}`).join("\n");
   }
   if (path === "relations") {
-    return "relations:\n" + state.relations.map((r) => `  [${r.id}] ${r.name} ${relationTypeLabel(r.type)} 亲疏${r.affinity}/${r.affinityMax} ${r.realm}`).join("\n");
+    return "relations:\n" + (state.relations || []).map((r) => `  [${r.id}] ${r.name} ${relationTypeLabel(r.type)} 亲疏${r.affinity}/${r.affinityMax} ${r.realm}`).join("\n");
   }
   if (path === "log") {
     return "log(最近5条):\n" + state.log.slice(0, 5).map((l) => `  - ${l}`).join("\n");
