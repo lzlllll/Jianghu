@@ -401,10 +401,10 @@ export const useGameStore = create<GameStore>()(
           efficiency += 0.1;
         }
 
-        const matchingHearts = tech.heartMatch?.map((trait) => {
+        const matchingHearts = Array.isArray(tech.heartMatch) ? tech.heartMatch.map((trait) => {
           const score = s.player.stats.heartScores.find((hs) => hs.trait === trait)?.score || 0;
           return score;
-        }) || [];
+        }) : [];
         const avgMatchingScore = matchingHearts.length > 0
           ? matchingHearts.reduce((a, b) => a + b, 0) / matchingHearts.length
           : 0;
