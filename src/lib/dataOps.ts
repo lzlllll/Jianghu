@@ -359,12 +359,44 @@ function applyModify(parent: any, key: string, op: Extract<DataOp, { kind: "modi
   }
 }
 
-/** 生成数据操作的人类可读摘要，用于 UI 展示 */
+function formatValue(value: string): string {
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) {
+      if (parsed.length === 0) return "[]";
+      if (parsed.length <= 3) {
+        return parsed.map((item) => {
+          if (typeof item === "object" && item !== null) {
+            const keys = Object.keys(item);
+            if (keys.includes("name")) return item.name;
+            if (keys.includes("element")) return `${item.element}${item.grade}`;
+            if (keys.includes("id")) return item.id;
+            return JSON.stringify(item).slice(0, 20);
+          }
+          return String(item);
+        }).join(", ");
+      }
+      return `[${parsed.length}项]`;
+    }
+    if (typeof parsed === "object" && parsed !== null) {
+      const keys = Object.keys(parsed);
+      if (keys.length <= 3) {
+        return keys.map((k) => `${k}:${parsed[k]}`).join(", ");
+      }
+      return `{${keys.length}个字段}`;
+    }
+    return String(parsed);
+  } catch {
+    return value;
+  }
+}
+
 export function summarizeOps(ops: DataOp[]): string[] {
   return ops.map((op) => {
     if (op.kind === "modify") {
       const sign = op.op === "+" ? "+" : op.op === "-" ? "-" : "=";
-      return `${op.path} ${sign} ${op.value}`;
+      const formattedValue = formatValue(op.value);
+      return `${op.path} ${sign} ${formattedValue}`;
     }
     if (op.kind === "add") {
       return `新增 ${op.collection}`;
