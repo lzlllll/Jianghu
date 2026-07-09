@@ -230,7 +230,10 @@ export const useAIStore = create<AIStore>()(
           return;
         }
 
-        const relevantData = resolveRelevantData(gameState, flashPaths);
+        const isFirstTurn = conv.turns.length === 0;
+        const relevantData = isFirstTurn
+          ? buildDataSchema(gameState)
+          : resolveRelevantData(gameState, flashPaths);
         const recentTurns = recentForPrompt(conv.turns);
         const proRequest = {
           summary: conv.summary,
