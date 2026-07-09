@@ -64,7 +64,7 @@ export function NewsPanel() {
           </div>
         ))}
 
-        {(news?.items || []).length === 0 && (
+        {(Array.isArray(news?.items) ? news.items : []).length === 0 && (
           <div className="text-center py-8">
             <Scroll size={32} className="mx-auto text-paper-500/30 mb-2" />
             <p className="font-serif text-sm text-paper-400/50">暂无新闻</p>

@@ -90,7 +90,7 @@ export function TechniquePanel() {
 
   const getMatchBreakdown = (tech: Technique): MatchSource[] => {
     const sources: MatchSource[] = [];
-    const rootElements = (player.spiritRoots || []).map((r) => r.element);
+    const rootElements = (Array.isArray(player.spiritRoots) ? player.spiritRoots : []).map((r) => r.element);
 
     if (rootElements.includes(tech.element)) {
       sources.push({ label: "灵根同属性", value: 25, detail: `${tech.element}系匹配` });
@@ -131,7 +131,7 @@ export function TechniquePanel() {
 
   const getCultivationModifiers = (tech: Technique): CultivationModifier[] => {
     const list: CultivationModifier[] = [];
-    const rootElements = (player.spiritRoots || []).map((r) => r.element);
+    const rootElements = (Array.isArray(player.spiritRoots) ? player.spiritRoots : []).map((r) => r.element);
 
     if (rootElements.includes(tech.element)) {
       list.push({ label: "灵根同属性", value: "+25%", impact: "positive" });
@@ -397,7 +397,7 @@ export function TechniquePanel() {
                 <div className="lg:col-span-1">
                   <h5 className="font-brush text-sm text-paper-200 mb-3">十重境界</h5>
                   <div className="grid grid-cols-5 gap-2">
-                    {(tech.levels || []).map((level, idx) => {
+                    {(Array.isArray(tech.levels) ? tech.levels : []).map((level, idx) => {
                       const isCurrent = idx < currentLevel;
                       const isNext = idx === currentLevel;
                       const isUnlocked = isCurrent || isNext;
@@ -463,7 +463,7 @@ export function TechniquePanel() {
                 <div className="lg:col-span-1">
                   <h5 className="font-brush text-sm text-paper-200 mb-3">招式技能</h5>
                   <div className="space-y-2">
-                    {(unlockedSkills || []).map((skill) => (
+                    {(Array.isArray(unlockedSkills) ? unlockedSkills : []).map((skill) => (
                       <div
                         key={skill.id}
                         className="bg-gold-500/5 border border-gold-400/20 rounded px-3 py-2"
@@ -486,7 +486,7 @@ export function TechniquePanel() {
                         </div>
                       </div>
                     ))}
-                    {(lockedSkills || []).map((skill) => (
+                    {(Array.isArray(lockedSkills) ? lockedSkills : []).map((skill) => (
                       <div
                         key={skill.id}
                         className="bg-ink-900/50 border border-paper-400/10 rounded px-3 py-2 opacity-50"
@@ -509,7 +509,7 @@ export function TechniquePanel() {
 
                   <h5 className="font-brush text-sm text-paper-200 mt-4 mb-3">修炼条件</h5>
                   <div className="space-y-1.5">
-                    {(tech.prerequisites || []).map((req, idx) => {
+                    {(Array.isArray(tech.prerequisites) ? tech.prerequisites : []).map((req, idx) => {
                       const met = canPractice(tech);
                       return (
                         <div

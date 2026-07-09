@@ -188,7 +188,7 @@ export function NPCChatModal() {
                 </p>
               </div>
             ) : (
-              (profile.messages || []).map((msg) => (
+              (Array.isArray(profile.messages) ? profile.messages : []).map((msg) => (
                 <div
                   key={msg.id}
                   className={cn(

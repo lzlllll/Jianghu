@@ -442,7 +442,7 @@ export const useGameStore = create<GameStore>()(
         }
         const success = Math.random() * 100 < recipe.successRate;
         set((st) => {
-          const newInventory = (st.inventory || []).map((i) => {
+          const newInventory = (Array.isArray(st.inventory) ? st.inventory : []).map((i) => {
             if (i.name === "黄表符纸") return { ...i, count: i.count - recipe.paperCost };
             if (i.name === "朱砂") return { ...i, count: i.count - recipe.cinnabarCost };
             return i;
@@ -655,7 +655,7 @@ EFFECT: [效果描述]`,
         }
 
         set((st) => {
-          let newInventory = (st.inventory || []).map((i) => {
+          let newInventory = (Array.isArray(st.inventory) ? st.inventory : []).map((i) => {
             const herb = selectedHerbs.find((h) => h.name === i.name);
             if (herb) return { ...i, count: Math.max(0, i.count - herb.count) };
             return i;
@@ -716,7 +716,7 @@ EFFECT: [效果描述]`,
         set((st) => ({
           sect: {
             ...st.sect,
-            tasks: (st.sect?.tasks || []).map((t) =>
+            tasks: (Array.isArray(st.sect?.tasks) ? st.sect.tasks : []).map((t) =>
               t.id === id ? { ...t, accepted: true } : t,
             ),
             contribution: (st.sect?.contribution || 0) + task.contribution,
@@ -749,7 +749,7 @@ EFFECT: [效果描述]`,
           sect: {
             ...st.sect,
             contribution: (st.sect?.contribution || 0) - pos.contributionNeeded,
-            positions: (st.sect?.positions || []).map((p) => ({
+            positions: (Array.isArray(st.sect?.positions) ? st.sect.positions : []).map((p) => ({
               ...p,
               unlocked: p.level <= pos.level ? true : p.unlocked,
               isCurrent: p.id === id ? true : p.isCurrent ? false : p.isCurrent,
@@ -785,7 +785,7 @@ EFFECT: [效果描述]`,
           const cultGain = Math.floor(40 + Math.random() * 60);
           set((st) => ({
             player: { ...st.player, cultivation: st.player.cultivation + cultGain },
-            relations: (st.relations || []).map((r) =>
+            relations: (Array.isArray(st.relations) ? st.relations : []).map((r) =>
               r.id === relationId
                 ? { ...r, affinity: Math.min(r.affinityMax, r.affinity + gain) }
                 : r,
@@ -795,7 +795,7 @@ EFFECT: [效果描述]`,
           return;
         }
         set((st) => ({
-          relations: (st.relations || []).map((r) =>
+          relations: (Array.isArray(st.relations) ? st.relations : []).map((r) =>
             r.id === relationId
               ? { ...r, affinity: Math.min(r.affinityMax, r.affinity + gain) }
               : r,
@@ -806,13 +806,13 @@ EFFECT: [效果描述]`,
 
       addBuff: (buff) => {
         set((st) => {
-          const existing = (st.player.buffs || []).find((b) => b.id === buff.id);
+          const existing = (Array.isArray(st.player.buffs) ? st.player.buffs : []).find((b) => b.id === buff.id);
           if (existing) {
             const newStacks = Math.min(existing.stacks + buff.stacks, existing.maxStacks);
             return {
               player: {
                 ...st.player,
-                buffs: (st.player.buffs || []).map((b) =>
+                buffs: (Array.isArray(st.player.buffs) ? st.player.buffs : []).map((b) =>
                   b.id === buff.id ? { ...b, stacks: newStacks } : b,
                 ),
               },
@@ -821,7 +821,7 @@ EFFECT: [效果描述]`,
           return {
             player: {
               ...st.player,
-              buffs: [...(st.player.buffs || []), { ...buff, stacks: Math.min(buff.stacks, buff.maxStacks) }],
+              buffs: [...(Array.isArray(st.player.buffs) ? st.player.buffs : []), { ...buff, stacks: Math.min(buff.stacks, buff.maxStacks) }],
             },
           };
         });
@@ -831,20 +831,20 @@ EFFECT: [效果描述]`,
         set((st) => ({
           player: {
             ...st.player,
-            buffs: st.player.buffs.filter((b) => b.id !== buffId),
+            buffs: (Array.isArray(st.player.buffs) ? st.player.buffs : []).filter((b) => b.id !== buffId),
           },
         }));
       },
 
       addShield: (shield) => {
         set((st) => {
-          const existing = (st.player.shields || []).find((s) => s.id === shield.id);
+          const existing = (Array.isArray(st.player.shields) ? st.player.shields : []).find((s) => s.id === shield.id);
           if (existing) {
             const newValue = Math.min(existing.value + shield.value, existing.maxValue);
             return {
               player: {
                 ...st.player,
-                shields: (st.player.shields || []).map((s) =>
+                shields: (Array.isArray(st.player.shields) ? st.player.shields : []).map((s) =>
                   s.id === shield.id ? { ...s, value: newValue } : s,
                 ),
               },
@@ -853,7 +853,7 @@ EFFECT: [效果描述]`,
           return {
             player: {
               ...st.player,
-              shields: [...(st.player.shields || []), { ...shield }],
+              shields: [...(Array.isArray(st.player.shields) ? st.player.shields : []), { ...shield }],
             },
           };
         });
@@ -885,7 +885,7 @@ EFFECT: [效果描述]`,
         set((st) => ({
           player: {
             ...st.player,
-            buffs: st.player.buffs
+            buffs: (Array.isArray(st.player.buffs) ? st.player.buffs : [])
               .filter((buff) => {
                 if (buff.durationType !== "round") return true;
                 if (buff.duration === undefined) return true;

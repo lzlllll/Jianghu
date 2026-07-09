@@ -577,9 +577,9 @@ ${background ? `【背景】${background}\n` : ""}
         set((st) => ({
           npcChat: {
             ...st.npcChat,
-            profiles: (st.npcChat.profiles || []).map((p) =>
+            profiles: (Array.isArray(st.npcChat.profiles) ? st.npcChat.profiles : []).map((p) =>
               p.npcId === npcId
-                ? { ...p, messages: [...(p.messages || []), playerMsg], lastUpdated: Date.now() }
+                ? { ...p, messages: [...(Array.isArray(p.messages) ? p.messages : []), playerMsg], lastUpdated: Date.now() }
                 : p,
             ),
           },
@@ -591,7 +591,7 @@ ${background ? `【背景】${background}\n` : ""}
             .map((t) => `玩家：${t.input}\n叙述：${t.narrative.slice(0, 100)}`)
             .join("\n---\n");
 
-          const recentMessages = (profile.messages || []).slice(-8);
+          const recentMessages = (Array.isArray(profile.messages) ? profile.messages : []).slice(-8);
           const chatHistory = recentMessages
             .map((m) => `${m.role === "player" ? "玩家" : profile.name}：${m.content}`)
             .join("\n");
@@ -646,9 +646,9 @@ ${chatHistory || "暂无"}`,
             npcChat: {
               ...st.npcChat,
               isTyping: false,
-              profiles: (st.npcChat.profiles || []).map((p) =>
+              profiles: (Array.isArray(st.npcChat.profiles) ? st.npcChat.profiles : []).map((p) =>
                 p.npcId === npcId
-                  ? { ...p, messages: [...(p.messages || []), npcMsg], lastUpdated: Date.now() }
+                  ? { ...p, messages: [...(Array.isArray(p.messages) ? p.messages : []), npcMsg], lastUpdated: Date.now() }
                   : p,
               ),
             },
@@ -687,7 +687,7 @@ ${chatHistory || "暂无"}`,
         set((st) => ({
           npcChat: {
             ...st.npcChat,
-            profiles: (st.npcChat.profiles || []).map((p) =>
+            profiles: (Array.isArray(st.npcChat.profiles) ? st.npcChat.profiles : []).map((p) =>
               p.npcId === npcId ? { ...p, messages: [], lastUpdated: Date.now() } : p,
             ),
           },
@@ -768,8 +768,8 @@ ${chatHistory || "暂无"}`,
           const player = useGameStore.getState().player;
           const battleState = get().battle;
 
-          const inventory = useGameStore.getState().inventory || [];
-          const techniques = useGameStore.getState().techniques || [];
+          const inventory = Array.isArray(useGameStore.getState().inventory) ? useGameStore.getState().inventory : [];
+          const techniques = Array.isArray(useGameStore.getState().techniques) ? useGameStore.getState().techniques : [];
           const playerWeapons = inventory.filter((i) => i.type === "法宝");
           const playerTalismans = inventory.filter((i) => i.type === "符箓");
           const playerPills = inventory.filter((i) => i.type === "丹药");

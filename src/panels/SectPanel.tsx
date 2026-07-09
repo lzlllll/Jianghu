@@ -174,7 +174,7 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 function PositionTree() {
-  const positions = useGameStore((s) => s.sect?.positions || []);
+  const positions = useGameStore((s) => Array.isArray(s.sect?.positions) ? s.sect.positions : []);
   const contribution = useGameStore((s) => s.sect?.contribution || 0);
   const promote = useGameStore((s) => s.promote);
 
@@ -252,7 +252,7 @@ function PositionTree() {
 }
 
 function TaskBoard() {
-  const tasks = useGameStore((s) => s.sect?.tasks || []);
+  const tasks = useGameStore((s) => Array.isArray(s.sect?.tasks) ? s.sect.tasks : []);
 
   const DIFFICULTY: Record<SectTask["difficulty"], { color: string; bg: string }> = {
     易: { color: "text-jade-400", bg: "border-jade-500/30 bg-jade-500/10" },
@@ -318,7 +318,7 @@ function TaskBoard() {
 }
 
 function ShopBoard() {
-  const shop = useGameStore((s) => s.sect?.shop || []);
+  const shop = useGameStore((s) => Array.isArray(s.sect?.shop) ? s.sect.shop : []);
   const contribution = useGameStore((s) => s.sect?.contribution || 0);
 
   return (
@@ -369,8 +369,8 @@ function ShopBoard() {
 }
 
 function HeritageBoard() {
-  const heritage = useGameStore((s) => s.sect?.heritage || []);
-  const resources = useGameStore((s) => s.sect?.resources || []);
+  const heritage = useGameStore((s) => Array.isArray(s.sect?.heritage) ? s.sect.heritage : []);
+  const resources = useGameStore((s) => Array.isArray(s.sect?.resources) ? s.sect.resources : []);
 
   const STATUS_STYLE: Record<SectHeritage["status"], string> = {
     已习: "text-jade-400 border-jade-500/40 bg-jade-500/10",

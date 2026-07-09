@@ -72,10 +72,10 @@ export function buildDataSchema(state: GameState): string {
   lines.push(`player.position = ${p.position}`);
   lines.push(`player.background = ${p.background}`);
   lines.push(
-    `player.spiritRoots = ${(p.spiritRoots || []).map((r) => `${r.element}${r.value}`).join(" ")}`,
+    `player.spiritRoots = ${(Array.isArray(p.spiritRoots) ? p.spiritRoots : []).map((r) => `${r.element}${r.value}`).join(" ")}`,
   );
   lines.push(
-    `player.stats = 体力${p.stats.vitality} 神魂${p.stats.soul} 悟性${p.stats.wisdom} 身法${p.stats.agility} 心性[${(p.stats.heartScores || []).map((hs) => `${hs.trait}${hs.score}`).join(",")}]`,
+    `player.stats = 体力${p.stats.vitality} 神魂${p.stats.soul} 悟性${p.stats.wisdom} 身法${p.stats.agility} 心性[${(Array.isArray(p.stats.heartScores) ? p.stats.heartScores : []).map((hs) => `${hs.trait}${hs.score}`).join(",")}]`,
   );
   lines.push(
     `player.meridians = ${(Array.isArray(p.meridians) ? p.meridians : []).map((m) => `${m.name}${m.clarity}/${m.maxClarity}${m.damage ? "[伤]" : ""}`).join(" ")}`,
@@ -187,19 +187,19 @@ export function resolveRelevantData(state: GameState, paths: string[]): string {
 function describePath(state: GameState, path: string): string {
   // 集合名
   if (path === "inventory") {
-    return "inventory:\n" + (state.inventory || []).map((i) => `  [${i.id}] ${i.name} ${i.type} ${i.grade} ×${i.count}${i.equipped ? ` 已装备${i.slot}` : ""}`).join("\n");
+    return "inventory:\n" + (Array.isArray(state.inventory) ? state.inventory : []).map((i) => `  [${i.id}] ${i.name} ${i.type} ${i.grade} ×${i.count}${i.equipped ? ` 已装备${i.slot}` : ""}`).join("\n");
   }
   if (path === "techniques") {
-    return "techniques:\n" + (state.techniques || []).map((t) => `  [${t.id}] ${t.name} ${t.category} ${t.grade} 熟练${t.proficiency}/${t.proficiencyMax}`).join("\n");
+    return "techniques:\n" + (Array.isArray(state.techniques) ? state.techniques : []).map((t) => `  [${t.id}] ${t.name} ${t.category} ${t.grade} 熟练${t.proficiency}/${t.proficiencyMax}`).join("\n");
   }
   if (path === "relations") {
-    return "relations:\n" + (state.relations || []).map((r) => `  [${r.id}] ${r.name} ${relationTypeLabel(r.type)} 亲疏${r.affinity}/${r.affinityMax} ${r.realm}`).join("\n");
+    return "relations:\n" + (Array.isArray(state.relations) ? state.relations : []).map((r) => `  [${r.id}] ${r.name} ${relationTypeLabel(r.type)} 亲疏${r.affinity}/${r.affinityMax} ${r.realm}`).join("\n");
   }
   if (path === "log") {
     return "log(最近5条):\n" + state.log.slice(0, 5).map((l) => `  - ${l}`).join("\n");
   }
   if (path === "sect.tasks") {
-    return "sect.tasks:\n" + (state.sect?.tasks || []).map((t) => `  [${t.id}] ${t.title} ${t.difficulty} 贡献${t.contribution}${t.accepted ? " 已接" : ""}`).join("\n");
+    return "sect.tasks:\n" + (Array.isArray(state.sect?.tasks) ? state.sect.tasks : []).map((t) => `  [${t.id}] ${t.title} ${t.difficulty} 贡献${t.contribution}${t.accepted ? " 已接" : ""}`).join("\n");
   }
 
   // 路径解析

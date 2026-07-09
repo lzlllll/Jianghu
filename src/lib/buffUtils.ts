@@ -402,14 +402,14 @@ export function calculateResistancePenetration(
 }
 
 export function applyBuff(player: Player, buff: Buff): Player {
-  const existingBuff = (player.buffs || []).find((b) => b.id === buff.id);
+  const existingBuff = (Array.isArray(player.buffs) ? player.buffs : []).find((b) => b.id === buff.id);
 
   if (existingBuff) {
     const newStacks = Math.min(existingBuff.stacks + buff.stacks, existingBuff.maxStacks);
 
     return {
       ...player,
-      buffs: (player.buffs || []).map((b) =>
+      buffs: (Array.isArray(player.buffs) ? player.buffs : []).map((b) =>
         b.id === buff.id ? { ...b, stacks: newStacks } : b,
       ),
     };
@@ -417,7 +417,7 @@ export function applyBuff(player: Player, buff: Buff): Player {
 
   return {
     ...player,
-    buffs: [...(player.buffs || []), { ...buff, stacks: Math.min(buff.stacks, buff.maxStacks) }],
+    buffs: [...(Array.isArray(player.buffs) ? player.buffs : []), { ...buff, stacks: Math.min(buff.stacks, buff.maxStacks) }],
   };
 }
 
@@ -445,14 +445,14 @@ export function updateBuffDuration(player: Player): Player {
 }
 
 export function applyShield(player: Player, shield: ShieldData): Player {
-  const existingShield = (player.shields || []).find((s) => s.id === shield.id);
+  const existingShield = (Array.isArray(player.shields) ? player.shields : []).find((s) => s.id === shield.id);
 
   if (existingShield) {
     const newValue = Math.min(existingShield.value + shield.value, existingShield.maxValue);
 
     return {
       ...player,
-      shields: (player.shields || []).map((s) =>
+      shields: (Array.isArray(player.shields) ? player.shields : []).map((s) =>
         s.id === shield.id ? { ...s, value: newValue } : s,
       ),
     };
@@ -460,7 +460,7 @@ export function applyShield(player: Player, shield: ShieldData): Player {
 
   return {
     ...player,
-    shields: [...(player.shields || []), { ...shield }],
+    shields: [...(Array.isArray(player.shields) ? player.shields : []), { ...shield }],
   };
 }
 

@@ -80,7 +80,7 @@ export function ProfilePanel() {
         <div className="space-y-6">
           <ScrollCard title="心性" subtitle="八面玲珑，一念之差">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              {(player.stats?.heartScores || []).map((hs) => {
+              {(Array.isArray(player.stats?.heartScores) ? player.stats.heartScores : []).map((hs) => {
                 const modifiers = hs.modifiers && hs.modifiers.length > 0
                   ? hs.modifiers
                   : generateHeartModifiers(hs.trait, hs.score);
@@ -264,7 +264,7 @@ export function ProfilePanel() {
               <div className="grid grid-cols-2 gap-6">
                 <ScrollCard title="灵根" subtitle="五行资质，天生注定">
                   <div className="space-y-3">
-                    {(player.spiritRoots || []).map((root) => (
+                    {(Array.isArray(player.spiritRoots) ? player.spiritRoots : []).map((root) => (
                       <div key={root.element} className="flex items-center gap-3">
                         <div
                           className={cn(

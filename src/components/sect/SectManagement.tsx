@@ -61,10 +61,10 @@ export function SectManagement() {
         ))}
       </div>
 
-      <div key={tab}>
-        {tab === "industries" && <IndustryPanel industries={sect?.management?.industries || []} />}
-        {tab === "activities" && <ActivityPanel activities={sect?.management?.activities || []} />}
-        {tab === "halls" && <HallsPanel halls={sect?.management?.halls || []} />}
+      <div>
+        {tab === "industries" && <IndustryPanel industries={Array.isArray(sect?.management?.industries) ? sect.management.industries : []} />}
+        {tab === "activities" && <ActivityPanel activities={Array.isArray(sect?.management?.activities) ? sect.management.activities : []} />}
+        {tab === "halls" && <HallsPanel halls={Array.isArray(sect?.management?.halls) ? sect.management.halls : []} />}
         {tab === "treasury" && <TreasuryPanel treasury={sect?.management?.treasury || { spiritStones: 0, materials: [] }} consumption={sect?.management?.consumption || { dailyCost: 0, recentConsumption: [] }} />}
       </div>
     </div>
@@ -202,7 +202,7 @@ function TreasuryPanel({ treasury, consumption }: { treasury: { spiritStones: nu
 
       <ScrollCard title="物资库存" subtitle="各类材料储备">
         <div className="space-y-2 max-h-[300px] overflow-y-auto">
-          {(treasury.materials || []).map((mat) => (
+          {(Array.isArray(treasury.materials) ? treasury.materials : []).map((mat) => (
             <div key={mat.name} className="flex items-center justify-between p-2 rounded bg-ink-900/20">
               <span className="font-serif text-xs text-paper-300">{mat.name}</span>
               <span className="font-number text-xs text-jade-400">{mat.amount.toLocaleString()}</span>
@@ -213,7 +213,7 @@ function TreasuryPanel({ treasury, consumption }: { treasury: { spiritStones: nu
 
       <ScrollCard title="消耗记录" subtitle="近期开支" className="col-span-2">
         <div className="flex items-end gap-2 h-32">
-          {(consumption.recentConsumption || []).map((item) => (
+          {(Array.isArray(consumption.recentConsumption) ? consumption.recentConsumption : []).map((item) => (
             <div key={item.date} className="flex-1 flex flex-col items-center">
               <span className="font-number text-xs text-paper-400/70 mb-1">{item.cost}</span>
               <div 
