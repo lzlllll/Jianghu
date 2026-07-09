@@ -158,7 +158,7 @@ export function StoryPanel({ onOpenSettings }: StoryPanelProps) {
           </div>
 
           {/* 数据变更徽章 */}
-          {lastTurn && lastTurn.ops.length > 0 && (
+          {lastTurn && Array.isArray(lastTurn.ops) && lastTurn.ops.length > 0 && (
             <>
               <CloudDivider className="my-3" />
               <div>
@@ -412,6 +412,13 @@ function OpBadge({ text, op }: { text: string; op: import("@/data/types").DataOp
 
 function NarrativeText({ text }: { text: string }) {
   const paragraphs = text.split(/\n+/).filter((p) => p.trim());
+  if (paragraphs.length === 0) {
+    return (
+      <p className="text-paper-400/40 text-center py-8">
+        暂无叙事内容
+      </p>
+    );
+  }
   return (
     <>
       {paragraphs.map((p, i) => (
