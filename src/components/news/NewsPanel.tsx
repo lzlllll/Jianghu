@@ -26,7 +26,8 @@ const CATEGORY_CONFIG: Record<NewsCategory, { icon: React.ReactNode; color: stri
 export function NewsPanel() {
   const news = useGameStore((s) => s.news);
 
-  const groupedNews = (news?.items || []).reduce((acc, item) => {
+  const newsItems = Array.isArray(news?.items) ? news.items : [];
+  const groupedNews = newsItems.reduce((acc, item) => {
     if (!acc[item.category]) acc[item.category] = [];
     acc[item.category].push(item);
     return acc;

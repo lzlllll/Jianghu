@@ -37,7 +37,8 @@ export function ProfilePanel() {
     ? (player.cultivation / nextRealm.cultivationNeeded) * 100
     : 100;
 
-  const groupedMeridians = (player.meridians || []).reduce((acc, m) => {
+  const meridians = Array.isArray(player.meridians) ? player.meridians : [];
+  const groupedMeridians = meridians.reduce((acc, m) => {
     if (!acc[m.zone]) acc[m.zone] = [];
     acc[m.zone].push(m);
     return acc;

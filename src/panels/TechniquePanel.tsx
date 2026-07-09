@@ -155,8 +155,9 @@ export function TechniquePanel() {
       }
     }
 
+    const meridians = Array.isArray(player.meridians) ? player.meridians : [];
     const avgMeridianClarity =
-      player.meridians.reduce((sum, m) => sum + m.clarity, 0) / player.meridians.length;
+      meridians.length > 0 ? meridians.reduce((sum, m) => sum + m.clarity, 0) / meridians.length : 0;
     if (avgMeridianClarity < 50) {
       list.push({ label: "经脉滞塞", value: "×0.5", impact: "negative" });
     }

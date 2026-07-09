@@ -78,7 +78,7 @@ export function buildDataSchema(state: GameState): string {
     `player.stats = 体力${p.stats.vitality} 神魂${p.stats.soul} 悟性${p.stats.wisdom} 身法${p.stats.agility} 心性[${(p.stats.heartScores || []).map((hs) => `${hs.trait}${hs.score}`).join(",")}]`,
   );
   lines.push(
-    `player.meridians = ${(p.meridians || []).map((m) => `${m.name}${m.clarity}/${m.maxClarity}${m.damage ? "[伤]" : ""}`).join(" ")}`,
+    `player.meridians = ${(Array.isArray(p.meridians) ? p.meridians : []).map((m) => `${m.name}${m.clarity}/${m.maxClarity}${m.damage ? "[伤]" : ""}`).join(" ")}`,
   );
 
   lines.push(`spiritStones.low = ${state.spiritStones.low}`);

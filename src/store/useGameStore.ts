@@ -197,7 +197,7 @@ export const useGameStore = create<GameStore>()(
             "市井传言": 3,
           };
 
-          let newNews = [...s.news.items];
+          let newNews = Array.isArray(s.news.items) ? [...s.news.items] : [];
 
           newItems.forEach((item) => {
             const newItem = {
@@ -246,7 +246,7 @@ export const useGameStore = create<GameStore>()(
         if (heartTechnique) {
           basePracticeSpeed = heartTechnique.basePracticeSpeed || 100;
 
-          const playerRootElements = (s.player.spiritRoots || []).map((r) => r.element);
+          const playerRootElements = (Array.isArray(s.player.spiritRoots) ? s.player.spiritRoots : []).map((r) => r.element);
           const techElement = heartTechnique.element;
 
           if (playerRootElements.includes(techElement)) {
@@ -287,8 +287,9 @@ export const useGameStore = create<GameStore>()(
           }
         }
 
+        const meridians = Array.isArray(s.player.meridians) ? s.player.meridians : [];
         const avgMeridianClarity =
-          s.player.meridians.reduce((sum, m) => sum + m.clarity, 0) / s.player.meridians.length;
+          meridians.length > 0 ? meridians.reduce((sum, m) => sum + m.clarity, 0) / meridians.length : 0;
         if (avgMeridianClarity < 50) {
           efficiency *= 0.5;
         }
@@ -330,11 +331,12 @@ export const useGameStore = create<GameStore>()(
         let baseSuccess = 0.5;
         baseSuccess += (s.player.stats.wisdom - 50) * 0.003;
 
+        const meridians = Array.isArray(s.player.meridians) ? s.player.meridians : [];
         const avgMeridianClarity =
-          s.player.meridians.reduce((sum, m) => sum + m.clarity, 0) / s.player.meridians.length;
+          meridians.length > 0 ? meridians.reduce((sum, m) => sum + m.clarity, 0) / meridians.length : 0;
         baseSuccess += (avgMeridianClarity - 50) * 0.002;
 
-        const damageCount = s.player.meridians.filter((m) => m.damage).length;
+        const damageCount = meridians.filter((m) => m.damage).length;
         baseSuccess -= damageCount * 0.1;
 
         const success = Math.random() < Math.min(0.95, Math.max(0.1, baseSuccess));
@@ -365,7 +367,7 @@ export const useGameStore = create<GameStore>()(
               ...st.player,
               hp: Math.max(1, st.player.hp - damage),
               mp: 0,
-              meridians: (st.player.meridians || []).map((m) =>
+              meridians: (Array.isArray(st.player.meridians) ? st.player.meridians : []).map((m) =>
                 Math.random() < 0.3 ? { ...m, damage: true, clarity: Math.max(20, m.clarity - 20) } : m,
               ),
             },
@@ -386,7 +388,7 @@ export const useGameStore = create<GameStore>()(
 
         let efficiency = 1;
 
-        const playerRootElements = (s.player.spiritRoots || []).map((r) => r.element);
+        const playerRootElements = (Array.isArray(s.player.spiritRoots) ? s.player.spiritRoots : []).map((r) => r.element);
         const techElement = tech.element;
 
         if (playerRootElements.includes(techElement)) {
@@ -417,7 +419,7 @@ export const useGameStore = create<GameStore>()(
 
         set((st) => ({
           player: { ...st.player, mp: Math.max(0, st.player.mp - mpCost) },
-          techniques: (st.techniques || []).map((t) =>
+          techniques: (Array.isArray(st.techniques) ? st.techniques : []).map((t) =>
             t.id === id
               ? { ...t, proficiency: Math.min(t.proficiencyMax, t.proficiency + finalGain) }
               : t,
@@ -1053,7 +1055,7 @@ EFFECT: [效果描述]`,
               "阴跷脉": "leg_left",
               "阳跷脉": "leg_right",
             };
-            state.player.meridians = (state.player.meridians || []).map((m: any) => ({
+            state.player.meridians = (Array.isArray(state.player.meridians) ? state.player.meridians : []).map((m: any) => ({
               ...m,
               zone: ZONE_MAP[m.name] || "chest",
             }));
