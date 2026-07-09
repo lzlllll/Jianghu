@@ -292,7 +292,16 @@ function applyOne(root: any, op: DataOp): void {
       const arr = parent;
       if (Array.isArray(arr)) {
         const idx = arr.findIndex((x: any) => String(x?.id) === last.id || String(x?.trait) === last.id);
-        if (idx !== -1) arr[idx] = parseValue(op.value);
+        if (idx !== -1) {
+          arr[idx] = parseValue(op.value);
+        } else {
+          const newValue = parseValue(op.value);
+          if (typeof newValue === "object" && newValue !== null) {
+            arr.push({ ...newValue, id: last.id });
+          } else {
+            arr.push(newValue);
+          }
+        }
       }
     }
   } else if (op.kind === "add") {
