@@ -131,7 +131,7 @@ export function StoryPanel({ onOpenSettings }: StoryPanelProps) {
         </div>
       )}
 
-      <div className="flex flex-col gap-4 h-[calc(100vh-140px)]">
+      <div className="flex flex-col gap-4 h-[calc(100vh-120px)]">
         {/* 叙事正文 */}
         <ScrollCard
           title="天机"
@@ -150,7 +150,7 @@ export function StoryPanel({ onOpenSettings }: StoryPanelProps) {
               )}
             </div>
           }
-          className="flex-1 min-h-0 flex flex-col"
+          className="flex-[3] min-h-0 flex flex-col"
         >
           <div
             ref={narrativeRef}
@@ -193,7 +193,7 @@ export function StoryPanel({ onOpenSettings }: StoryPanelProps) {
         <ScrollCard
           title="心念"
           subtitle="一念既起，万法随之"
-          className="shrink-0"
+          className="shrink-0 max-h-[350px]"
         >
           {/* 快捷决断 */}
           <div className="flex flex-wrap gap-1.5 mb-3">

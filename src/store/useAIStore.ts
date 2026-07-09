@@ -313,7 +313,7 @@ export const useAIStore = create<AIStore>()(
           timestamp: Date.now(),
         };
 
-        await new Promise((resolve) => setTimeout(resolve, 0));
+        await new Promise<void>((resolve) => queueMicrotask(() => resolve()));
 
         set((st) => ({
           conversation: {
@@ -359,7 +359,7 @@ export const useAIStore = create<AIStore>()(
 
         useGameStore.getState().restoreSnapshot(lastTurn.snapshot);
 
-        await new Promise((resolve) => setTimeout(resolve, 0));
+        await new Promise<void>((resolve) => queueMicrotask(() => resolve()));
 
         set((st) => ({
           conversation: { ...st.conversation, stage: "pro", errorMsg: "" },
@@ -382,7 +382,7 @@ export const useAIStore = create<AIStore>()(
           const parsed = parseModelOutput(proRaw);
           useGameStore.getState().applyOps(parsed.ops);
 
-          await new Promise((resolve) => setTimeout(resolve, 0));
+          await new Promise<void>((resolve) => queueMicrotask(() => resolve()));
 
           set((st) => {
             const turns = [...st.conversation.turns];
