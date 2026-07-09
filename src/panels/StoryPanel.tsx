@@ -48,6 +48,14 @@ export function StoryPanel({ onOpenSettings }: StoryPanelProps) {
 
   const [decision, setDecision] = useState("");
   const narrativeRef = useRef<HTMLDivElement>(null);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (conversation.stage === "done") {
@@ -278,7 +286,9 @@ export function StoryPanel({ onOpenSettings }: StoryPanelProps) {
                   onClick={() => {
                     navigator.clipboard.writeText(conversation.lastRawOutput);
                     setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
+                    setTimeout(() => {
+                      if (isMountedRef.current) setCopied(false);
+                    }, 2000);
                   }}
                   className="p-1 hover:bg-paper-400/10 rounded transition"
                   title="复制"
