@@ -68,7 +68,7 @@ export function StoryPanel({ onOpenSettings }: StoryPanelProps) {
           entities: [
             {
               id: "player",
-              name: "沈青砚",
+              name: player.name || "玩家",
               type: "player",
               position: { x: 5, y: 5 },
               hp: player.hp,

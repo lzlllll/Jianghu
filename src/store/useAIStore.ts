@@ -812,7 +812,7 @@ ${battleState.context.join("\n")}
 输出格式：
 <<<BATTLE>>>
 -- narrative: 战斗叙事文本
--- entities: [{"id":"player","name":"沈青砚","type":"player","position":{"x":5,"y":5},"hp":100,"maxHp":100},{"id":"enemy1","name":"妖兽","type":"enemy","position":{"x":7,"y":5},"hp":80,"maxHp":100}]
+-- entities: [{"id":"player","name":"玩家","type":"player","position":{"x":5,"y":5},"hp":100,"maxHp":100},{"id":"enemy1","name":"妖兽","type":"enemy","position":{"x":7,"y":5},"hp":80,"maxHp":100}]
 <<<OPS>>>
 MODIFY player.hp - 20
 MODIFY player.mp - 10

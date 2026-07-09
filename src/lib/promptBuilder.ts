@@ -296,15 +296,44 @@ export function buildProPrompt(params: {
 【开局生成规则】
 当玩家第一次进入游戏时，如果游戏数据为空（没有功法、物品、关系等），你必须生成完整的游戏数据。这是强制要求，必须执行！
 
-你需要：
-1. 使用 MODIFY 操作设置玩家属性：灵根（spiritRoots）、经脉（meridians）、体魄（body）、气运（fortune）、寿元（lifespanCurrent、lifespanMax）、HP（hp、hpMax）、MP（mp、mpMax）、灵力（spirit、spiritMax）、心性分数（stats.heartScores）
-2. 使用 ADD 操作添加1-2个初始功法到 techniques 集合
-3. 使用 ADD 操作添加几件初始物品到 inventory 集合（武器、丹药、材料等）
-4. 使用 MODIFY 操作设置灵石数量（spiritStones.low、spiritStones.mid）
-5. 如果玩家属于宗门，使用 MODIFY 操作设置宗门信息（sect.name、sect.level、sect.leader等），并使用 ADD 添加宗门职位、任务等
-6. 使用 ADD 操作添加几位初始关系人物到 relations 集合
-7. 使用 ADD 操作添加今日的江湖新闻到 news.items 集合（官府公告、宗门布告、市井传言各一条）
-8. 生成开篇叙事文本
+你必须生成以下所有字段，不可遗漏任何一项：
+
+1. 【玩家属性 MODIFY】设置以下所有字段：
+   - player.name、player.title（使用用户开局设置的姓名和称号）
+   - player.realm（当前境界名称）、player.realmIndex（境界索引值）
+   - player.cultivation（当前修为值）
+   - player.hp、player.hpMax（气血值）
+   - player.mp、player.mpMax（法力值）
+   - player.spirit、player.spiritMax（灵力值）
+   - player.lifespanCurrent、player.lifespanMax（寿元值）
+   - player.body（体质类型，如"冰肌玉骨"、"凡人之躯"等）
+   - player.fortune（气运类型，如"气运绵长"、"命途多舛"等）
+   - player.karma（机缘值，0-200）
+   - player.stats.vitality、player.stats.soul、player.stats.wisdom、player.stats.agility（四大潜能，0-100）
+   - player.spiritRoots（灵根数组，详见数据格式要求）
+   - player.meridians（经脉数组，必须包含12条经脉，每条用 ADD player.meridians 逐条添加）
+   - player.position、player.sectName（宗内职位、隶属宗门名称）
+   - player.description（人物简介，由用户输入或AI自由生成）
+   - player.personality（性格特点）
+   - player.background（背景故事）
+
+2. 【心性 ADD player.stats.heartScores】添加3-5条心性特质，每条包含 trait、score、modifiers
+
+3. 【功法 ADD techniques】添加1-2个初始功法，必须包含完整字段：id、name、type、category、grade、rank、realm、proficiency、proficiencyMax、basePracticeSpeed、heartCompatibility、attributes、prerequisites、skills（技能数组）、icon、desc
+
+4. 【物品 ADD inventory】添加3-6件初始物品（武器、丹药、材料、消耗品等），必须包含完整字段：id、name、type、grade、count、icon、desc，材料类还要包含 elements
+
+5. 【灵石 MODIFY spiritStones】设置 spiritStones.low、spiritStones.mid（中下品灵石数量）
+
+6. 【宗门 MODIFY sect 和 ADD sect.positions/tasks】如果用户属于宗门：
+   - MODIFY sect.name、sect.level、sect.leader、sect.contribution
+   - ADD sect.positions（至少添加1个当前职位）
+
+7. 【关系 ADD relations】添加2-4位初始关系人物，必须包含完整字段：id、name、title、type、affinity、affinityMax、realm、note
+
+8. 【新闻 ADD news.items】添加3条今日江湖新闻：官府公告、宗门布告、市井传言各一条
+
+9. 生成开篇叙事文本（1000-3000字）
 
 所有数据操作必须在 <<<OPS>>> 和 <<<END>>> 标记之间返回。
 
@@ -670,7 +699,7 @@ crafting
 battle
 <<<END>>>
 <<<BATTLE>>>
--- entities: [{"id":"player","name":"沈青砚","type":"player","position":{"x":5,"y":5},"hp":100,"maxHp":100,"mp":50,"maxMp":50},{"id":"enemy1","name":"妖兽","type":"enemy","position":{"x":7,"y":5},"hp":80,"maxHp":100}]
+-- entities: [{"id":"player","name":"玩家","type":"player","position":{"x":5,"y":5},"hp":100,"maxHp":100,"mp":50,"maxMp":50},{"id":"enemy1","name":"妖兽","type":"enemy","position":{"x":7,"y":5},"hp":80,"maxHp":100}]
 <<<OPS>>>
 <<<END>>>
 

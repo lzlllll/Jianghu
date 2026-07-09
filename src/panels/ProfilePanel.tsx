@@ -290,9 +290,9 @@ export function ProfilePanel() {
                   </div>
                   <div className="mt-4 pt-4 border-t border-gold-500/15">
                     <p className="font-serif text-base text-paper-400/70 leading-relaxed">
-                      <span className="text-gold-400">水木双灵根</span>，资质上佳，
-                      <span className="text-jade-400">适于水系功法</span>。
-                      虽非天灵根，然勤修可补。
+                      {(Array.isArray(player.spiritRoots) ? player.spiritRoots : []).length > 0
+                        ? `拥有 ${(Array.isArray(player.spiritRoots) ? player.spiritRoots : []).length} 系灵根，各有长短，修真之路漫漫修远。`
+                        : "尚未觉醒灵根，待机缘到来方可显现。"}
                     </p>
                   </div>
                 </ScrollCard>

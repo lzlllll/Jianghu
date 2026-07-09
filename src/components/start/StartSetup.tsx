@@ -350,7 +350,7 @@ export function StartSetup() {
                   type="text"
                   value={setup.name}
                   onChange={(e) => handleInputChange("name", e.target.value)}
-                  placeholder="如：沈青砚"
+                  placeholder="请输入姓名"
                   className="w-full bg-ink-900/50 border border-paper-400/20 rounded px-3 py-2 font-serif text-paper-100 placeholder-paper-400/30 focus:outline-none focus:border-gold-400/40"
                   maxLength={20}
                 />
@@ -361,7 +361,7 @@ export function StartSetup() {
                   type="text"
                   value={setup.title}
                   onChange={(e) => handleInputChange("title", e.target.value)}
-                  placeholder="如：青云直上"
+                  placeholder="请输入称号"
                   className="w-full bg-ink-900/50 border border-paper-400/20 rounded px-3 py-2 font-serif text-paper-100 placeholder-paper-400/30 focus:outline-none focus:border-gold-400/40"
                   maxLength={20}
                 />
@@ -375,7 +375,7 @@ export function StartSetup() {
                   type="text"
                   value={setup.sectName}
                   onChange={(e) => handleInputChange("sectName", e.target.value)}
-                  placeholder="如：云栖宗"
+                  placeholder="请输入宗门"
                   className="w-full bg-ink-900/50 border border-paper-400/20 rounded px-3 py-2 font-serif text-paper-100 placeholder-paper-400/30 focus:outline-none focus:border-gold-400/40"
                   maxLength={20}
                 />
@@ -419,7 +419,7 @@ export function StartSetup() {
               <textarea
                 value={setup.description}
                 onChange={(e) => handleInputChange("description", e.target.value)}
-                placeholder="简述你的人物设定，如：水木双灵根，擅长炼丹，性格沉稳..."
+                placeholder="简述你的人物设定，如：拥有冰火双灵根的散修，性格孤傲..."
                 rows={3}
                 className="w-full bg-ink-900/50 border border-paper-400/20 rounded px-3 py-2 font-serif text-paper-100 placeholder-paper-400/30 focus:outline-none focus:border-gold-400/40 resize-none"
                 maxLength={200}
@@ -431,7 +431,7 @@ export function StartSetup() {
               <textarea
                 value={setup.personality}
                 onChange={(e) => handleInputChange("personality", e.target.value)}
-                placeholder="如：沉稳内敛，心思缜密，重情重义..."
+                placeholder="如：沉稳内敛，心思缜密..."
                 rows={2}
                 className="w-full bg-ink-900/50 border border-paper-400/20 rounded px-3 py-2 font-serif text-paper-100 placeholder-paper-400/30 focus:outline-none focus:border-gold-400/40 resize-none"
                 maxLength={100}

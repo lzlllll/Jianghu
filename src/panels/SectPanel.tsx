@@ -153,11 +153,16 @@ function SectOverview() {
             </div>
           </div>
           <CloudDivider />
-          <p className="font-serif text-xs text-paper-400/70 leading-relaxed">
-            云栖宗立派千二百年，以水系功法见长。鼎盛时为东南第一大派，
-            百年前与血煞门一战，元气大伤，至今未复。门下弟子勤勉，
-            渐有中兴之象。
-          </p>
+          {sect.name ? (
+            <p className="font-serif text-xs text-paper-400/70 leading-relaxed">
+              {sect.name}，当前等级 {sect.level}，门下弟子 {sect.disciples} 人。
+              {sect.territory ? `据守${sect.territory}。` : ""}
+            </p>
+          ) : (
+            <p className="font-serif text-xs text-paper-400/40 leading-relaxed italic">
+              尚未创建宗门，AI将在开局时生成。
+            </p>
+          )}
         </div>
       </ScrollCard>
     </div>

@@ -38,7 +38,7 @@ export function TopBanner({ onOpenSettings }: TopBannerProps) {
         {/* 印章式头像 */}
         <div className="relative">
           <div className="w-14 h-14 red-seal rounded-sm text-2xl font-brush">
-            沈
+            {player.name?.charAt(0) || "道"}
           </div>
           <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-ink-900 border border-gold-400 flex items-center justify-center">
             <span className="text-[8px] text-gold-400">道</span>
