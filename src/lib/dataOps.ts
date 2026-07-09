@@ -105,6 +105,8 @@ function parseOpLines(block: string): DataOp[] {
   const ops: DataOp[] = [];
   const lines = block.split("\n");
   let i = 0;
+  const MAX_LINES_PER_OP = 100;
+  const MAX_VALUE_LENGTH = 100000;
 
   while (i < lines.length) {
     const rawLine = lines[i].trim();
@@ -118,15 +120,20 @@ function parseOpLines(block: string): DataOp[] {
       const m = rest.match(/^(\S+)\s*([+\-=])\s*(.+)$/);
       if (m) {
         let valuePart = m[3].trim();
-        // 若值为 JSON 数组或对象但未闭合，继续读后续行拼接
+        let lineCount = 0;
         if ((valuePart.startsWith("[") || valuePart.startsWith("{")) && !isJsonClosed(valuePart)) {
           i++;
-          while (i < lines.length) {
+          while (i < lines.length && lineCount < MAX_LINES_PER_OP) {
             const nextLine = lines[i].trim();
             if (!nextLine || nextLine.startsWith("#") || nextLine.startsWith("//")) { i++; continue; }
             if (/^(MODIFY|ADD|DELETE)\b/i.test(nextLine)) break;
+            if (valuePart.length + nextLine.length > MAX_VALUE_LENGTH) {
+              console.warn("[parseOpLines] Value too large, truncating");
+              break;
+            }
             valuePart += nextLine;
             i++;
+            lineCount++;
             if (isJsonClosed(valuePart)) break;
           }
         }
@@ -146,16 +153,23 @@ function parseOpLines(block: string): DataOp[] {
       if (sp !== -1) {
         const collection = rest.slice(0, sp).trim();
         let payload = rest.slice(sp + 1).trim();
+        let lineCount = 0;
 
         i++;
-        while (i < lines.length) {
+        while (i < lines.length && lineCount < MAX_LINES_PER_OP) {
           const nextLine = lines[i].trim();
+          if (payload.length > MAX_VALUE_LENGTH) {
+            console.warn("[parseOpLines] Payload too large, truncating");
+            break;
+          }
           if (nextLine.startsWith("-- ") || nextLine.startsWith("--- ")) {
             payload += "\n" + lines[i];
             i++;
+            lineCount++;
           } else if (nextLine && !/^(MODIFY|ADD|DELETE)\b/i.test(nextLine)) {
             payload += "\n" + lines[i];
             i++;
+            lineCount++;
           } else {
             break;
           }
@@ -238,7 +252,13 @@ function resolveCollection(root: any, collection: string): any[] {
 
 /** 深拷贝并应用所有数据操作，返回新状态 */
 export function applyOpsToState(state: GameState, ops: DataOp[]): GameState {
-  const next: GameState = structuredClone(state);
+  let next: GameState;
+  try {
+    next = structuredClone(state);
+  } catch (e) {
+    console.warn("[dataOps] structuredClone failed, using shallow copy:", e);
+    next = JSON.parse(JSON.stringify(state));
+  }
   for (const op of ops) {
     try {
       applyOne(next, op);
@@ -322,6 +342,10 @@ function applyOne(root: any, op: DataOp): void {
     } else {
       const arr = parent;
       if (Array.isArray(arr)) {
+        if (arr.length > 1000) {
+          console.warn("[applyOne] Array too large, skipping modify:", op.path);
+          return;
+        }
         const idx = arr.findIndex((x: any) => String(x?.id) === last.id || String(x?.trait) === last.id);
         if (idx !== -1) {
           arr[idx] = parseValue(op.value);
@@ -338,6 +362,14 @@ function applyOne(root: any, op: DataOp): void {
     }
   } else if (op.kind === "add") {
     const arr = resolveCollection(root, op.collection);
+    if (!Array.isArray(arr)) {
+      console.warn("[applyOne] Collection is not an array:", op.collection);
+      return;
+    }
+    if (arr.length > 1000) {
+      console.warn("[applyOne] Collection too large, skipping add:", op.collection);
+      return;
+    }
     let payload: unknown;
 
     if (op.payload.trim().startsWith("-- ")) {
@@ -353,7 +385,7 @@ function applyOne(root: any, op: DataOp): void {
     arr.push(payload);
   } else if (op.kind === "delete") {
     const arr = resolveCollection(root, op.collection);
-    if (arr.length === 0) return;
+    if (!Array.isArray(arr) || arr.length === 0) return;
     if (typeof arr[0] === "object" && arr[0] !== null) {
       const idx = arr.findIndex(
         (x: any) => String(x?.id) === op.id || String(x?.name) === op.id,

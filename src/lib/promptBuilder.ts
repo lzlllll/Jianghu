@@ -57,70 +57,83 @@ const REALMS = [
 export function buildDataSchema(state: GameState): string {
   const p = state.player;
   const lines: string[] = [];
-  lines.push(`player.name = ${p.name}`);
-  lines.push(`player.title = ${p.title}`);
+  lines.push(`player.name = ${p.name || ""}`);
+  lines.push(`player.title = ${p.title || ""}`);
   lines.push(`player.realm = ${REALMS[p.realmIndex] ?? "未知"} (realmIndex=${p.realmIndex}, stage=${p.realmStage})`);
   lines.push(`player.cultivation = ${p.cultivation}`);
   lines.push(`player.hp = ${p.hp}/${p.hpMax}`);
   lines.push(`player.mp = ${p.mp}/${p.mpMax}`);
   lines.push(`player.spirit = ${p.spirit}/${p.spiritMax}`);
   lines.push(`player.lifespan = ${p.lifespanCurrent}/${p.lifespanMax}`);
-  lines.push(`player.body = ${p.body}`);
-  lines.push(`player.fortune = ${p.fortune}`);
+  lines.push(`player.body = ${p.body || ""}`);
+  lines.push(`player.fortune = ${p.fortune || ""}`);
   lines.push(`player.karma = ${p.karma}`);
-  lines.push(`player.sectName = ${p.sectName}`);
-  lines.push(`player.position = ${p.position}`);
-  lines.push(`player.background = ${p.background}`);
+  lines.push(`player.sectName = ${p.sectName || ""}`);
+  lines.push(`player.position = ${p.position || ""}`);
+  lines.push(`player.background = ${p.background || ""}`);
+
+  const spiritRoots = Array.isArray(p.spiritRoots) ? p.spiritRoots : [];
+  lines.push(`player.spiritRoots = ${spiritRoots.map((r) => `${r.element}${r.value}`).join(" ") || "(空)"}`);
+
+  const heartScores = Array.isArray(p.stats?.heartScores) ? p.stats.heartScores : [];
   lines.push(
-    `player.spiritRoots = ${(Array.isArray(p.spiritRoots) ? p.spiritRoots : []).map((r) => `${r.element}${r.value}`).join(" ")}`,
-  );
-  lines.push(
-    `player.stats = 体力${p.stats.vitality} 神魂${p.stats.soul} 悟性${p.stats.wisdom} 身法${p.stats.agility} 心性[${(Array.isArray(p.stats.heartScores) ? p.stats.heartScores : []).map((hs) => `${hs.trait}${hs.score}`).join(",")}]`,
-  );
-  lines.push(
-    `player.meridians = ${(Array.isArray(p.meridians) ? p.meridians : []).map((m) => `${m.name}${m.clarity}/${m.maxClarity}${m.damage ? "[伤]" : ""}`).join(" ")}`,
+    `player.stats = 体力${p.stats?.vitality ?? 0} 神魂${p.stats?.soul ?? 0} 悟性${p.stats?.wisdom ?? 0} 身法${p.stats?.agility ?? 0} 心性[${heartScores.map((hs) => `${hs.trait}${hs.score}`).join(",") || "空"}]`,
   );
 
-  lines.push(`spiritStones.low = ${state.spiritStones.low}`);
-  lines.push(`spiritStones.mid = ${state.spiritStones.mid}`);
-  lines.push(`spiritStones.high = ${state.spiritStones.high}`);
-  lines.push(`spiritStones.supreme = ${state.spiritStones.supreme}`);
+  const meridians = Array.isArray(p.meridians) ? p.meridians : [];
+  lines.push(`player.meridians = ${meridians.map((m) => `${m.name}${m.clarity}/${m.maxClarity}${m.damage ? "[伤]" : ""}`).join(" ") || "(空)"}`);
 
-  state.techniques.forEach((t) => {
+  lines.push(`spiritStones.low = ${state.spiritStones?.low ?? 0}`);
+  lines.push(`spiritStones.mid = ${state.spiritStones?.mid ?? 0}`);
+  lines.push(`spiritStones.high = ${state.spiritStones?.high ?? 0}`);
+  lines.push(`spiritStones.supreme = ${state.spiritStones?.supreme ?? 0}`);
+
+  const techniques = Array.isArray(state.techniques) ? state.techniques : [];
+  techniques.forEach((t) => {
     lines.push(
       `techniques[${t.id}] = ${t.name} ${t.category} ${t.grade} ${t.daoPath} ${t.element}系 ${t.nature}性 熟练${t.proficiency}/${t.proficiencyMax} 心性匹配[${t.heartMatch?.join(",") || ""}]`,
     );
   });
 
-  state.inventory.forEach((i) => {
+  const inventory = Array.isArray(state.inventory) ? state.inventory : [];
+  inventory.forEach((i) => {
     const eq = i.equipped ? ` 已装备${i.slot}` : "";
     lines.push(
       `inventory[${i.id}] = ${i.name} ${i.type} ${i.grade} ×${i.count}${eq}`,
     );
   });
 
-  const s = state.sect;
-  lines.push(`sect.name = ${s.name}`);
+  const s = state.sect || { name: "", level: 1, contribution: 0, leader: "", positions: [], tasks: [], heritage: [], resources: [] };
+  lines.push(`sect.name = ${s.name || ""}`);
   lines.push(`sect.level = ${s.level}`);
   lines.push(`sect.contribution = ${s.contribution}`);
-  lines.push(`sect.leader = ${s.leader}`);
-  s.positions.forEach((pos) => {
+  lines.push(`sect.leader = ${s.leader || ""}`);
+
+  const positions = Array.isArray(s.positions) ? s.positions : [];
+  positions.forEach((pos) => {
     const mark = pos.isCurrent ? "【现任】" : pos.unlocked ? "已达" : "未达";
     lines.push(`sect.positions[${pos.id}] = ${pos.name} Lv${pos.level} ${mark} 需贡献${pos.contributionNeeded}`);
   });
-  s.tasks.forEach((t) => {
+
+  const tasks = Array.isArray(s.tasks) ? s.tasks : [];
+  tasks.forEach((t) => {
     lines.push(
       `sect.tasks[${t.id}] = ${t.title} 难度${t.difficulty} 贡献${t.contribution} 灵石${t.spiritStone}${t.accepted ? " 已接" : ""}`,
     );
   });
-  s.heritage.forEach((h, idx) => {
+
+  const heritage = Array.isArray(s.heritage) ? s.heritage : [];
+  heritage.forEach((h, idx) => {
     lines.push(`sect.heritage[${idx}] = ${h.name} ${h.type} ${h.grade} ${h.status}`);
   });
-  s.resources.forEach((r, idx) => {
+
+  const resources = Array.isArray(s.resources) ? s.resources : [];
+  resources.forEach((r, idx) => {
     lines.push(`sect.resources[${idx}] = ${r.name} ${r.amount}${r.unit}`);
   });
 
-  state.relations.forEach((r) => {
+  const relations = Array.isArray(state.relations) ? state.relations : [];
+  relations.forEach((r) => {
     lines.push(
       `relations[${r.id}] = ${r.name} ${r.title} ${relationTypeLabel(r.type)} 境界${r.realm} 亲疏${r.affinity}/${r.affinityMax}`,
     );
@@ -178,28 +191,49 @@ export function resolveRelevantData(state: GameState, paths: string[]): string {
     return buildDataSchema(state);
   }
   const lines: string[] = [];
+  const MAX_LINES = 200;
   for (const path of paths) {
-    lines.push(describePath(state, path));
+    if (lines.length >= MAX_LINES) {
+      lines.push("... (数据过多，已截断)");
+      break;
+    }
+    const result = describePath(state, path);
+    if (result && result.length < 5000) {
+      lines.push(result);
+    }
   }
   return lines.filter(Boolean).join("\n");
 }
 
 function describePath(state: GameState, path: string): string {
+  if (!path || path.length > 100) {
+    return "";
+  }
+
   // 集合名
   if (path === "inventory") {
-    return "inventory:\n" + (Array.isArray(state.inventory) ? state.inventory : []).map((i) => `  [${i.id}] ${i.name} ${i.type} ${i.grade} ×${i.count}${i.equipped ? ` 已装备${i.slot}` : ""}`).join("\n");
+    const inventory = Array.isArray(state.inventory) ? state.inventory : [];
+    if (inventory.length === 0) return "inventory: (空)";
+    return "inventory:\n" + inventory.slice(0, 30).map((i) => `  [${i.id}] ${i.name} ${i.type} ${i.grade} ×${i.count}${i.equipped ? ` 已装备${i.slot}` : ""}`).join("\n");
   }
   if (path === "techniques") {
-    return "techniques:\n" + (Array.isArray(state.techniques) ? state.techniques : []).map((t) => `  [${t.id}] ${t.name} ${t.category} ${t.grade} 熟练${t.proficiency}/${t.proficiencyMax}`).join("\n");
+    const techniques = Array.isArray(state.techniques) ? state.techniques : [];
+    if (techniques.length === 0) return "techniques: (空)";
+    return "techniques:\n" + techniques.slice(0, 30).map((t) => `  [${t.id}] ${t.name} ${t.category} ${t.grade} 熟练${t.proficiency}/${t.proficiencyMax}`).join("\n");
   }
   if (path === "relations") {
-    return "relations:\n" + (Array.isArray(state.relations) ? state.relations : []).map((r) => `  [${r.id}] ${r.name} ${relationTypeLabel(r.type)} 亲疏${r.affinity}/${r.affinityMax} ${r.realm}`).join("\n");
+    const relations = Array.isArray(state.relations) ? state.relations : [];
+    if (relations.length === 0) return "relations: (空)";
+    return "relations:\n" + relations.slice(0, 30).map((r) => `  [${r.id}] ${r.name} ${relationTypeLabel(r.type)} 亲疏${r.affinity}/${r.affinityMax} ${r.realm}`).join("\n");
   }
   if (path === "log") {
-    return "log(最近5条):\n" + state.log.slice(0, 5).map((l) => `  - ${l}`).join("\n");
+    const log = Array.isArray(state.log) ? state.log : [];
+    return "log(最近5条):\n" + log.slice(0, 5).map((l) => `  - ${l}`).join("\n");
   }
   if (path === "sect.tasks") {
-    return "sect.tasks:\n" + (Array.isArray(state.sect?.tasks) ? state.sect.tasks : []).map((t) => `  [${t.id}] ${t.title} ${t.difficulty} 贡献${t.contribution}${t.accepted ? " 已接" : ""}`).join("\n");
+    const tasks = Array.isArray(state.sect?.tasks) ? state.sect.tasks : [];
+    if (tasks.length === 0) return "sect.tasks: (空)";
+    return "sect.tasks:\n" + tasks.slice(0, 30).map((t) => `  [${t.id}] ${t.title} ${t.difficulty} 贡献${t.contribution}${t.accepted ? " 已接" : ""}`).join("\n");
   }
 
   // 路径解析
@@ -208,25 +242,37 @@ function describePath(state: GameState, path: string): string {
     const coll = segMatch[1];
     const id = segMatch[2];
     const sub = segMatch[3];
-    const arr = (state as any)[coll] ?? (coll === "sect" ? null : null);
     if (coll === "sect") {
-      // sect.tasks[s1] / sect.positions[p1] 等
       const subMatch = path.match(/^sect\.([a-zA-Z_]+)\[([^\]]+)\](?:\.(.+))?$/);
       if (subMatch) {
         const subColl = subMatch[1];
         const subId = subMatch[2];
         const subField = subMatch[3];
-        const list = (state.sect as any)[subColl] as any[];
-        const item = list?.find((x) => String(x.id) === subId || String(x.name) === subId);
-        if (item) return `${path} = ${subField ? JSON.stringify((item as any)[subField]) : JSON.stringify(item)}`;
+        const list = Array.isArray((state.sect as any)?.[subColl]) ? (state.sect as any)[subColl] : [];
+        const item = list.find((x: any) => String(x?.id) === subId || String(x?.name) === subId);
+        if (item) {
+          try {
+            const value = subField ? (item as any)[subField] : item;
+            const jsonStr = typeof value === "object" ? JSON.stringify(value) : String(value);
+            return `${path} = ${jsonStr.slice(0, 500)}`;
+          } catch {
+            return `${path} = (序列化失败)`;
+          }
+        }
       }
       return `${path} = (未找到)`;
     }
+    const arr = (state as any)[coll];
     if (Array.isArray(arr)) {
-      const item = arr.find((x: any) => String(x.id) === id);
+      const item = arr.find((x: any) => String(x?.id) === id);
       if (item) {
-        if (sub) return `${path} = ${JSON.stringify((item as any)[sub])}`;
-        return `${path} = ${JSON.stringify(item)}`;
+        try {
+          const value = sub ? (item as any)[sub] : item;
+          const jsonStr = typeof value === "object" ? JSON.stringify(value) : String(value);
+          return `${path} = ${jsonStr.slice(0, 500)}`;
+        } catch {
+          return `${path} = (序列化失败)`;
+        }
       }
     }
     return `${path} = (未找到)`;
@@ -236,11 +282,17 @@ function describePath(state: GameState, path: string): string {
   const parts = path.split(".");
   let cur: any = state;
   for (const p of parts) {
-    cur = cur?.[p];
+    if (cur == null) return `${path} = (未找到)`;
+    cur = cur[p];
   }
   if (cur === undefined) return `${path} = (未找到)`;
   if (typeof cur === "object" && cur !== null) {
-    return `${path} = ${JSON.stringify(cur)}`;
+    try {
+      const jsonStr = JSON.stringify(cur);
+      return `${path} = ${jsonStr.slice(0, 500)}`;
+    } catch {
+      return `${path} = (序列化失败)`;
+    }
   }
   return `${path} = ${cur}`;
 }
