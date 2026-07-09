@@ -84,6 +84,23 @@ function parseBattleEntities(content: string): BattleEntity[] {
   return entities;
 }
 
+/** 检查 JSON 字符串的括号是否完整闭合 */
+function isJsonClosed(s: string): boolean {
+  const stack: string[] = [];
+  let inString = false;
+  let escape = false;
+  for (const ch of s) {
+    if (escape) { escape = false; continue; }
+    if (ch === "\\" && inString) { escape = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === "[" || ch === "{") stack.push(ch);
+    else if (ch === "]") { if (stack.pop() !== "[") return false; }
+    else if (ch === "}") { if (stack.pop() !== "{") return false; }
+  }
+  return stack.length === 0;
+}
+
 function parseOpLines(block: string): DataOp[] {
   const ops: DataOp[] = [];
   const lines = block.split("\n");
@@ -100,14 +117,28 @@ function parseOpLines(block: string): DataOp[] {
       const rest = rawLine.replace(/^MODIFY\s+/i, "").trim();
       const m = rest.match(/^(\S+)\s*([+\-=])\s*(.+)$/);
       if (m) {
+        let valuePart = m[3].trim();
+        // 若值为 JSON 数组或对象但未闭合，继续读后续行拼接
+        if ((valuePart.startsWith("[") || valuePart.startsWith("{")) && !isJsonClosed(valuePart)) {
+          i++;
+          while (i < lines.length) {
+            const nextLine = lines[i].trim();
+            if (!nextLine || nextLine.startsWith("#") || nextLine.startsWith("//")) { i++; continue; }
+            if (/^(MODIFY|ADD|DELETE)\b/i.test(nextLine)) break;
+            valuePart += nextLine;
+            i++;
+            if (isJsonClosed(valuePart)) break;
+          }
+        }
         ops.push({
           kind: "modify",
           path: m[1],
           op: m[2] as "=" | "+" | "-",
-          value: m[3].trim(),
+          value: valuePart,
         });
+      } else {
+        i++;
       }
-      i++;
     } else if (/^ADD\b/i.test(rawLine)) {
       const rest = rawLine.replace(/^ADD\s+/i, "").trim();
       const sp = rest.search(/\s/);
@@ -372,6 +403,14 @@ function applyModify(parent: any, key: string, op: Extract<DataOp, { kind: "modi
       value = Object.entries(value).map(([element, val]) => ({
         element,
         value: Number(val),
+      }));
+    }
+
+    // 归一化 meridians 数组：damage 字段应为 boolean
+    if (key === "meridians" && Array.isArray(value)) {
+      value = value.map((m: any) => ({
+        ...m,
+        damage: Boolean(m.damage),
       }));
     }
 
