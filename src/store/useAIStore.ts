@@ -356,6 +356,8 @@ export const useAIStore = create<AIStore>()(
 
         useGameStore.getState().restoreSnapshot(lastTurn.snapshot);
 
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
         set((st) => ({
           conversation: { ...st.conversation, stage: "pro", errorMsg: "" },
         }));
@@ -376,6 +378,8 @@ export const useAIStore = create<AIStore>()(
           if (signal.aborted) return;
           const parsed = parseModelOutput(proRaw);
           useGameStore.getState().applyOps(parsed.ops);
+
+          await new Promise((resolve) => setTimeout(resolve, 0));
 
           set((st) => {
             const turns = [...st.conversation.turns];
