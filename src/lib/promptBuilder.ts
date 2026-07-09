@@ -199,7 +199,7 @@ function describePath(state: GameState, path: string): string {
     return "log(最近5条):\n" + state.log.slice(0, 5).map((l) => `  - ${l}`).join("\n");
   }
   if (path === "sect.tasks") {
-    return "sect.tasks:\n" + state.sect.tasks.map((t) => `  [${t.id}] ${t.title} ${t.difficulty} 贡献${t.contribution}${t.accepted ? " 已接" : ""}`).join("\n");
+    return "sect.tasks:\n" + (state.sect?.tasks || []).map((t) => `  [${t.id}] ${t.title} ${t.difficulty} 贡献${t.contribution}${t.accepted ? " 已接" : ""}`).join("\n");
   }
 
   // 路径解析

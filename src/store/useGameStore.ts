@@ -246,7 +246,7 @@ export const useGameStore = create<GameStore>()(
         if (heartTechnique) {
           basePracticeSpeed = heartTechnique.basePracticeSpeed || 100;
 
-          const playerRootElements = s.player.spiritRoots.map((r) => r.element);
+          const playerRootElements = (s.player.spiritRoots || []).map((r) => r.element);
           const techElement = heartTechnique.element;
 
           if (playerRootElements.includes(techElement)) {
@@ -365,7 +365,7 @@ export const useGameStore = create<GameStore>()(
               ...st.player,
               hp: Math.max(1, st.player.hp - damage),
               mp: 0,
-              meridians: st.player.meridians.map((m) =>
+              meridians: (st.player.meridians || []).map((m) =>
                 Math.random() < 0.3 ? { ...m, damage: true, clarity: Math.max(20, m.clarity - 20) } : m,
               ),
             },
@@ -386,7 +386,7 @@ export const useGameStore = create<GameStore>()(
 
         let efficiency = 1;
 
-        const playerRootElements = s.player.spiritRoots.map((r) => r.element);
+        const playerRootElements = (s.player.spiritRoots || []).map((r) => r.element);
         const techElement = tech.element;
 
         if (playerRootElements.includes(techElement)) {
