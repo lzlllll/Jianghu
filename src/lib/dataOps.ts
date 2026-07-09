@@ -297,7 +297,8 @@ function applyOne(root: any, op: DataOp): void {
         } else {
           const newValue = parseValue(op.value);
           if (typeof newValue === "object" && newValue !== null) {
-            arr.push({ ...newValue, id: last.id });
+            const normalizedValue = normalizeMeridianZone({ ...newValue, id: last.id });
+            arr.push(normalizedValue);
           } else {
             arr.push(newValue);
           }
@@ -348,10 +349,33 @@ function descend(obj: any, seg: PathSeg): any {
   return undefined;
 }
 
+const ZONE_MAP: Record<string, string> = {
+  "头部": "head",
+  "胸部": "chest",
+  "腹部": "abdomen",
+  "四肢": "arm_left",
+};
+
+function normalizeMeridianZone(meridian: any): any {
+  if (meridian.zone && ZONE_MAP[meridian.zone]) {
+    return { ...meridian, zone: ZONE_MAP[meridian.zone] };
+  }
+  return meridian;
+}
+
 function applyModify(parent: any, key: string, op: Extract<DataOp, { kind: "modify" }>): void {
   const current = parent[key];
   if (op.op === "=") {
-    parent[key] = parseValue(op.value);
+    let value = parseValue(op.value);
+
+    if (key === "spiritRoots" && typeof value === "object" && value !== null && !Array.isArray(value)) {
+      value = Object.entries(value).map(([element, val]) => ({
+        element,
+        value: Number(val),
+      }));
+    }
+
+    parent[key] = value;
   } else if (op.op === "+") {
     if (typeof current === "number") {
       parent[key] = current + Number(parseValue(op.value));

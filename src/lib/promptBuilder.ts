@@ -486,6 +486,109 @@ DELETE <集合> <id>
 - 当前心法：player.activeHeartTechnique，设置为空字符串或心法id来切换
 - 集合名，用于 ADD / DELETE：inventory、log、techniques、relations、sect.tasks、sect.heritage
 
+【关键数据格式（必须严格遵守）】
+
+=== player.spiritRoots 格式 ===
+必须使用数组格式，每个元素包含 element 和 value 字段：
+MODIFY player.spiritRoots = [{"element":"暗","value":72},{"element":"木","value":31},{"element":"风","value":28}]
+元素类型（element）必须是：金、木、水、火、土、风、雷、冰、暗 之一
+value 必须是 0-100 的数字
+
+=== player.meridians 格式 ===
+必须使用 ADD 操作逐个添加，格式如下：
+ADD player.meridians
+-- id: m1
+-- name: 手太阴肺经
+-- clarity: 72
+-- maxClarity: 100
+-- damage: 0
+-- zone: chest
+
+zone 字段必须使用英文，可选值：head（头部）、chest（胸部）、abdomen（腹部）、arm_left（左臂）、arm_right（右臂）、leg_left（左腿）、leg_right（右腿）
+clarity 必须是 0-100 的数字
+damage 必须是 0-100 的数字（0表示无损伤）
+
+=== player.stats.heartScores 格式 ===
+使用 ADD 操作添加心性：
+ADD player.stats.heartScores
+-- trait: 伪装
+-- score: 78
+-- modifiers: [{"stat":"comprehension","value":15,"description":"领悟速度加成"},{"stat":"trading","value":20,"description":"交易折扣加成"},{"stat":"defense","value":-10,"description":"防御降低"}]
+
+modifiers 数组中每个对象必须包含：stat（属性名）、value（数值，正数为加成，负数为减益）、description（描述）
+
+=== techniques 格式 ===
+ADD techniques
+-- id: t1
+-- name: 幻心诀残卷
+-- type: 心法
+-- category: heart
+-- grade: 灵品
+-- rank: 1
+-- realm: 引气初期
+-- proficiency: 23
+-- proficiencyMax: 100
+-- basePracticeSpeed: 12
+-- heartCompatibility: [{"trait":"伪装","bonus":15},{"trait":"冷酷","bonus":10}]
+-- attributes: {"暗":0.6,"木":0.2}
+-- prerequisites: []
+-- skills: []
+-- icon: 🌑
+-- desc: 功法描述文本
+
+type 可选值：心法、炼体、神通、身法、秘术
+category 可选值：heart（心法）、body（炼体）、divine（神通）、movement（身法）、secret（秘术）
+grade 可选值：凡品、灵品、玄品、地品、天品
+
+=== inventory 格式 ===
+ADD inventory
+-- id: i1
+-- name: 幻心铃
+-- type: 武器
+-- grade: 灵品
+-- count: 1
+-- icon: 🔔
+-- desc: 物品描述文本
+-- elements: {"暗":65}
+
+type 可选值：武器、装备、丹药、材料、消耗品、法宝、符篆、典籍
+elements 字段仅用于材料类型，格式为 {"元素名":数值}
+
+=== relations 格式 ===
+ADD relations
+-- id: r1
+-- name: 程昭
+-- title: 护法
+-- type: friend
+-- affinity: 85
+-- affinityMax: 100
+-- realm: 引气中期
+-- note: 关系描述
+
+type 可选值：dao_companion（道侣）、master（师父）、disciple（徒弟）、friend（好友）、enemy（仇敌）
+
+=== sect 格式 ===
+MODIFY sect.name = 幻梦宗
+MODIFY sect.level = 1
+MODIFY sect.leader = 叶笙歌
+MODIFY sect.contribution = 0
+
+ADD sect.positions
+-- id: p1
+-- name: 宗主
+-- level: 1
+-- contributionNeeded: 0
+-- isCurrent: true
+-- unlocked: true
+
+ADD sect.tasks
+-- id: s1
+-- title: 采集药材
+-- difficulty: 简单
+-- contribution: 10
+-- spiritStone: 5
+-- accepted: false
+
 ADD 示例（使用标记块格式，每行一个字段）：
 ADD inventory
 -- id: i99
