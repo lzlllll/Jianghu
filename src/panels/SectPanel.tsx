@@ -95,7 +95,7 @@ export function SectPanel() {
         ))}
       </div>
 
-      <div key={tab}>
+      <div>
         {tab === "overview" && <SectOverview />}
         {tab === "position" && <PositionTree />}
         {tab === "task" && <TaskBoard />}

@@ -310,6 +310,8 @@ export const useAIStore = create<AIStore>()(
           timestamp: Date.now(),
         };
 
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
         set((st) => ({
           conversation: {
             ...st.conversation,

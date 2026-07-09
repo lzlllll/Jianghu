@@ -34,7 +34,7 @@ export default function Home() {
               fill="#c9a961"
             />
           </svg>
-          <div key={currentPanel} className="animate-inkSpread max-w-7xl mx-auto">
+          <div className="animate-inkSpread max-w-7xl mx-auto">
             {currentPanel === "profile" && <ProfilePanel />}
             {currentPanel === "technique" && <TechniquePanel />}
             {currentPanel === "treasure" && <TreasurePanel />}
