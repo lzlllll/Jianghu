@@ -254,6 +254,8 @@ function resolveCollection(root: any, collection: string): any[] {
       } else {
         cur[s] = {};
       }
+    } else if (typeof cur[s] !== "object" && i < segs.length - 1) {
+      return [];
     }
     cur = cur[s];
   }
@@ -367,9 +369,17 @@ function applyOne(root: any, op: DataOp): void {
     for (let i = 0; i < segs.length - 1; i++) {
       parent = descend(parent, segs[i]);
       if (parent == null) return;
+      if (typeof parent !== "object") {
+        console.warn("[applyOne] Path segment is not an object:", op.path, "at segment", i, "value:", parent);
+        return;
+      }
     }
     const last = segs[segs.length - 1];
     if (typeof last === "string") {
+      if (typeof parent !== "object" || parent === null) {
+        console.warn("[applyOne] Parent is not an object for modify:", op.path);
+        return;
+      }
       applyModify(parent, last, op);
     } else {
       const arr = parent;
@@ -437,7 +447,10 @@ function applyOne(root: any, op: DataOp): void {
 }
 
 function descend(obj: any, seg: PathSeg): any {
-  if (typeof seg === "string") return obj?.[seg];
+  if (typeof seg === "string") {
+    const result = obj?.[seg];
+    return result;
+  }
   if (Array.isArray(obj)) {
     return obj.find((x: any) => String(x?.id) === seg.id || String(x?.trait) === seg.id || String(x?.name) === seg.id);
   }
