@@ -163,32 +163,28 @@ function parseOpLines(block: string): DataOp[] {
       const rest = rawLine.replace(/^ADD\s+/i, "").trim();
       const sp = rest.search(/\s/);
 
-      if (sp !== -1) {
-        const collection = rest.slice(0, sp).trim();
-        let payload = rest.slice(sp + 1).trim();
-        let lineCount = 0;
+      const collection = sp !== -1 ? rest.slice(0, sp).trim() : rest;
+      let payload = sp !== -1 ? rest.slice(sp + 1).trim() : "";
+      let lineCount = 0;
 
-        i++;
-        while (i < lines.length && lineCount < MAX_LINES_PER_OP) {
-          const nextLine = lines[i].trim();
-          if (payload.length > MAX_VALUE_LENGTH) {
-            console.warn("[parseOpLines] Payload too large, truncating");
-            break;
-          }
-          if (/^(MODIFY|ADD|DELETE)\b/i.test(nextLine)) break;
-          payload += "\n" + lines[i];
-          i++;
-          lineCount++;
+      i++;
+      while (i < lines.length && lineCount < MAX_LINES_PER_OP) {
+        const nextLine = lines[i].trim();
+        if (payload.length > MAX_VALUE_LENGTH) {
+          console.warn("[parseOpLines] Payload too large, truncating");
+          break;
         }
-
-        ops.push({
-          kind: "add",
-          collection,
-          payload,
-        });
-      } else {
+        if (/^(MODIFY|ADD|DELETE)\b/i.test(nextLine)) break;
+        payload += "\n" + lines[i];
         i++;
+        lineCount++;
       }
+
+      ops.push({
+        kind: "add",
+        collection,
+        payload,
+      });
     } else if (/^DELETE\b/i.test(rawLine)) {
       const rest = rawLine.replace(/^DELETE\s+/i, "").trim();
       const sp = rest.search(/\s/);
