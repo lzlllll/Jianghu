@@ -127,7 +127,7 @@ function parseOpLines(block: string): DataOp[] {
         let valuePart = m[3].trim();
         let lineCount = 0;
         const isMultilineValue = valuePart.startsWith("[") || valuePart.startsWith("{");
-        
+
         i++;
         while (i < lines.length && lineCount < MAX_LINES_PER_OP) {
           const nextLine = lines[i].trim();
@@ -245,8 +245,16 @@ function parseValue(raw: string): unknown {
 function resolveCollection(root: any, collection: string): any[] {
   const segs = collection.split(".");
   let cur: any = root;
-  for (const s of segs) {
+  for (let i = 0; i < segs.length; i++) {
+    const s = segs[i];
     if (cur == null) return [];
+    if (cur[s] === undefined) {
+      if (i === segs.length - 1) {
+        cur[s] = [];
+      } else {
+        cur[s] = {};
+      }
+    }
     cur = cur[s];
   }
   return Array.isArray(cur) ? cur : [];
