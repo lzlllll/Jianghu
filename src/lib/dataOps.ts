@@ -338,7 +338,7 @@ function parseMarkdownBlockToJson(block: string): any {
           result[key] = valueStr;
         }
       }
-    } else if (!result.id && !result.name) {
+    } else {
       if (!result.text) {
         result.text = trimmed;
       } else {
