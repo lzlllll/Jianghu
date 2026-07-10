@@ -543,16 +543,14 @@ Buff操作：
 【数据操作格式（严格遵守）】
 在叙事正文之后，另起一行输出：
 <<<OPS>>>
-MODIFY <路径> <操作符> <值>
+MODIFY <路径> <值>
 ADD <集合>
--- <字段名>: <字段值>
--- <字段名>: <字段值>
+<字段名>: <字段值>
+<字段名>: <字段值>
 DELETE <集合> <id>
 <<<END>>>
 
-操作符：
-= 设置为新值：数值 / 字符串 / 布尔
-+ 数值增加，或字符串拼接
+MODIFY 操作直接设置值，支持数值、字符串、布尔值和数组对象
 - 数值减少
 
 路径写法：
@@ -560,7 +558,7 @@ DELETE <集合> <id>
 - 潜能字段：player.stats.vitality、player.stats.soul、player.stats.wisdom、player.stats.agility
 - 心性分数：player.stats.heartScores[刚毅].score，心性名作为索引，支持任意心性名称
 - 心性加成：player.stats.heartScores[刚毅].modifiers，数组格式：[{"stat":属性名,"value":数值,"description":"描述"}]
-- ADD 心性：ADD player.stats.heartScores 然后用 -- trait: 莽撞 -- score: 60 -- modifiers: [{"stat":"attack","value":18,"description":"攻击力加成"}]
+- ADD 心性：ADD player.stats.heartScores 然后用 trait: 莽撞 score: 60 modifiers: [{"stat":"attack","value":18,"description":"攻击力加成"}]
 - DELETE 心性：DELETE player.stats.heartScores 莽撞，按trait名称删除
 - 经脉字段：player.meridians[m1].clarity、player.meridians[m2].damage、player.meridians[m3].zone
 - 数组元素按 id：techniques[t1].proficiency、techniques[t1].levels、techniques[t1].skills、techniques[t1].prerequisites、techniques[t1].attributes、relations[r1].affinity、inventory[i4].count、sect.tasks[s1].accepted
@@ -709,7 +707,7 @@ DELETE inventory i10
 DELETE log "旧的日志内容"
 
 标记块格式规则：
-1. ADD 命令后换行，每行以 -- 开头，后面跟字段名冒号字段值
+1. ADD 命令后换行，每行直接写字段名冒号字段值
 2. 字段值为字符串时不需要引号，除非包含冒号或特殊字符
 3. 复杂对象如 elements 使用 JSON 格式
 4. log 集合使用 text 字段

@@ -104,43 +104,57 @@ function parseOpLines(block: string): DataOp[] {
 
     if (/^MODIFY\b/i.test(rawLine)) {
       const rest = rawLine.replace(/^MODIFY\s+/i, "").trim();
-      const firstSpace = rest.indexOf(" ");
-      if (firstSpace !== -1) {
-        const path = rest.slice(0, firstSpace).trim();
-        let value = rest.slice(firstSpace + 1).trim();
-        let lineCount = 0;
+      const m = rest.match(/^(\S+)\s*([+\-=])\s*(.+)$/);
 
-        i++;
-        while (i < lines.length && lineCount < MAX_LINES_PER_OP) {
-          const nextLine = lines[i];
-          const trimmedNext = nextLine.trim();
-          if (!trimmedNext || trimmedNext.startsWith("#") || trimmedNext.startsWith("//")) {
-            if (value.length < MAX_VALUE_LENGTH) {
-              value += "\n" + nextLine;
-            }
-            i++;
-            lineCount++;
-            continue;
+      let path: string;
+      let op: "=" | "+" | "-";
+      let value: string;
+
+      if (m) {
+        path = m[1];
+        op = m[2] as "=" | "+" | "-";
+        value = m[3].trim();
+      } else {
+        const firstSpace = rest.indexOf(" ");
+        if (firstSpace === -1) {
+          i++;
+          continue;
+        }
+        path = rest.slice(0, firstSpace).trim();
+        op = "=";
+        value = rest.slice(firstSpace + 1).trim();
+      }
+
+      let lineCount = 0;
+
+      i++;
+      while (i < lines.length && lineCount < MAX_LINES_PER_OP) {
+        const nextLine = lines[i];
+        const trimmedNext = nextLine.trim();
+        if (!trimmedNext || trimmedNext.startsWith("#") || trimmedNext.startsWith("//")) {
+          if (value.length < MAX_VALUE_LENGTH) {
+            value += "\n" + nextLine;
           }
-          if (/^(MODIFY|ADD|DELETE)\b/i.test(trimmedNext)) break;
-          if (value.length + nextLine.length > MAX_VALUE_LENGTH) {
-            console.warn("[parseOpLines] Value too large, truncating");
-            break;
-          }
-          value += "\n" + nextLine;
           i++;
           lineCount++;
+          continue;
         }
-
-        ops.push({
-          kind: "modify",
-          path,
-          op: "=",
-          value: value.trim(),
-        });
-      } else {
+        if (/^(MODIFY|ADD|DELETE)\b/i.test(trimmedNext)) break;
+        if (value.length + nextLine.length > MAX_VALUE_LENGTH) {
+          console.warn("[parseOpLines] Value too large, truncating");
+          break;
+        }
+        value += "\n" + nextLine;
         i++;
+        lineCount++;
       }
+
+      ops.push({
+        kind: "modify",
+        path,
+        op,
+        value: value.trim(),
+      });
     } else if (/^ADD\b/i.test(rawLine)) {
       const rest = rawLine.replace(/^ADD\s+/i, "").trim();
       const collection = rest;
@@ -211,27 +225,43 @@ function parsePath(path: string): PathSeg[] {
 
 function parseValue(raw: string): unknown {
   const trimmed = raw.trim();
-  
+
   if (!isNaN(Number(trimmed))) {
     return Number(trimmed);
   }
-  
+
   if (trimmed === "true") {
     return true;
   }
-  
+
   if (trimmed === "false") {
     return false;
   }
-  
+
   if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
     return trimmed.slice(1, -1);
   }
-  
+
   if (trimmed.startsWith("'") && trimmed.endsWith("'")) {
     return trimmed.slice(1, -1);
   }
-  
+
+  if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+    try {
+      return JSON.parse(trimmed);
+    } catch {
+      return raw;
+    }
+  }
+
+  if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+    try {
+      return JSON.parse(trimmed);
+    } catch {
+      return raw;
+    }
+  }
+
   return raw;
 }
 
@@ -300,8 +330,14 @@ function parseMarkdownBlockToJson(block: string): any {
   const lines = block.split("\n");
 
   for (const line of lines) {
-    const trimmed = line.trim();
+    let trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#")) continue;
+
+    if (trimmed.startsWith("-- ")) {
+      trimmed = trimmed.slice(3).trim();
+    } else if (trimmed.startsWith("--- ")) {
+      trimmed = trimmed.slice(4).trim();
+    }
 
     const colonIdx = trimmed.indexOf(":");
     if (colonIdx !== -1) {
