@@ -15,7 +15,6 @@ export interface ParsedTurn {
 const MODE_START = "<<<MODE>>>";
 const MODE_END = "<<<END>>>";
 
-/** 从模型输出中提取叙事正文、模式标记与 <<<OPS>>> 标记块 */
 export function parseModelOutput(raw: string): ParsedTurn {
   let text = raw.replace(/```[a-zA-Z]*\n?/g, "");
 
@@ -84,23 +83,6 @@ function parseBattleEntities(content: string): BattleEntity[] {
   return entities;
 }
 
-/** 检查 JSON 字符串的括号是否完整闭合 */
-function isJsonClosed(s: string): boolean {
-  const stack: string[] = [];
-  let inString = false;
-  let escape = false;
-  for (const ch of s) {
-    if (escape) { escape = false; continue; }
-    if (ch === "\\" && inString) { escape = true; continue; }
-    if (ch === '"') { inString = !inString; continue; }
-    if (inString) continue;
-    if (ch === "[" || ch === "{") stack.push(ch);
-    else if (ch === "]") { if (stack.pop() !== "[") return false; }
-    else if (ch === "}") { if (stack.pop() !== "{") return false; }
-  }
-  return stack.length === 0;
-}
-
 function parseOpLines(block: string): DataOp[] {
   const ops: DataOp[] = [];
   const lines = block.split("\n");
@@ -122,60 +104,67 @@ function parseOpLines(block: string): DataOp[] {
 
     if (/^MODIFY\b/i.test(rawLine)) {
       const rest = rawLine.replace(/^MODIFY\s+/i, "").trim();
-      const m = rest.match(/^(\S+)\s*([+\-=])\s*(.+)$/);
-      if (m) {
-        let valuePart = m[3].trim();
+      const firstSpace = rest.indexOf(" ");
+      if (firstSpace !== -1) {
+        const path = rest.slice(0, firstSpace).trim();
+        let value = rest.slice(firstSpace + 1).trim();
         let lineCount = 0;
-        const isMultilineValue = valuePart.startsWith("[") || valuePart.startsWith("{");
 
         i++;
         while (i < lines.length && lineCount < MAX_LINES_PER_OP) {
-          const nextLine = lines[i].trim();
-          if (!nextLine || nextLine.startsWith("#") || nextLine.startsWith("//")) {
-            if (isMultilineValue && !isJsonClosed(valuePart)) {
-              valuePart += "\n" + lines[i];
+          const nextLine = lines[i];
+          const trimmedNext = nextLine.trim();
+          if (!trimmedNext || trimmedNext.startsWith("#") || trimmedNext.startsWith("//")) {
+            if (value.length < MAX_VALUE_LENGTH) {
+              value += "\n" + nextLine;
             }
             i++;
             lineCount++;
             continue;
           }
-          if (/^(MODIFY|ADD|DELETE)\b/i.test(nextLine)) break;
-          if (valuePart.length + nextLine.length > MAX_VALUE_LENGTH) {
+          if (/^(MODIFY|ADD|DELETE)\b/i.test(trimmedNext)) break;
+          if (value.length + nextLine.length > MAX_VALUE_LENGTH) {
             console.warn("[parseOpLines] Value too large, truncating");
             break;
           }
-          valuePart += "\n" + lines[i];
+          value += "\n" + nextLine;
           i++;
           lineCount++;
-          if (isMultilineValue && isJsonClosed(valuePart)) break;
         }
 
         ops.push({
           kind: "modify",
-          path: m[1],
-          op: m[2] as "=" | "+" | "-",
-          value: valuePart,
+          path,
+          op: "=",
+          value: value.trim(),
         });
       } else {
         i++;
       }
     } else if (/^ADD\b/i.test(rawLine)) {
       const rest = rawLine.replace(/^ADD\s+/i, "").trim();
-      const sp = rest.search(/\s/);
-
-      const collection = sp !== -1 ? rest.slice(0, sp).trim() : rest;
-      let payload = sp !== -1 ? rest.slice(sp + 1).trim() : "";
+      const collection = rest;
+      let payload = "";
       let lineCount = 0;
 
       i++;
       while (i < lines.length && lineCount < MAX_LINES_PER_OP) {
-        const nextLine = lines[i].trim();
-        if (payload.length > MAX_VALUE_LENGTH) {
+        const nextLine = lines[i];
+        const trimmedNext = nextLine.trim();
+        if (!trimmedNext || trimmedNext.startsWith("#") || trimmedNext.startsWith("//")) {
+          if (payload.length < MAX_VALUE_LENGTH) {
+            payload += "\n" + nextLine;
+          }
+          i++;
+          lineCount++;
+          continue;
+        }
+        if (/^(MODIFY|ADD|DELETE)\b/i.test(trimmedNext)) break;
+        if (payload.length + nextLine.length > MAX_VALUE_LENGTH) {
           console.warn("[parseOpLines] Payload too large, truncating");
           break;
         }
-        if (/^(MODIFY|ADD|DELETE)\b/i.test(nextLine)) break;
-        payload += "\n" + lines[i];
+        payload += "\n" + nextLine;
         i++;
         lineCount++;
       }
@@ -183,16 +172,16 @@ function parseOpLines(block: string): DataOp[] {
       ops.push({
         kind: "add",
         collection,
-        payload,
+        payload: payload.trim(),
       });
     } else if (/^DELETE\b/i.test(rawLine)) {
       const rest = rawLine.replace(/^DELETE\s+/i, "").trim();
-      const sp = rest.search(/\s/);
-      if (sp !== -1) {
+      const firstSpace = rest.indexOf(" ");
+      if (firstSpace !== -1) {
         ops.push({
           kind: "delete",
-          collection: rest.slice(0, sp).trim(),
-          id: rest.slice(sp + 1).trim(),
+          collection: rest.slice(0, firstSpace).trim(),
+          id: rest.slice(firstSpace + 1).trim(),
         });
       }
       i++;
@@ -203,31 +192,17 @@ function parseOpLines(block: string): DataOp[] {
   return ops;
 }
 
-type PathSeg = string | { id: string };
+type PathSeg = string;
 
 function parsePath(path: string): PathSeg[] {
   const segs: PathSeg[] = [];
-  let i = 0;
   let cur = "";
-  while (i < path.length) {
-    const ch = path[i];
+  for (const ch of path) {
     if (ch === ".") {
       if (cur) segs.push(cur);
       cur = "";
-      i++;
-    } else if (ch === "[") {
-      if (cur) {
-        segs.push(cur);
-        cur = "";
-      }
-      const end = path.indexOf("]", i);
-      if (end === -1) break;
-      segs.push({ id: path.slice(i + 1, end) });
-      i = end + 1;
-      if (path[i] === ".") i++;
     } else {
       cur += ch;
-      i++;
     }
   }
   if (cur) segs.push(cur);
@@ -235,11 +210,29 @@ function parsePath(path: string): PathSeg[] {
 }
 
 function parseValue(raw: string): unknown {
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return raw;
+  const trimmed = raw.trim();
+  
+  if (!isNaN(Number(trimmed))) {
+    return Number(trimmed);
   }
+  
+  if (trimmed === "true") {
+    return true;
+  }
+  
+  if (trimmed === "false") {
+    return false;
+  }
+  
+  if (trimmed.startsWith('"') && trimmed.endsWith('"')) {
+    return trimmed.slice(1, -1);
+  }
+  
+  if (trimmed.startsWith("'") && trimmed.endsWith("'")) {
+    return trimmed.slice(1, -1);
+  }
+  
+  return raw;
 }
 
 function resolveCollection(root: any, collection: string): any[] {
@@ -262,7 +255,6 @@ function resolveCollection(root: any, collection: string): any[] {
   return Array.isArray(cur) ? cur : [];
 }
 
-/** 深拷贝并应用所有数据操作，返回新状态 */
 export function applyOpsToState(state: GameState, ops: DataOp[]): GameState {
   if (ops.length === 0) return state;
   const MAX_OPS = 200;
@@ -311,39 +303,11 @@ function parseMarkdownBlockToJson(block: string): any {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#")) continue;
 
-    if (trimmed.startsWith("-- ")) {
-      const content = trimmed.slice(3).trim();
-      const colonIdx = content.indexOf(":");
-      if (colonIdx !== -1) {
-        const key = content.slice(0, colonIdx).trim();
-        const rawValue = content.slice(colonIdx + 1).trim();
-        let value: unknown = rawValue;
-
-        if (rawValue.startsWith('"') && rawValue.endsWith('"')) {
-          value = rawValue.slice(1, -1);
-        } else if (!isNaN(Number(rawValue))) {
-          value = Number(rawValue);
-        } else if (rawValue === "true") {
-          value = true;
-        } else if (rawValue === "false") {
-          value = false;
-        }
-
-        result[key] = value;
-      }
-    } else if (trimmed.startsWith("--- ")) {
-      const content = trimmed.slice(4).trim();
-      const colonIdx = content.indexOf(":");
-      if (colonIdx !== -1) {
-        const key = content.slice(0, colonIdx).trim();
-        const valueStr = content.slice(colonIdx + 1).trim();
-
-        try {
-          result[key] = JSON.parse(valueStr);
-        } catch {
-          result[key] = valueStr;
-        }
-      }
+    const colonIdx = trimmed.indexOf(":");
+    if (colonIdx !== -1) {
+      const key = trimmed.slice(0, colonIdx).trim();
+      const rawValue = trimmed.slice(colonIdx + 1).trim();
+      result[key] = parseValue(rawValue);
     } else {
       if (!result.text) {
         result.text = trimmed;
@@ -375,33 +339,11 @@ function applyOne(root: any, op: DataOp): void {
       }
     }
     const last = segs[segs.length - 1];
-    if (typeof last === "string") {
-      if (typeof parent !== "object" || parent === null) {
-        console.warn("[applyOne] Parent is not an object for modify:", op.path);
-        return;
-      }
-      applyModify(parent, last, op);
-    } else {
-      const arr = parent;
-      if (Array.isArray(arr)) {
-        if (arr.length > 1000) {
-          console.warn("[applyOne] Array too large, skipping modify:", op.path);
-          return;
-        }
-        const idx = arr.findIndex((x: any) => String(x?.id) === last.id || String(x?.trait) === last.id);
-        if (idx !== -1) {
-          arr[idx] = parseValue(op.value);
-        } else {
-          const newValue = parseValue(op.value);
-          if (typeof newValue === "object" && newValue !== null) {
-            const normalizedValue = normalizeMeridianZone({ ...newValue, id: last.id });
-            arr.push(normalizedValue);
-          } else {
-            arr.push(newValue);
-          }
-        }
-      }
+    if (typeof parent !== "object" || parent === null) {
+      console.warn("[applyOne] Parent is not an object for modify:", op.path);
+      return;
     }
+    applyModify(parent, last, op);
   } else if (op.kind === "add") {
     const arr = resolveCollection(root, op.collection);
     if (!Array.isArray(arr)) {
@@ -412,18 +354,7 @@ function applyOne(root: any, op: DataOp): void {
       console.warn("[applyOne] Collection too large, skipping add:", op.collection);
       return;
     }
-    let payload: unknown;
-
-    if (op.payload.trim().startsWith("-- ")) {
-      payload = parseMarkdownBlockToJson(op.payload);
-    } else {
-      try {
-        payload = JSON.parse(op.payload);
-      } catch {
-        payload = op.payload;
-      }
-    }
-
+    const payload = parseMarkdownBlockToJson(op.payload);
     arr.push(payload);
   } else if (op.kind === "delete") {
     const arr = resolveCollection(root, op.collection);
@@ -434,13 +365,7 @@ function applyOne(root: any, op: DataOp): void {
       );
       if (idx !== -1) arr.splice(idx, 1);
     } else {
-      let target: unknown = op.id;
-      try {
-        target = JSON.parse(op.id);
-      } catch {
-        /* keep raw */
-      }
-      const idx = arr.findIndex((x: unknown) => x === target);
+      const idx = arr.findIndex((x: unknown) => String(x) === op.id);
       if (idx !== -1) arr.splice(idx, 1);
     }
   }
@@ -448,11 +373,7 @@ function applyOne(root: any, op: DataOp): void {
 
 function descend(obj: any, seg: PathSeg): any {
   if (typeof seg === "string") {
-    const result = obj?.[seg];
-    return result;
-  }
-  if (Array.isArray(obj)) {
-    return obj.find((x: any) => String(x?.id) === seg.id || String(x?.trait) === seg.id || String(x?.name) === seg.id);
+    return obj?.[seg];
   }
   return undefined;
 }
@@ -483,7 +404,6 @@ function applyModify(parent: any, key: string, op: Extract<DataOp, { kind: "modi
       }));
     }
 
-    // 归一化 meridians 数组：damage 字段应为 boolean
     if (key === "meridians" && Array.isArray(value)) {
       value = value.map((m: any) => ({
         ...m,
@@ -509,35 +429,31 @@ function applyModify(parent: any, key: string, op: Extract<DataOp, { kind: "modi
 }
 
 function formatValue(value: string): string {
-  try {
-    const parsed = JSON.parse(value);
-    if (Array.isArray(parsed)) {
-      if (parsed.length === 0) return "[]";
-      if (parsed.length <= 3) {
-        return parsed.map((item) => {
-          if (typeof item === "object" && item !== null) {
-            const keys = Object.keys(item);
-            if (keys.includes("name")) return item.name;
-            if (keys.includes("element")) return `${item.element}${item.grade}`;
-            if (keys.includes("id")) return item.id;
-            return JSON.stringify(item).slice(0, 20);
-          }
-          return String(item);
-        }).join(", ");
-      }
-      return `[${parsed.length}项]`;
+  const parsed = parseValue(value);
+  if (Array.isArray(parsed)) {
+    if (parsed.length === 0) return "[]";
+    if (parsed.length <= 3) {
+      return parsed.map((item) => {
+        if (typeof item === "object" && item !== null) {
+          const keys = Object.keys(item);
+          if (keys.includes("name")) return item.name;
+          if (keys.includes("element")) return `${item.element}${item.grade}`;
+          if (keys.includes("id")) return item.id;
+          return String(item).slice(0, 20);
+        }
+        return String(item);
+      }).join(", ");
     }
-    if (typeof parsed === "object" && parsed !== null) {
-      const keys = Object.keys(parsed);
-      if (keys.length <= 3) {
-        return keys.map((k) => `${k}:${parsed[k]}`).join(", ");
-      }
-      return `{${keys.length}个字段}`;
-    }
-    return String(parsed);
-  } catch {
-    return value;
+    return `[${parsed.length}项]`;
   }
+  if (typeof parsed === "object" && parsed !== null) {
+    const keys = Object.keys(parsed);
+    if (keys.length <= 3) {
+      return keys.map((k) => `${k}:${parsed[k]}`).join(", ");
+    }
+    return `{${keys.length}个字段}`;
+  }
+  return String(parsed);
 }
 
 export function summarizeOps(ops: DataOp[]): string[] {
