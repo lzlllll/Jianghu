@@ -299,7 +299,7 @@ export function ProfilePanel() {
 
                 <ScrollCard title="潜能" subtitle="四大根基，定修行上限">
                   <div className="space-y-4">
-                    {Object.entries(player.stats || {}).map(([key, val]) => {
+                    {Object.entries(typeof player.stats === "object" && player.stats !== null ? player.stats : {}).map(([key, val]) => {
                       if (key === "heartScores") return null;
                       const stat = STAT_LABELS[key as keyof typeof STAT_LABELS];
                       if (!stat) return null;

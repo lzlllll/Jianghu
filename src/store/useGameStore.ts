@@ -1275,6 +1275,43 @@ EFFECT: [效果描述]`,
         log: s.log,
         pillCache: s.pillCache,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (!state) return state;
+        const hasCorruptedData =
+          state.player &&
+          (typeof state.player.stats !== "object" ||
+            state.player.stats === null ||
+            !Array.isArray(state.player.stats.heartScores) ||
+            !Array.isArray(state.player.meridians) ||
+            !Array.isArray(state.player.spiritRoots));
+
+        if (hasCorruptedData) {
+          console.warn("[useGameStore] Detected corrupted data, resetting player stats");
+          return {
+            ...state,
+            player: {
+              ...state.player,
+              stats: {
+                vitality: typeof state.player.stats?.vitality === "number" ? state.player.stats.vitality : 50,
+                soul: typeof state.player.stats?.soul === "number" ? state.player.stats.soul : 50,
+                wisdom: typeof state.player.stats?.wisdom === "number" ? state.player.stats.wisdom : 50,
+                agility: typeof state.player.stats?.agility === "number" ? state.player.stats.agility : 50,
+                heartScores: Array.isArray(state.player.stats?.heartScores) ? state.player.stats.heartScores : [],
+              },
+              meridians: Array.isArray(state.player.meridians) ? state.player.meridians : [],
+              spiritRoots: Array.isArray(state.player.spiritRoots) ? state.player.spiritRoots : [],
+              buffs: Array.isArray(state.player.buffs) ? state.player.buffs : [],
+              shields: Array.isArray(state.player.shields) ? state.player.shields : [],
+              timeline: Array.isArray(state.player.timeline) ? state.player.timeline : [],
+            },
+            techniques: Array.isArray(state.techniques) ? state.techniques : [],
+            inventory: Array.isArray(state.inventory) ? state.inventory : [],
+            relations: Array.isArray(state.relations) ? state.relations : [],
+            log: Array.isArray(state.log) ? state.log : [],
+          };
+        }
+        return state;
+      },
     },
   ),
 );

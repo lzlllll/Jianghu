@@ -66,7 +66,7 @@ export function TechniquePanel() {
         if (req.minLevel && root.value < req.minLevel) return false;
       }
       if (req.type === "heartTrait") {
-        const score = player.stats.heartScores.find((hs) => hs.trait === req.value)?.score || 0;
+        const score = (player.stats?.heartScores && Array.isArray(player.stats.heartScores) ? player.stats.heartScores : []).find((hs) => hs.trait === req.value)?.score || 0;
         if (score < 50) return false;
       }
     }
@@ -103,7 +103,7 @@ export function TechniquePanel() {
     }
 
     for (const compat of tech.heartCompatibility || []) {
-      const heartScore = player.stats.heartScores.find((hs) => hs.trait === compat.trait)?.score || 0;
+      const heartScore = (player.stats?.heartScores && Array.isArray(player.stats.heartScores) ? player.stats.heartScores : []).find((hs) => hs.trait === compat.trait)?.score || 0;
       const rounded = Math.round((heartScore / 100) * (compat.bonus / 100) * 100);
       if (rounded !== 0) {
         sources.push({
@@ -144,7 +144,7 @@ export function TechniquePanel() {
     }
 
     for (const compat of tech.heartCompatibility || []) {
-      const heartScore = player.stats.heartScores.find((hs) => hs.trait === compat.trait)?.score || 0;
+      const heartScore = (player.stats?.heartScores && Array.isArray(player.stats.heartScores) ? player.stats.heartScores : []).find((hs) => hs.trait === compat.trait)?.score || 0;
       const contribution = Math.round((heartScore / 100) * (compat.bonus / 100) * 100);
       if (contribution !== 0) {
         list.push({
@@ -162,7 +162,7 @@ export function TechniquePanel() {
       list.push({ label: "经脉滞塞", value: "×0.5", impact: "negative" });
     }
 
-    const wisdomBonus = Math.max(0, (player.stats.wisdom - 50) * 0.5);
+    const wisdomBonus = Math.max(0, ((typeof player.stats === "object" && player.stats !== null ? player.stats.wisdom : 50) - 50) * 0.5);
     if (wisdomBonus > 0) {
       list.push({ label: "悟性加成", value: `+${wisdomBonus.toFixed(1)}%`, impact: "positive" });
     }
