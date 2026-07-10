@@ -25,8 +25,8 @@ const API_PRESETS: { label: string; baseUrl: string; flash: string; pro: string;
   {
     label: "DeepSeek",
     baseUrl: "https://api.deepseek.com/v1",
-    flash: "deepseek-chat",
-    pro: "deepseek-reasoner",
+    flash: "deepseek-v4-flash",
+    pro: "deepseek-v4-pro",
     note: "默认支持浏览器直连",
   },
   {

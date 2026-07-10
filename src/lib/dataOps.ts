@@ -126,22 +126,30 @@ function parseOpLines(block: string): DataOp[] {
       if (m) {
         let valuePart = m[3].trim();
         let lineCount = 0;
-        if ((valuePart.startsWith("[") || valuePart.startsWith("{")) && !isJsonClosed(valuePart)) {
-          i++;
-          while (i < lines.length && lineCount < MAX_LINES_PER_OP) {
-            const nextLine = lines[i].trim();
-            if (!nextLine || nextLine.startsWith("#") || nextLine.startsWith("//")) { i++; continue; }
-            if (/^(MODIFY|ADD|DELETE)\b/i.test(nextLine)) break;
-            if (valuePart.length + nextLine.length > MAX_VALUE_LENGTH) {
-              console.warn("[parseOpLines] Value too large, truncating");
-              break;
+        const isMultilineValue = valuePart.startsWith("[") || valuePart.startsWith("{");
+        
+        i++;
+        while (i < lines.length && lineCount < MAX_LINES_PER_OP) {
+          const nextLine = lines[i].trim();
+          if (!nextLine || nextLine.startsWith("#") || nextLine.startsWith("//")) {
+            if (isMultilineValue && !isJsonClosed(valuePart)) {
+              valuePart += "\n" + lines[i];
             }
-            valuePart += nextLine;
             i++;
             lineCount++;
-            if (isJsonClosed(valuePart)) break;
+            continue;
           }
+          if (/^(MODIFY|ADD|DELETE)\b/i.test(nextLine)) break;
+          if (valuePart.length + nextLine.length > MAX_VALUE_LENGTH) {
+            console.warn("[parseOpLines] Value too large, truncating");
+            break;
+          }
+          valuePart += "\n" + lines[i];
+          i++;
+          lineCount++;
+          if (isMultilineValue && isJsonClosed(valuePart)) break;
         }
+
         ops.push({
           kind: "modify",
           path: m[1],
@@ -167,17 +175,10 @@ function parseOpLines(block: string): DataOp[] {
             console.warn("[parseOpLines] Payload too large, truncating");
             break;
           }
-          if (nextLine.startsWith("-- ") || nextLine.startsWith("--- ")) {
-            payload += "\n" + lines[i];
-            i++;
-            lineCount++;
-          } else if (nextLine && !/^(MODIFY|ADD|DELETE)\b/i.test(nextLine)) {
-            payload += "\n" + lines[i];
-            i++;
-            lineCount++;
-          } else {
-            break;
-          }
+          if (/^(MODIFY|ADD|DELETE)\b/i.test(nextLine)) break;
+          payload += "\n" + lines[i];
+          i++;
+          lineCount++;
         }
 
         ops.push({

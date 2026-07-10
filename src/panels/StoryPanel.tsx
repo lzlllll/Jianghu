@@ -4,8 +4,6 @@ import { useGameStore } from "@/store/useGameStore";
 import { ScrollCard } from "@/components/ui/ScrollCard";
 import { PanelTitle } from "@/components/ui/PanelTitle";
 import { SealButton } from "@/components/ui/SealButton";
-import { CloudDivider } from "@/components/ui/CloudDivider";
-import { summarizeOps } from "@/lib/dataOps";
 import { cn } from "@/lib/utils";
 import { BattlePanel } from "@/components/battle/BattlePanel";
 import {
@@ -165,28 +163,6 @@ export function StoryPanel({ onOpenSettings }: StoryPanelProps) {
             )}
           </div>
 
-          {/* 数据变更徽章 */}
-          {lastTurn && Array.isArray(lastTurn.ops) && lastTurn.ops.length > 0 && (
-            <>
-              <CloudDivider className="my-3" />
-              <div>
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Database size={12} className="text-gold-400/70" />
-                  <span className="font-serif text-xs text-paper-300 tracking-wider">
-                    气运流转
-                  </span>
-                  <span className="font-number text-[10px] text-paper-400/50">
-                    {lastTurn.ops.length} 项
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {summarizeOps(lastTurn.ops).map((s, i) => (
-                    <OpBadge key={i} text={s} op={lastTurn.ops[i]} />
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
         </ScrollCard>
 
         {/* 决策输入 */}
@@ -397,26 +373,6 @@ function StageIndicator({ stage }: { stage: string }) {
         );
       })}
     </div>
-  );
-}
-
-function OpBadge({ text, op }: { text: string; op: import("@/data/types").DataOp }) {
-  const color =
-    op.kind === "add"
-      ? "border-jade-500/40 bg-jade-500/10 text-jade-300"
-      : op.kind === "delete"
-        ? "border-cinnabar-500/40 bg-cinnabar-500/10 text-cinnabar-300"
-        : "border-gold-500/40 bg-gold-500/10 text-gold-300";
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center px-2 py-1 rounded text-[10px] font-number border",
-        color,
-      )}
-      title={text}
-    >
-      {text}
-    </span>
   );
 }
 
