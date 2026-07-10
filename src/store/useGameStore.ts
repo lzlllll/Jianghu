@@ -992,7 +992,7 @@ EFFECT: [效果描述]`,
     }),
     {
       name: "xiuxian-save",
-      version: 9,
+      version: 10,
       migrate: (state: any, version: number) => {
         if (version < 2) {
           if (state.techniques && Array.isArray(state.techniques)) {
@@ -1228,6 +1228,39 @@ EFFECT: [效果描述]`,
               }
               state.pillCache = newCache;
             }
+          }
+        }
+
+        if (version < 10) {
+          if (state.player) {
+            if (typeof state.player.stats !== "object" || state.player.stats === null) {
+              state.player.stats = {
+                vitality: 0,
+                soul: 0,
+                wisdom: 0,
+                agility: 0,
+                heartScores: [],
+              };
+            } else {
+              if (typeof state.player.stats.vitality !== "number") state.player.stats.vitality = 0;
+              if (typeof state.player.stats.soul !== "number") state.player.stats.soul = 0;
+              if (typeof state.player.stats.wisdom !== "number") state.player.stats.wisdom = 0;
+              if (typeof state.player.stats.agility !== "number") state.player.stats.agility = 0;
+              if (!Array.isArray(state.player.stats.heartScores)) state.player.stats.heartScores = [];
+            }
+            if (!Array.isArray(state.player.meridians)) state.player.meridians = [];
+            if (!Array.isArray(state.player.spiritRoots)) state.player.spiritRoots = [];
+            if (!Array.isArray(state.player.buffs)) state.player.buffs = [];
+            if (!Array.isArray(state.player.shields)) state.player.shields = [];
+            if (!Array.isArray(state.player.timeline)) state.player.timeline = [];
+          }
+          if (!Array.isArray(state.techniques)) state.techniques = [];
+          if (!Array.isArray(state.inventory)) state.inventory = [];
+          if (!Array.isArray(state.relations)) state.relations = [];
+          if (!Array.isArray(state.log)) state.log = [];
+          if (state.sect) {
+            if (!Array.isArray(state.sect.positions)) state.sect.positions = [];
+            if (!Array.isArray(state.sect.tasks)) state.sect.tasks = [];
           }
         }
         return state;
