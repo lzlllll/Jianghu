@@ -107,6 +107,90 @@ interface GameStore extends GameState {
   updateNews: (newItems: { category: string; title: string; content: string; source: string }[]) => void;
 }
 
+function validateAndFixPlayer(player: any): Player {
+  if (!player || typeof player !== "object") {
+    return {
+      ...initialPlayer,
+      spiritRoots: [],
+      stats: { vitality: 50, soul: 50, wisdom: 50, agility: 50, heartScores: [] },
+      meridians: [],
+      timeline: [],
+      buffs: [],
+      shields: [],
+      activeHeartTechnique: null,
+    };
+  }
+
+  const stats = typeof player.stats === "object" && player.stats !== null ? player.stats : {};
+
+  return {
+    ...player,
+    name: typeof player.name === "string" && player.name ? player.name : "玩家",
+    title: typeof player.title === "string" ? player.title : "无名之辈",
+    realm: typeof player.realm === "string" ? player.realm : "引气初期",
+    realmIndex: typeof player.realmIndex === "number" ? player.realmIndex : 0,
+    cultivation: typeof player.cultivation === "number" ? player.cultivation : 0,
+    hp: typeof player.hp === "number" ? player.hp : 100,
+    hpMax: typeof player.hpMax === "number" ? player.hpMax : 100,
+    mp: typeof player.mp === "number" ? player.mp : 50,
+    mpMax: typeof player.mpMax === "number" ? player.mpMax : 50,
+    spirit: typeof player.spirit === "number" ? player.spirit : 0,
+    spiritMax: typeof player.spiritMax === "number" ? player.spiritMax : 100,
+    lifespanCurrent: typeof player.lifespanCurrent === "number" ? player.lifespanCurrent : 100,
+    lifespanMax: typeof player.lifespanMax === "number" ? player.lifespanMax : 100,
+    body: typeof player.body === "string" ? player.body : "凡人之躯",
+    fortune: typeof player.fortune === "string" ? player.fortune : "平庸",
+    karma: typeof player.karma === "number" ? player.karma : 50,
+    position: typeof player.position === "string" ? player.position : "",
+    sectName: typeof player.sectName === "string" ? player.sectName : "",
+    description: typeof player.description === "string" ? player.description : "",
+    personality: typeof player.personality === "string" ? player.personality : "",
+    background: typeof player.background === "string" ? player.background : "",
+    stats: {
+      vitality: typeof stats.vitality === "number" ? stats.vitality : 50,
+      soul: typeof stats.soul === "number" ? stats.soul : 50,
+      wisdom: typeof stats.wisdom === "number" ? stats.wisdom : 50,
+      agility: typeof stats.agility === "number" ? stats.agility : 50,
+      heartScores: Array.isArray(stats.heartScores) ? stats.heartScores : [],
+    },
+    spiritRoots: Array.isArray(player.spiritRoots) ? player.spiritRoots : [],
+    meridians: Array.isArray(player.meridians) ? player.meridians : [],
+    timeline: Array.isArray(player.timeline) ? player.timeline : [],
+    buffs: Array.isArray(player.buffs) ? player.buffs : [],
+    shields: Array.isArray(player.shields) ? player.shields : [],
+    activeHeartTechnique: player.activeHeartTechnique || null,
+  };
+}
+
+function validateAndFixState(state: any): GameState {
+  return {
+    ...initialState,
+    ...state,
+    player: validateAndFixPlayer(state?.player),
+    techniques: Array.isArray(state?.techniques) ? state.techniques : [],
+    inventory: Array.isArray(state?.inventory) ? state.inventory : [],
+    spiritStones: typeof state?.spiritStones === "object" && state.spiritStones !== null
+      ? {
+        low: typeof state.spiritStones.low === "number" ? state.spiritStones.low : 0,
+        mid: typeof state.spiritStones.mid === "number" ? state.spiritStones.mid : 0,
+        high: typeof state.spiritStones.high === "number" ? state.spiritStones.high : 0,
+        supreme: typeof state.spiritStones.supreme === "number" ? state.spiritStones.supreme : 0,
+      }
+      : { low: 0, mid: 0, high: 0, supreme: 0 },
+    sect: typeof state?.sect === "object" && state.sect !== null
+      ? {
+        ...initialState.sect,
+        ...state.sect,
+        positions: Array.isArray(state.sect.positions) ? state.sect.positions : [],
+        tasks: Array.isArray(state.sect.tasks) ? state.sect.tasks : [],
+      }
+      : initialState.sect,
+    relations: Array.isArray(state?.relations) ? state.relations : [],
+    log: Array.isArray(state?.log) ? state.log : [],
+    pillCache: typeof state?.pillCache === "object" && state.pillCache !== null ? state.pillCache : {},
+  };
+}
+
 const initialState: GameState = {
   player: {
     ...initialPlayer,
@@ -1344,40 +1428,8 @@ EFFECT: [效果描述]`,
       }),
       onRehydrateStorage: () => (state) => {
         if (!state) return state;
-        const hasCorruptedData =
-          state.player &&
-          (typeof state.player.stats !== "object" ||
-            state.player.stats === null ||
-            !Array.isArray(state.player.stats.heartScores) ||
-            !Array.isArray(state.player.meridians) ||
-            !Array.isArray(state.player.spiritRoots));
-
-        if (hasCorruptedData) {
-          console.warn("[useGameStore] Detected corrupted data, resetting player stats");
-          return {
-            ...state,
-            player: {
-              ...state.player,
-              stats: {
-                vitality: typeof state.player.stats?.vitality === "number" ? state.player.stats.vitality : 50,
-                soul: typeof state.player.stats?.soul === "number" ? state.player.stats.soul : 50,
-                wisdom: typeof state.player.stats?.wisdom === "number" ? state.player.stats.wisdom : 50,
-                agility: typeof state.player.stats?.agility === "number" ? state.player.stats.agility : 50,
-                heartScores: Array.isArray(state.player.stats?.heartScores) ? state.player.stats.heartScores : [],
-              },
-              meridians: Array.isArray(state.player.meridians) ? state.player.meridians : [],
-              spiritRoots: Array.isArray(state.player.spiritRoots) ? state.player.spiritRoots : [],
-              buffs: Array.isArray(state.player.buffs) ? state.player.buffs : [],
-              shields: Array.isArray(state.player.shields) ? state.player.shields : [],
-              timeline: Array.isArray(state.player.timeline) ? state.player.timeline : [],
-            },
-            techniques: Array.isArray(state.techniques) ? state.techniques : [],
-            inventory: Array.isArray(state.inventory) ? state.inventory : [],
-            relations: Array.isArray(state.relations) ? state.relations : [],
-            log: Array.isArray(state.log) ? state.log : [],
-          };
-        }
-        return state;
+        console.warn("[useGameStore] Validating and fixing rehydrated state");
+        return validateAndFixState(state);
       },
     },
   ),
