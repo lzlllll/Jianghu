@@ -992,7 +992,7 @@ EFFECT: [效果描述]`,
     }),
     {
       name: "xiuxian-save",
-      version: 10,
+      version: 11,
       migrate: (state: any, version: number) => {
         if (version < 2) {
           if (state.techniques && Array.isArray(state.techniques)) {
@@ -1259,6 +1259,73 @@ EFFECT: [效果描述]`,
           if (!Array.isArray(state.relations)) state.relations = [];
           if (!Array.isArray(state.log)) state.log = [];
           if (state.sect) {
+            if (!Array.isArray(state.sect.positions)) state.sect.positions = [];
+            if (!Array.isArray(state.sect.tasks)) state.sect.tasks = [];
+          }
+        }
+
+        if (version < 11) {
+          if (!state.player) {
+            state.player = { ...initialPlayer, stats: { vitality: 50, soul: 50, wisdom: 50, agility: 50, heartScores: [] }, spiritRoots: [], meridians: [], timeline: [], buffs: [], shields: [], activeHeartTechnique: null };
+          } else {
+            if (!state.player.name || typeof state.player.name !== "string") state.player.name = "玩家";
+            if (!state.player.title || typeof state.player.title !== "string") state.player.title = "无名之辈";
+            if (!state.player.realm || typeof state.player.realm !== "string") state.player.realm = "引气初期";
+            if (typeof state.player.realmIndex !== "number") state.player.realmIndex = 0;
+            if (typeof state.player.cultivation !== "number") state.player.cultivation = 0;
+            if (typeof state.player.hp !== "number") state.player.hp = 100;
+            if (typeof state.player.hpMax !== "number") state.player.hpMax = 100;
+            if (typeof state.player.mp !== "number") state.player.mp = 50;
+            if (typeof state.player.mpMax !== "number") state.player.mpMax = 50;
+            if (typeof state.player.spirit !== "number") state.player.spirit = 0;
+            if (typeof state.player.spiritMax !== "number") state.player.spiritMax = 100;
+            if (typeof state.player.lifespanCurrent !== "number") state.player.lifespanCurrent = 100;
+            if (typeof state.player.lifespanMax !== "number") state.player.lifespanMax = 100;
+            if (!state.player.body || typeof state.player.body !== "string") state.player.body = "凡人之躯";
+            if (!state.player.fortune || typeof state.player.fortune !== "string") state.player.fortune = "平庸";
+            if (typeof state.player.karma !== "number") state.player.karma = 50;
+            if (!state.player.position || typeof state.player.position !== "string") state.player.position = "";
+            if (!state.player.sectName || typeof state.player.sectName !== "string") state.player.sectName = "";
+            if (!state.player.description || typeof state.player.description !== "string") state.player.description = "";
+            if (!state.player.personality || typeof state.player.personality !== "string") state.player.personality = "";
+            if (!state.player.background || typeof state.player.background !== "string") state.player.background = "";
+
+            if (typeof state.player.stats !== "object" || state.player.stats === null) {
+              state.player.stats = { vitality: 50, soul: 50, wisdom: 50, agility: 50, heartScores: [] };
+            } else {
+              if (typeof state.player.stats.vitality !== "number") state.player.stats.vitality = 50;
+              if (typeof state.player.stats.soul !== "number") state.player.stats.soul = 50;
+              if (typeof state.player.stats.wisdom !== "number") state.player.stats.wisdom = 50;
+              if (typeof state.player.stats.agility !== "number") state.player.stats.agility = 50;
+              if (!Array.isArray(state.player.stats.heartScores)) state.player.stats.heartScores = [];
+            }
+
+            if (!Array.isArray(state.player.spiritRoots)) state.player.spiritRoots = [];
+            if (!Array.isArray(state.player.meridians)) state.player.meridians = [];
+            if (!Array.isArray(state.player.timeline)) state.player.timeline = [];
+            if (!Array.isArray(state.player.buffs)) state.player.buffs = [];
+            if (!Array.isArray(state.player.shields)) state.player.shields = [];
+          }
+
+          if (!Array.isArray(state.techniques)) state.techniques = [];
+          if (!Array.isArray(state.inventory)) state.inventory = [];
+          if (!Array.isArray(state.relations)) state.relations = [];
+          if (!Array.isArray(state.log)) state.log = [];
+
+          if (!state.spiritStones || typeof state.spiritStones !== "object") {
+            state.spiritStones = { low: 0, mid: 0, high: 0, supreme: 0 };
+          } else {
+            if (typeof state.spiritStones.low !== "number") state.spiritStones.low = 0;
+            if (typeof state.spiritStones.mid !== "number") state.spiritStones.mid = 0;
+            if (typeof state.spiritStones.high !== "number") state.spiritStones.high = 0;
+            if (typeof state.spiritStones.supreme !== "number") state.spiritStones.supreme = 0;
+          }
+
+          if (state.sect) {
+            if (!state.sect.name || typeof state.sect.name !== "string") state.sect.name = "";
+            if (typeof state.sect.level !== "number") state.sect.level = 1;
+            if (!state.sect.leader || typeof state.sect.leader !== "string") state.sect.leader = "";
+            if (typeof state.sect.contribution !== "number") state.sect.contribution = 0;
             if (!Array.isArray(state.sect.positions)) state.sect.positions = [];
             if (!Array.isArray(state.sect.tasks)) state.sect.tasks = [];
           }
