@@ -10,6 +10,7 @@ import type { AISettings, GameSnapshot } from "@/data/types";
 interface PlayerSetup {
   name: string;
   title: string;
+  gender: "male" | "female";
   sectName: string;
   position: string;
   realm: string;
@@ -56,6 +57,7 @@ export function StartSetup() {
   const [setup, setSetup] = useState<PlayerSetup>({
     name: "",
     title: "",
+    gender: "male",
     sectName: "",
     position: "外门弟子",
     realm: "引气",
@@ -120,6 +122,7 @@ export function StartSetup() {
         ...gameState.player,
         name: setup.name.trim(),
         title: setup.title.trim() || "无名之辈",
+        gender: setup.gender,
         sectName: setup.sectName.trim() || "散修",
         position: setup.position,
         realmIndex: REALMS.indexOf(setup.realm) * 4,
@@ -344,6 +347,33 @@ export function StartSetup() {
 
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block font-serif text-sm text-paper-300 mb-1">性别</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleInputChange("gender", "male")}
+                    className={cn(
+                      "flex-1 px-3 py-2 rounded font-serif text-sm border transition-colors",
+                      setup.gender === "male"
+                        ? "border-gold-400/50 bg-gold-400/10 text-gold-400"
+                        : "border-paper-400/20 bg-ink-900/30 text-paper-400/60 hover:border-paper-400/40"
+                    )}
+                  >
+                    男
+                  </button>
+                  <button
+                    onClick={() => handleInputChange("gender", "female")}
+                    className={cn(
+                      "flex-1 px-3 py-2 rounded font-serif text-sm border transition-colors",
+                      setup.gender === "female"
+                        ? "border-gold-400/50 bg-gold-400/10 text-gold-400"
+                        : "border-paper-400/20 bg-ink-900/30 text-paper-400/60 hover:border-paper-400/40"
+                    )}
+                  >
+                    女
+                  </button>
+                </div>
+              </div>
               <div>
                 <label className="block font-serif text-sm text-paper-300 mb-1">姓名 *</label>
                 <input

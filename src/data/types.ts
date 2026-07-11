@@ -248,6 +248,7 @@ export interface TimelineEvent {
 export interface Player {
   name: string;
   title: string;
+  gender: "male" | "female";
   sectName: string;
   position: string;
   realmIndex: number;

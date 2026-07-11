@@ -89,6 +89,7 @@ export const ELEMENT_GENERATE: Record<string, string> = {
 export const initialPlayer: Player = {
   name: "",
   title: "",
+  gender: "male",
   sectName: "",
   position: "",
   realmIndex: 0,
