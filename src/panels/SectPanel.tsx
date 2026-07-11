@@ -259,12 +259,14 @@ function PositionTree() {
 function TaskBoard() {
   const tasks = useGameStore((s) => Array.isArray(s.sect?.tasks) ? s.sect.tasks : []);
 
-  const DIFFICULTY: Record<SectTask["difficulty"], { color: string; bg: string }> = {
+  const DIFFICULTY: Record<string, { color: string; bg: string }> = {
     易: { color: "text-jade-400", bg: "border-jade-500/30 bg-jade-500/10" },
     中: { color: "text-gold-400", bg: "border-gold-400/30 bg-gold-400/10" },
     难: { color: "text-cinnabar-400", bg: "border-cinnabar-500/30 bg-cinnabar-500/10" },
     险: { color: "text-cinnabar-400", bg: "border-cinnabar-600/40 bg-cinnabar-600/15" },
   };
+
+  const DEFAULT_DIFFICULTY = { color: "text-paper-400", bg: "border-paper-500/30 bg-paper-500/10" };
 
   return (
     <ScrollCard title="门派任务" subtitle="为宗出力，积攒贡献">
@@ -273,7 +275,7 @@ function TaskBoard() {
       </p>
       <div className="space-y-2">
         {tasks.map((task) => {
-          const d = DIFFICULTY[task.difficulty];
+          const d = DIFFICULTY[task.difficulty] || DEFAULT_DIFFICULTY;
           return (
             <div
               key={task.id}
@@ -377,11 +379,13 @@ function HeritageBoard() {
   const heritage = useGameStore((s) => Array.isArray(s.sect?.heritage) ? s.sect.heritage : []);
   const resources = useGameStore((s) => Array.isArray(s.sect?.resources) ? s.sect.resources : []);
 
-  const STATUS_STYLE: Record<SectHeritage["status"], string> = {
+  const STATUS_STYLE: Record<string, string> = {
     已习: "text-jade-400 border-jade-500/40 bg-jade-500/10",
     可习: "text-gold-400 border-gold-400/40 bg-gold-400/10",
     未达: "text-paper-500/50 border-paper-400/15 bg-ink-900/40",
   };
+
+  const DEFAULT_STATUS = "text-paper-500/50 border-paper-400/15 bg-ink-900/40";
 
   return (
     <div className="grid grid-cols-2 gap-4">
@@ -408,7 +412,7 @@ function HeritageBoard() {
               <span
                 className={cn(
                   "font-serif text-xs px-2 py-0.5 rounded border",
-                  STATUS_STYLE[h.status],
+                  STATUS_STYLE[h.status] || DEFAULT_STATUS,
                 )}
               >
                 {h.status}

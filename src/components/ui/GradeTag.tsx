@@ -6,7 +6,7 @@ interface GradeTagProps {
   className?: string;
 }
 
-const gradeStyle: Record<ItemGrade, string> = {
+const gradeStyle: Record<string, string> = {
   凡品: "border-paper-400/40 text-paper-300 bg-paper-400/10",
   灵品: "border-jade-500/50 text-jade-400 bg-jade-500/10",
   玄品: "border-cinnabar-500/50 text-cinnabar-400 bg-cinnabar-500/10",
@@ -14,12 +14,14 @@ const gradeStyle: Record<ItemGrade, string> = {
   仙品: "border-gold-300/80 text-gold-300 bg-gold-300/15",
 };
 
+const DEFAULT_GRADE_STYLE = "border-paper-400/40 text-paper-300 bg-paper-400/10";
+
 export function GradeTag({ grade, className }: GradeTagProps) {
   return (
     <span
       className={cn(
         "inline-flex items-center px-2 py-0.5 rounded-sm border text-[10px] font-serif tracking-wider",
-        gradeStyle[grade],
+        gradeStyle[grade] || DEFAULT_GRADE_STYLE,
         className,
       )}
     >

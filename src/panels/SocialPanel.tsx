@@ -114,9 +114,16 @@ export function SocialPanel() {
   );
 }
 
+const DEFAULT_RELATION_COLOR = {
+  text: "text-paper-400",
+  border: "border-paper-500/40",
+  bg: "bg-paper-500/10",
+  seal: "bg-paper-500",
+};
+
 function RelationCard({ relation }: { relation: Relation }) {
   const openNPCChat = useAIStore((s) => s.openNPCChat);
-  const c = TYPE_COLOR[relation.type];
+  const c = TYPE_COLOR[relation.type] || DEFAULT_RELATION_COLOR;
   const isEnemy = relation.type === "enemy";
   const isCompanion = relation.type === "dao_companion";
 

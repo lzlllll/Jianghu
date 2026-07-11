@@ -391,7 +391,12 @@ function applyOne(root: any, op: DataOp): void {
       return;
     }
     const payload = parseMarkdownBlockToJson(op.payload);
-    arr.push(payload);
+    if (op.collection === "log") {
+      const text = typeof payload === "string" ? payload : payload.text || payload.desc || JSON.stringify(payload);
+      arr.push(text);
+    } else {
+      arr.push(payload);
+    }
   } else if (op.kind === "delete") {
     const arr = resolveCollection(root, op.collection);
     if (!Array.isArray(arr) || arr.length === 0) return;

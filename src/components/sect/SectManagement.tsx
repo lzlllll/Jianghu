@@ -14,9 +14,9 @@ export function SectManagement() {
   const sect = useGameStore((s) => s.sect);
   const isDeveloperMode = useAIStore((s) => s.isDeveloperMode);
   const player = useGameStore((s) => s.player);
-  
+
   const isLeader = player.position === "掌门" || player.position === "副掌门" || isDeveloperMode;
-  
+
   const [tab, setTab] = useState<ManagementTab>("industries");
 
   const TABS: { id: ManagementTab; label: string; icon: React.ReactNode }[] = [
@@ -101,19 +101,22 @@ function IndustryPanel({ industries }: { industries: SectIndustry[] }) {
 }
 
 function ActivityPanel({ activities }: { activities: SectActivity[] }) {
-  const STATUS_STYLE: Record<SectActivity["status"], string> = {
+  const STATUS_STYLE: Record<string, string> = {
     "筹备中": "text-gold-400 border-gold-400/30 bg-gold-400/10",
     "进行中": "text-jade-400 border-jade-500/30 bg-jade-500/10",
     "已结束": "text-paper-500/50 border-paper-400/15 bg-ink-900/40",
   };
 
-  const TYPE_STYLE: Record<SectActivity["type"], string> = {
+  const TYPE_STYLE: Record<string, string> = {
     "大比": "text-cinnabar-400",
     "试炼": "text-blue-400",
     "庆典": "text-gold-400",
     "祭祀": "text-purple-400",
     "远征": "text-red-400",
   };
+
+  const DEFAULT_STATUS_STYLE = "text-paper-500/50 border-paper-400/15 bg-ink-900/40";
+  const DEFAULT_TYPE_STYLE = "text-paper-400";
 
   return (
     <ScrollCard title="宗门活动" subtitle="凝心聚力，共襄盛举">
@@ -123,11 +126,11 @@ function ActivityPanel({ activities }: { activities: SectActivity[] }) {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-3">
                 <span className="font-brush text-lg text-paper-100">{act.name}</span>
-                <span className={cn("font-serif text-xs px-2 py-0.5 rounded border", TYPE_STYLE[act.type])}>
+                <span className={cn("font-serif text-xs px-2 py-0.5 rounded border", TYPE_STYLE[act.type] || DEFAULT_TYPE_STYLE)}>
                   {act.type}
                 </span>
               </div>
-              <span className={cn("font-serif text-xs px-2 py-0.5 rounded border", STATUS_STYLE[act.status])}>
+              <span className={cn("font-serif text-xs px-2 py-0.5 rounded border", STATUS_STYLE[act.status] || DEFAULT_STATUS_STYLE)}>
                 {act.status}
               </span>
             </div>
@@ -216,7 +219,7 @@ function TreasuryPanel({ treasury, consumption }: { treasury: { spiritStones: nu
           {(Array.isArray(consumption.recentConsumption) ? consumption.recentConsumption : []).map((item) => (
             <div key={item.date} className="flex-1 flex flex-col items-center">
               <span className="font-number text-xs text-paper-400/70 mb-1">{item.cost}</span>
-              <div 
+              <div
                 className="w-full bg-cinnabar-500/30 rounded-t"
                 style={{ height: `${(item.cost / 3000) * 100}%` }}
               />
