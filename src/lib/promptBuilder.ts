@@ -113,7 +113,7 @@ export function buildDataSchema(state: GameState): string {
     );
   });
 
-  const s = state.sect || { name: "", level: 1, contribution: 0, leader: "", positions: [], tasks: [], heritage: [], resources: [] };
+  const s = state.sect || { name: "", level: 1, contribution: 0, leader: "", territory: "", appearance: "", reputationDesc: "", surroundings: "", positions: [], tasks: [], heritage: [], resources: [] };
   lines.push(`sect.name = ${s.name || ""}`);
   lines.push(`sect.level = ${s.level}`);
   lines.push(`sect.contribution = ${s.contribution}`);
