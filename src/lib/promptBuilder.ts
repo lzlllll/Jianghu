@@ -71,6 +71,8 @@ export function buildDataSchema(state: GameState): string {
   lines.push(`player.sectName = ${p.sectName || ""}`);
   lines.push(`player.position = ${p.position || ""}`);
   lines.push(`player.background = ${p.background || ""}`);
+  lines.push(`player.personality = ${p.personality || ""}`);
+  lines.push(`player.description = ${p.description || ""}`);
 
   const spiritRoots = Array.isArray(p.spiritRoots) ? p.spiritRoots : [];
   lines.push(`player.spiritRoots = ${spiritRoots.map((r) => `${r.element}${r.value}`).join(" ") || "(空)"}`);
@@ -811,9 +813,9 @@ battle
       : "（尚无近况）";
 
   const user = `【玩家身世背景】
-${state.player.background}
+${state.player.background || "（暂无记载）"}
 
-【前情提要（已压缩）】
+${state.player.personality ? `【玩家心性】\n${state.player.personality}\n\n` : ""}${state.player.description ? `【玩家外貌】\n${state.player.description}\n\n` : ""}【前情提要（已压缩）】
 ${summary || "（开端）"}
 
 【最近经历】

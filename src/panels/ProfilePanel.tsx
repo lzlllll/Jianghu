@@ -78,7 +78,26 @@ export function ProfilePanel() {
 
       {activeTab === "heart" && (
         <div className="space-y-6">
-          <ScrollCard title="心性" subtitle="八面玲珑，一念之差">
+          <ScrollCard title="心性" subtitle="人之初，性本善">
+            <div className="relative">
+              <div className="absolute -left-1 top-0 font-brush text-5xl text-cinnabar-500/10 select-none pointer-events-none">
+                {(player.personality || "").charAt(0) || "心"}
+              </div>
+              <p className="font-serif text-lg text-paper-100 leading-loose tracking-wide indent-[2em] relative z-10 whitespace-pre-wrap">
+                {player.personality || "心性未明，待红尘历练方知本性。"}
+              </p>
+            </div>
+            <div className="mt-4 pt-4 border-t border-gold-500/15 flex items-center justify-between">
+              <span className="font-serif text-sm text-paper-400/50">
+                共 {(player.personality || "").length} 字
+              </span>
+              <span className="font-brush text-base text-gold-400/40 tracking-wider">
+                · 心性录 ·
+              </span>
+            </div>
+          </ScrollCard>
+
+          <ScrollCard title="心性评分" subtitle="八面玲珑，一念之差">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {(Array.isArray(player.stats?.heartScores) ? player.stats.heartScores : []).map((hs) => {
                 const modifiers = hs.modifiers && hs.modifiers.length > 0
@@ -175,6 +194,29 @@ export function ProfilePanel() {
               </div>
             </ScrollCard>
           </div>
+
+          {player.description && (
+            <ScrollCard title="外貌" subtitle="天生一副皮囊，仙姿玉骨" ornament={
+              <span className="font-brush text-sm text-jade-400/40">形貌</span>
+            }>
+              <div className="relative">
+                <div className="absolute -left-1 top-0 font-brush text-5xl text-jade-500/10 select-none pointer-events-none">
+                  {(player.description || "").charAt(0) || "貌"}
+                </div>
+                <p className="font-serif text-lg text-paper-100 leading-loose tracking-wide indent-[2em] relative z-10 whitespace-pre-wrap">
+                  {player.description}
+                </p>
+              </div>
+              <div className="mt-4 pt-4 border-t border-jade-500/15 flex items-center justify-between">
+                <span className="font-serif text-sm text-paper-400/50">
+                  共 {player.description.length} 字
+                </span>
+                <span className="font-brush text-base text-jade-400/40 tracking-wider">
+                  · 容貌录 ·
+                </span>
+              </div>
+            </ScrollCard>
+          )}
         </div>
       )}
 
@@ -547,7 +589,8 @@ export function ProfilePanel() {
             </div>
           </div>
         </div>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 }
