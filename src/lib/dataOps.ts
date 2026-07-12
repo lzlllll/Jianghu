@@ -155,7 +155,7 @@ function parseOpLines(block: string): DataOp[] {
         op,
         value: value.trim(),
       });
-    } else if (/^ADD\b/i.test(rawLine)) {
+    } else if (/^ADD\s+/i.test(rawLine)) {
       const rest = rawLine.replace(/^ADD\s+/i, "").trim();
       const collection = rest;
       let payload = "";
@@ -183,11 +183,14 @@ function parseOpLines(block: string): DataOp[] {
         lineCount++;
       }
 
-      ops.push({
-        kind: "add",
-        collection,
-        payload: payload.trim(),
-      });
+      const trimmedPayload = payload.trim();
+      if (trimmedPayload) {
+        ops.push({
+          kind: "add",
+          collection,
+          payload: trimmedPayload,
+        });
+      }
     } else if (/^DELETE\b/i.test(rawLine)) {
       const rest = rawLine.replace(/^DELETE\s+/i, "").trim();
       const firstSpace = rest.indexOf(" ");
@@ -226,6 +229,10 @@ function parsePath(path: string): PathSeg[] {
 function parseValue(raw: string): unknown {
   const trimmed = raw.trim();
 
+  if (!trimmed) {
+    return raw;
+  }
+
   if (!isNaN(Number(trimmed))) {
     return Number(trimmed);
   }
@@ -250,7 +257,11 @@ function parseValue(raw: string): unknown {
     try {
       return JSON.parse(trimmed);
     } catch {
-      return raw;
+      try {
+        return JSON.parse(trimmed.replace(/'/g, '"'));
+      } catch {
+        return trimmed;
+      }
     }
   }
 
@@ -258,11 +269,15 @@ function parseValue(raw: string): unknown {
     try {
       return JSON.parse(trimmed);
     } catch {
-      return raw;
+      try {
+        return JSON.parse(trimmed.replace(/'/g, '"'));
+      } catch {
+        return trimmed;
+      }
     }
   }
 
-  return raw;
+  return trimmed;
 }
 
 function resolveCollection(root: any, collection: string): any[] {
@@ -329,9 +344,6 @@ function parseMarkdownBlockToJson(block: string): any {
   const result: Record<string, unknown> = {};
   const lines = block.split("\n");
 
-  let currentKey: string | null = null;
-  let currentValue: string = "";
-
   for (const line of lines) {
     let trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#")) continue;
@@ -344,31 +356,9 @@ function parseMarkdownBlockToJson(block: string): any {
 
     const colonIdx = trimmed.indexOf(":");
     if (colonIdx !== -1) {
-      if (currentKey) {
-        result[currentKey] = parseValue(currentValue.trim());
-        currentKey = null;
-        currentValue = "";
-      }
-
       const key = trimmed.slice(0, colonIdx).trim();
       const rawValue = trimmed.slice(colonIdx + 1).trim();
-      const firstChar = rawValue.charAt(0);
-
-      if ((firstChar === "[" || firstChar === "{") && !rawValue.endsWith("]") && !rawValue.endsWith("}")) {
-        currentKey = key;
-        currentValue = rawValue;
-      } else {
-        result[key] = parseValue(rawValue);
-      }
-    } else if (currentKey) {
-      currentValue += "\n" + trimmed;
-      const firstChar = currentValue.charAt(0);
-      const lastChar = currentValue.trim().charAt(currentValue.trim().length - 1);
-      if ((firstChar === "[" && lastChar === "]") || (firstChar === "{" && lastChar === "}")) {
-        result[currentKey] = parseValue(currentValue.trim());
-        currentKey = null;
-        currentValue = "";
-      }
+      result[key] = parseValue(rawValue);
     } else {
       if (!result.text) {
         result.text = trimmed;
@@ -376,10 +366,6 @@ function parseMarkdownBlockToJson(block: string): any {
         result.text += "\n" + trimmed;
       }
     }
-  }
-
-  if (currentKey) {
-    result[currentKey] = parseValue(currentValue.trim());
   }
 
   if (result.text && !result.desc) {
