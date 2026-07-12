@@ -219,6 +219,16 @@ function parseOpLines(block: string): DataOp[] {
           collection: rest.slice(0, firstSpace).trim(),
           id: rest.slice(firstSpace + 1).trim(),
         });
+      } else {
+        // 兼容点号格式：DELETE inventory.i15 → collection=inventory, id=i15
+        const lastDot = rest.lastIndexOf(".");
+        if (lastDot !== -1) {
+          ops.push({
+            kind: "delete",
+            collection: rest.slice(0, lastDot).trim(),
+            id: rest.slice(lastDot + 1).trim(),
+          });
+        }
       }
       i++;
     } else {

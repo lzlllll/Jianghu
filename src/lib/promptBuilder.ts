@@ -767,6 +767,7 @@ DELETE 操作 —— 删除数据（与 MODIFY、ADD 同等的核心操作，必
 
 【DELETE 格式】
 DELETE <集合名> <id>
+注意：集合名与 id 之间用空格分隔（不是点号），例如 DELETE inventory i10（而非 DELETE inventory.i10）
 - 数组元素集合按 id 匹配（inventory、techniques、relations、sect.tasks、sect.heritage、player.buffs）
 - 字符串数组按内容精确匹配（log）
 - 心性按 trait 名称：DELETE player.stats.heartScores 莽撞
