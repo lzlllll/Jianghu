@@ -428,6 +428,12 @@ function parseMarkdownBlockToJson(block: string): any {
   return Object.keys(result).length > 0 ? result : block;
 }
 
+const HOUR_NAMES = ["子时", "丑时", "寅时", "卯时", "辰时", "巳时", "午时", "未时", "申时", "酉时", "戌时", "亥时"];
+
+function getDayString(ct: { year: number; month: number; day: number; hour: number }): string {
+  return `第${ct.year}年${ct.month}月${ct.day}日 ${HOUR_NAMES[ct.hour] ?? "子时"}`;
+}
+
 function normalizeNewsItem(item: any): any {
   if (!item || typeof item !== "object") return item;
 
@@ -587,7 +593,22 @@ function applyOne(root: any, op: DataOp): void {
       if (op.collection === "techniques") {
         arr.push(normalizeTechnique(payload));
       } else if (op.collection === "news.items") {
-        arr.push(normalizeNewsItem(payload));
+        const item = normalizeNewsItem(payload);
+        // 获取当前日期
+        const ct = root.currentTime || { year: 1, month: 1, day: 1, hour: 0 };
+        const todayKey = `${ct.year}-${ct.month}-${ct.day}`;
+        const todayStr = getDayString(ct);
+        // 跨天：清空旧闻
+        if (!root.news) root.news = { items: [], lastUpdate: "" };
+        if (root.news.lastUpdate !== todayKey) {
+          arr.length = 0;
+          root.news.lastUpdate = todayKey;
+        }
+        // 同一天内每种分类上限3条
+        const catCount = arr.filter((x: any) => x.category === item.category).length;
+        if (catCount >= 3) return;
+        item.date = todayStr;
+        arr.push(item);
       } else {
         arr.push(payload);
       }

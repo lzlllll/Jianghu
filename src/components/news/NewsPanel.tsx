@@ -2,7 +2,7 @@ import { useGameStore } from "@/store/useGameStore";
 import { ScrollCard } from "@/components/ui/ScrollCard";
 import { cn } from "@/lib/utils";
 import type { NewsItem, NewsCategory } from "@/data/types";
-import { Scroll, Bell, Users, ScrollText } from "lucide-react";
+import { Scroll, Bell, Users, ScrollText, Clock } from "lucide-react";
 
 const CATEGORY_CONFIG: Record<string, { icon: React.ReactNode; color: string; bg: string }> = {
   "官府公告": {
@@ -40,8 +40,20 @@ export function NewsPanel() {
 
   const categories = Object.keys(groupedNews);
 
+  // 将 lastUpdate "1-3-15" 转为可读格式
+  const lastUpdateKey = news?.lastUpdate || "";
+  const lastUpdateDisplay = lastUpdateKey
+    ? `第${lastUpdateKey.replace(/-/g, "年").replace(/年(\d+)$/, "月$1日")}`
+    : "";
+
   return (
     <ScrollCard title="江湖快报" subtitle="天下事，尽皆知">
+      {lastUpdateDisplay && (
+        <div className="flex items-center gap-2 mb-4 text-paper-400/60">
+          <Clock size={14} />
+          <span className="font-serif text-xs">{lastUpdateDisplay}</span>
+        </div>
+      )}
       <div className="space-y-6">
         {categories.map((category) => {
           const config = CATEGORY_CONFIG[category] || DEFAULT_CONFIG;

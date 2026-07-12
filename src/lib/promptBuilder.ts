@@ -816,7 +816,8 @@ battle
 MODIFY currentTime.year = 1
 MODIFY currentTime.month = 3
 MODIFY currentTime.day = 15
-MODIFY currentTime.hour = 5（子时=0 丑时=1...亥时=11）`;
+MODIFY currentTime.hour = 5（子时=0 丑时=1...亥时=11）
+10. 【新闻生成】仅当当前日期与新闻的上次更新日期不同时（即跨天了），才在 <<<OPS>>> 中用 ADD news.items 生成3条新闻（官府公告/宗门布告/市井传言各一条）。同一天内不要再生成新闻。`;
 
   const recentText =
     recentTurns.length > 0
