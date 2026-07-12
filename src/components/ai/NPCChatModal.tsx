@@ -204,7 +204,7 @@ export function NPCChatModal() {
                         : "bg-gold-500/20 text-gold-400 border border-gold-500/40",
                     )}
                   >
-                    {msg.role === "player" ? "我" : profile.name.charAt(0)}
+                    {msg.role === "player" ? "我" : profile.name?.charAt(0) || "?"}
                   </div>
                   <div
                     className={cn(
@@ -237,7 +237,7 @@ export function NPCChatModal() {
             {isTyping && (
               <div className="flex gap-3">
                 <div className="w-8 h-8 rounded-sm bg-gold-500/20 text-gold-400 border border-gold-500/40 flex items-center justify-center shrink-0 font-brush text-sm">
-                  {profile.name.charAt(0)}
+                  {profile.name?.charAt(0) || "?"}
                 </div>
                 <div className="bg-gold-500/10 border border-gold-500/20 rounded-lg rounded-bl-none px-4 py-3">
                   <div className="flex items-center gap-1.5">

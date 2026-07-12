@@ -11,6 +11,10 @@ import type {
   ElementType,
   TalismanRecipe,
   Player,
+  BrewResult,
+  Buff,
+  ShieldData,
+  InventoryItem,
 } from "@/data/types";
 import { applyOpsToState } from "@/lib/dataOps";
 import {
@@ -94,7 +98,7 @@ interface GameStore extends GameState {
   breakthrough: () => void;
   comprehendTechnique: (id: string) => void;
   drawTalisman: (recipe: TalismanRecipe) => void;
-  brewAlchemy: (selectedHerbs: { name: string; count: number }[], fire: number, duration: number) => void;
+  brewAlchemy: (selectedHerbs: { name: string; count: number }[], fire: number, duration: number) => Promise<BrewResult>;
   acceptTask: (id: string) => void;
   promote: (id: string) => void;
   buyShop: (id: string) => void;
@@ -105,6 +109,13 @@ interface GameStore extends GameState {
   getSnapshot: () => GameSnapshot;
   restoreSnapshot: (snap: GameSnapshot) => void;
   updateNews: (newItems: { category: string; title: string; content: string; source: string }[]) => void;
+  addBuff: (buff: Buff) => void;
+  removeBuff: (buffId: string) => void;
+  addShield: (shield: ShieldData) => void;
+  consumeShield: (amount: number) => void;
+  updateBuffDuration: () => void;
+  equipItem: (itemId: string, slot: "命" | "护" | "辅") => void;
+  unequipSlot: (slot: "命" | "护" | "辅") => void;
 }
 
 function validateAndFixPlayer(player: any): Player {
@@ -571,13 +582,13 @@ export const useGameStore = create<GameStore>()(
         const s = get();
         if (selectedHerbs.length === 0) {
           set((st) => ({ log: ["请先选择药材。", ...st.log].slice(0, 30) }));
-          return;
+          return { success: false, message: "请先选择药材。" };
         }
 
         const mpCost = 30 + selectedHerbs.reduce((sum, h) => sum + h.count * 10, 0);
         if (s.player.mp < mpCost) {
           set((st) => ({ log: ["灵力不足，难控丹火。", ...st.log].slice(0, 30) }));
-          return;
+          return { success: false, message: "灵力不足，难控丹火。" };
         }
 
         for (const herb of selectedHerbs) {
@@ -586,7 +597,7 @@ export const useGameStore = create<GameStore>()(
             set((st) => ({
               log: [`药引「${herb.name}」不足，无法开炉。`, ...st.log].slice(0, 30),
             }));
-            return;
+            return { success: false, message: `药引「${herb.name}」不足，无法开炉。` };
           }
         }
 
@@ -738,6 +749,8 @@ EFFECT: [效果描述]`,
           }
         }
 
+        let result: BrewResult = { success: false, message: "丹炉轰鸣，丹药化为飞灰，功亏一篑。" };
+
         set((st) => {
           let newInventory = (Array.isArray(st.inventory) ? st.inventory : []).map((i) => {
             const herb = selectedHerbs.find((h) => h.name === i.name);
@@ -777,6 +790,15 @@ EFFECT: [效果描述]`,
                 },
               ];
             }
+            result = {
+              success: true,
+              message: `丹成！得「${pillName}」×${outputCount}`,
+              pillName,
+              pillGrade,
+              pillDesc,
+              pillElements: finalElements,
+              outputCount,
+            };
             return {
               inventory: newInventory,
               player: { ...st.player, mp: Math.max(0, st.player.mp - mpCost) },
@@ -791,6 +813,8 @@ EFFECT: [效果描述]`,
             log: ["丹炉轰鸣，丹药化为飞灰，功亏一篑。", ...st.log].slice(0, 30),
           };
         });
+
+        return result;
       },
 
       acceptTask: (id) => {
@@ -980,6 +1004,29 @@ EFFECT: [效果描述]`,
                 return { ...buff, duration: buff.duration - 1 };
               }),
           },
+        }));
+      },
+
+      equipItem: (itemId, slot) => {
+        set((st) => {
+          const inventory = Array.isArray(st.inventory) ? st.inventory : [];
+          const item = inventory.find((i) => i.id === itemId);
+          if (!item || item.type !== "法宝") return st;
+          return {
+            inventory: inventory.map((i) => {
+              if (i.id === itemId) return { ...i, equipped: true, slot };
+              if (i.equipped && i.slot === slot) return { ...i, equipped: false, slot: undefined };
+              return i;
+            }),
+          };
+        });
+      },
+
+      unequipSlot: (slot) => {
+        set((st) => ({
+          inventory: (Array.isArray(st.inventory) ? st.inventory : []).map((i) =>
+            i.equipped && i.slot === slot ? { ...i, equipped: false, slot: undefined } : i,
+          ),
         }));
       },
 

@@ -5,7 +5,18 @@ export type PanelId =
   | "crafting"
   | "sect"
   | "social"
-  | "story";
+  | "story"
+  | "status";
+
+export interface BrewResult {
+  success: boolean;
+  message: string;
+  pillName?: string;
+  pillGrade?: ItemGrade;
+  pillDesc?: string;
+  pillElements?: Record<string, number>;
+  outputCount?: number;
+}
 
 export type CraftingTab = "talisman" | "alchemy";
 

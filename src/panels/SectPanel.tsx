@@ -399,7 +399,7 @@ function HeritageBoard() {
             >
               <div className="w-9 h-9 rounded bg-ink-900/60 flex items-center justify-center border border-paper-400/15">
                 <span className="font-brush text-sm text-gold-400/80">
-                  {h.type.charAt(0)}
+                  {h.type?.charAt(0) || "?"}
                 </span>
               </div>
               <div className="flex-1">

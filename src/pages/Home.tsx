@@ -9,6 +9,7 @@ import { TreasurePanel } from "@/panels/TreasurePanel";
 import { SectPanel } from "@/panels/SectPanel";
 import { SocialPanel } from "@/panels/SocialPanel";
 import { StoryPanel } from "@/panels/StoryPanel";
+import { StatusPanel } from "@/panels/StatusPanel";
 import { AISettingsModal } from "@/components/ai/AISettingsModal";
 import { NPCChatModal } from "@/components/ai/NPCChatModal";
 import { CraftingModal } from "@/components/crafting/CraftingModal";
@@ -41,6 +42,7 @@ export default function Home() {
             {currentPanel === "sect" && <SectPanel />}
             {currentPanel === "social" && <SocialPanel />}
             {currentPanel === "story" && <StoryPanel onOpenSettings={() => setSettingsOpen(true)} />}
+            {currentPanel === "status" && <StatusPanel />}
           </div>
         </main>
       </div>

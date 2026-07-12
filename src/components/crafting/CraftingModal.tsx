@@ -8,7 +8,7 @@ import { GradeTag } from "@/components/ui/GradeTag";
 import { TalismanCrafting } from "@/components/crafting/TalismanCrafting";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
-import type { AlchemyRecipe, TalismanRecipe } from "@/data/types";
+import type { AlchemyRecipe, TalismanRecipe, BrewResult } from "@/data/types";
 
 export function CraftingModal() {
   const isOpen = useAIStore((s) => s.isCraftingOpen);
@@ -121,7 +121,7 @@ function TalismanWorkshop() {
                 <div className="relative w-32 h-40 bg-gradient-to-b from-paper-200 to-paper-300 rounded shadow-lg flex items-center justify-center transform rotate-1">
                   <div className="absolute inset-2 border border-cinnabar-500/30 rounded" />
                   <span className="font-brush text-5xl text-cinnabar-500">
-                    {selected.name.charAt(0)}
+                    {selected.name?.charAt(0) || "?"}
                   </span>
                   <div className="absolute -top-2 -right-2 w-6 h-6 red-seal rounded-sm text-[10px]">
                     符
@@ -197,6 +197,8 @@ function AlchemyWorkshop() {
   const [selectedHerbs, setSelectedHerbs] = useState<{ name: string; count: number }[]>([]);
   const [fire, setFire] = useState(50);
   const [duration, setDuration] = useState(30);
+  const [isBrewing, setIsBrewing] = useState(false);
+  const [brewResult, setBrewResult] = useState<BrewResult | null>(null);
 
   const ELEMENTS = ["金", "木", "水", "火", "土", "风", "雷", "冰", "暗"] as const;
 
@@ -466,12 +468,62 @@ function AlchemyWorkshop() {
           </div>
 
           <SealButton
-            onClick={() => brew(selectedHerbs, fire, duration)}
-            disabled={!canBrew()}
+            onClick={async () => {
+              setIsBrewing(true);
+              setBrewResult(null);
+              try {
+                const result = await brew(selectedHerbs, fire, duration);
+                setBrewResult(result);
+              } finally {
+                setIsBrewing(false);
+              }
+            }}
+            disabled={!canBrew() || isBrewing}
             className="w-full"
           >
-            开炉炼丹
+            {isBrewing ? "炼丹中..." : "开炉炼丹"}
           </SealButton>
+
+          {brewResult && (
+            <div className={cn(
+              "mt-4 p-4 rounded border",
+              brewResult.success
+                ? "border-jade-500/40 bg-jade-500/5"
+                : "border-cinnabar-500/40 bg-cinnabar-500/5",
+            )}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className={cn(
+                  "font-brush text-lg",
+                  brewResult.success ? "text-jade-400" : "text-cinnabar-400",
+                )}>
+                  {brewResult.success ? "丹成" : "失败"}
+                </span>
+                {brewResult.success && brewResult.pillGrade && (
+                  <GradeTag grade={brewResult.pillGrade} />
+                )}
+              </div>
+              <p className="font-serif text-sm text-paper-300 leading-relaxed">
+                {brewResult.message}
+              </p>
+              {brewResult.success && brewResult.pillDesc && (
+                <p className="font-serif text-xs text-paper-400/70 mt-2 leading-relaxed">
+                  {brewResult.pillDesc}
+                </p>
+              )}
+              {brewResult.success && brewResult.pillElements && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {Object.entries(brewResult.pillElements).map(([elem, val]) => (
+                    <span key={elem} className={cn(
+                      "font-number text-[10px] px-1.5 py-0.5 rounded border",
+                      val > 0 ? "border-jade-500/30 text-jade-400/80" : val < 0 ? "border-cinnabar-500/30 text-cinnabar-400/80" : "border-paper-400/10 text-paper-400/50",
+                    )}>
+                      {elem}{val > 0 ? "+" : ""}{val}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </ScrollCard>
       </div>
     </div>

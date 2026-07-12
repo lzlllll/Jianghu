@@ -6,6 +6,7 @@ import { CloudDivider } from "@/components/ui/CloudDivider";
 import { GradeTag } from "@/components/ui/GradeTag";
 import { cn } from "@/lib/utils";
 import type { InventoryItem, ItemGrade } from "@/data/types";
+import { X, Sword } from "lucide-react";
 
 const STONE_TIERS = [
   { key: "low" as const, name: "下品灵石", color: "text-paper-300", bg: "from-paper-400/20" },
@@ -39,6 +40,8 @@ const INVENTORY_CATEGORIES: Record<string, { label: string; icon: string; order:
 export function TreasurePanel() {
   const spiritStones = useGameStore((s) => s.spiritStones);
   const inventory = useGameStore((s) => s.inventory);
+  const equipItem = useGameStore((s) => s.equipItem);
+  const unequipSlot = useGameStore((s) => s.unequipSlot);
 
   const equipped = inventory.filter((i) => i.equipped);
   const unequipped = inventory.filter((i) => !i.equipped);
@@ -93,7 +96,7 @@ export function TreasurePanel() {
                     {slotInfo.name}
                   </div>
                   {item ? (
-                    <div className="mt-2">
+                    <div className="mt-2 relative">
                       <div className="text-3xl mb-1 text-gold-400">{item.icon}</div>
                       <div className="font-brush text-base text-paper-100">{item.name}</div>
                       <div className="mt-1 flex justify-center">
@@ -102,6 +105,12 @@ export function TreasurePanel() {
                       <p className="font-serif text-[10px] text-paper-400/60 mt-1.5 leading-relaxed">
                         {item.desc}
                       </p>
+                      <button
+                        onClick={() => unequipSlot(slotInfo.slot)}
+                        className="mt-2 flex items-center gap-1 mx-auto px-2 py-1 rounded border border-cinnabar-400/30 text-cinnabar-400/70 text-[10px] font-brush hover:bg-cinnabar-500/10 hover:text-cinnabar-400 transition"
+                      >
+                        <X size={10} /> 卸下
+                      </button>
                     </div>
                   ) : (
                     <div className="mt-4 font-serif text-xs text-paper-500/40">
@@ -116,14 +125,14 @@ export function TreasurePanel() {
 
         {/* 储物袋 */}
         <div className="col-span-12">
-          <InventoryGrid items={unequipped} />
+          <InventoryGrid items={unequipped} equipItem={equipItem} />
         </div>
       </div>
     </div>
   );
 }
 
-function InventoryGrid({ items }: { items: InventoryItem[] }) {
+function InventoryGrid({ items, equipItem }: { items: InventoryItem[]; equipItem: (id: string, slot: "命" | "护" | "辅") => void }) {
   const [selected, setSelected] = useState<InventoryItem | null>(null);
   const totalSlots = 48;
   const filledSlots = items.length;
@@ -231,6 +240,22 @@ function InventoryGrid({ items }: { items: InventoryItem[] }) {
               <p className="font-serif text-sm text-paper-300/90 leading-relaxed">
                 {selected.desc}
               </p>
+              {selected.type === "法宝" && !selected.equipped && (
+                <div className="mt-3 pt-3 border-t border-paper-400/10">
+                  <p className="font-serif text-[10px] text-paper-400/50 mb-2">装备到法宝槽</p>
+                  <div className="flex gap-1.5">
+                    {SLOT_LABELS.map((slotInfo) => (
+                      <button
+                        key={slotInfo.slot}
+                        onClick={() => equipItem(selected.id, slotInfo.slot)}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded border border-gold-400/30 text-gold-400/80 text-[10px] font-brush hover:bg-gold-400/10 transition"
+                      >
+                        <Sword size={10} /> {slotInfo.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-center">

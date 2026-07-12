@@ -137,7 +137,7 @@ function RelationCard({ relation }: { relation: Relation }) {
               c.seal,
             )}
           >
-            {relation.name.charAt(0)}
+            {relation.name?.charAt(0) || "?"}
           </div>
           <div
             className={cn(

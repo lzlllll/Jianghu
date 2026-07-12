@@ -10,6 +10,7 @@ import {
   Landmark,
   Users,
   Sparkles,
+  Activity,
 } from "lucide-react";
 
 interface NavItem {
@@ -26,6 +27,7 @@ const NAV_ITEMS: NavItem[] = [
   { id: "treasure", label: "财宝", subtitle: "财产宝物", icon: Gem },
   { id: "sect", label: "宗门", subtitle: "门派经营", icon: Landmark },
   { id: "social", label: "尘缘", subtitle: "社交往来", icon: Users },
+  { id: "status", label: "状态", subtitle: "当前效果", icon: Activity },
   { id: "story", label: "问道", subtitle: "天机演化", icon: Sparkles, accent: true },
 ];
 
