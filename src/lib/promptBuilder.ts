@@ -754,9 +754,33 @@ affinityMax: 100
 realm: 炼气七层
 note: 偶遇的散修。
 
-DELETE 示例：按 id；字符串数组 log 按内容
+DELETE 操作 —— 删除数据（与 MODIFY、ADD 同等的核心操作，必须善用）：
+
+【DELETE 适用场景】
+- 物品耗尽或丢弃时：DELETE inventory i10
+- 丹药/符箓用完后：DELETE inventory i_dan_3
+- 关系断绝时：DELETE relations r_enemy_1
+- Buff/效果过期时：DELETE player.buffs buff_xxx
+- 宗门任务完成/取消时：DELETE sect.tasks s_task_1
+- 功法遗忘/失传时：DELETE techniques t_old_1
+- 新闻过期时（跨天系统会自动清理，无需手动删除新闻）
+
+【DELETE 格式】
+DELETE <集合名> <id>
+- 数组元素集合按 id 匹配（inventory、techniques、relations、sect.tasks、sect.heritage、player.buffs）
+- 字符串数组按内容精确匹配（log）
+- 心性按 trait 名称：DELETE player.stats.heartScores 莽撞
+
+DELETE 示例：
 DELETE inventory i10
+DELETE player.buffs buff_poison
+DELETE relations r_enemy_1
 DELETE log "旧的日志内容"
+DELETE player.stats.heartScores 莽撞
+DELETE sect.tasks s_task_1
+DELETE techniques t_old_1
+
+【重要】：道具用完必须 DELETE，NPC死亡/离开必须 DELETE 关系，效果过期必须 DELETE buff。这是叙事连贯性的基本保证，不可遗漏。
 
 标记块格式规则：
 1. ADD 命令后换行，每行直接写字段名冒号字段值
