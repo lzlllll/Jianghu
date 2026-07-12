@@ -48,6 +48,7 @@ const INITIAL_CONVERSATION: ConversationState = {
   lastProDuration: 0,
   lastRawOutput: "",
   quickDecisions: [],
+  pendingChatSummary: "",
 };
 
 const INITIAL_NPC_CHAT: NPCChatState = {
@@ -236,11 +237,13 @@ export const useAIStore = create<AIStore>()(
           ? buildDataSchema(gameState)
           : resolveRelevantData(gameState, flashPaths);
         const recentTurns = recentForPrompt(conv.turns);
+        const chatSummary = conv.pendingChatSummary || undefined;
         const proRequest = {
           summary: conv.summary,
           recentTurns,
           decision: trimmed,
           relevantData,
+          chatSummary,
         };
 
         // ===== Stage 2: pro 生成叙事 + 数据 =====
@@ -261,6 +264,7 @@ export const useAIStore = create<AIStore>()(
               recentTurns,
               decision: trimmed,
               relevantData,
+              chatSummary,
             }),
             { timeoutMs: 120000, signal },
           );
@@ -328,6 +332,7 @@ export const useAIStore = create<AIStore>()(
             turns: [...st.conversation.turns, turn],
             stage: "done",
             errorMsg: "",
+            pendingChatSummary: "",
           },
         }));
         abortController = null;
@@ -476,6 +481,13 @@ export const useAIStore = create<AIStore>()(
           const relation = useGameStore.getState().relations.find((r) => r.id === npcId);
           const affinity = relation?.affinity ?? 50;
 
+          const statsStr = relation?.stats
+            ? `[战斗属性] HP:${relation.stats.hp}/${relation.stats.hpMax} MP:${relation.stats.mp}/${relation.stats.mpMax} 攻击:${relation.stats.attack} 防御:${relation.stats.defense} 速度:${relation.stats.speed}`
+            : "";
+          const techStr = relation?.techniqueIds?.length
+            ? `[掌握功法] ${relation.techniqueIds.join(", ")}`
+            : "";
+
           const prompt = [
             {
               role: "system" as const,
@@ -529,7 +541,7 @@ BACKGROUND: [背景故事]`,
           }
 
           const initialPrompt = `你是修真者「${name}」，称号「${title}」。
-
+${statsStr ? `${statsStr}\n` : ""}${techStr ? `${techStr}\n` : ""}
 【性格】${persona}
 【说话风格】${style}
 ${background ? `【背景】${background}\n` : ""}
@@ -693,9 +705,28 @@ ${chatHistory || "暂无"}`,
       },
 
       closeNPCChat: () => {
-        set((st) => ({
-          npcChat: { ...st.npcChat, activeNpcId: null, isTyping: false, errorMsg: "" },
-        }));
+        set((st) => {
+          // 生成对话摘要
+          const activeProfile = st.npcChat.profiles.find((p) => p.npcId === st.npcChat.activeNpcId);
+          let chatSummary = "";
+          if (activeProfile && activeProfile.messages.length >= 2) {
+            const recentMsgs = activeProfile.messages.slice(-8);
+            const lines: string[] = [];
+            lines.push(`与「${activeProfile.name}」(${activeProfile.title})近期的交谈：`);
+            for (const msg of recentMsgs) {
+              const speaker = msg.role === "player" ? "你" : activeProfile.name;
+              lines.push(`[${speaker}]: ${msg.content.slice(0, 120)}`);
+            }
+            chatSummary = lines.join("\n");
+          }
+          return {
+            npcChat: { ...st.npcChat, activeNpcId: null, isTyping: false, errorMsg: "" },
+            conversation: {
+              ...st.conversation,
+              pendingChatSummary: chatSummary || st.conversation.pendingChatSummary,
+            },
+          };
+        });
       },
 
       clearNPCChat: (npcId) => {

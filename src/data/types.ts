@@ -536,6 +536,18 @@ export interface Relation {
   affinityMax: number;
   realm: string;
   note: string;
+  /** NPC战斗属性，可选，用于战斗推演 */
+  stats?: {
+    hp: number;
+    hpMax: number;
+    mp: number;
+    mpMax: number;
+    attack: number;
+    defense: number;
+    speed: number;
+  };
+  /** NPC掌握的功法ID列表 */
+  techniqueIds?: string[];
 }
 
 export interface PillCacheEntry {
@@ -663,6 +675,8 @@ export interface ConversationState {
   lastProDuration: number;
   lastRawOutput: string;
   quickDecisions: string[];
+  /** 上次与NPC交谈的摘要，在下回合推演时发送给AI并清空 */
+  pendingChatSummary: string;
 }
 
 export type NPCChatRole = "player" | "npc";

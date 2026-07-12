@@ -134,8 +134,12 @@ export function buildDataSchema(state: GameState): string {
 
   const relations = Array.isArray(state.relations) ? state.relations : [];
   relations.forEach((r) => {
+    const statsStr = r.stats
+      ? ` HP${r.stats.hp}/${r.stats.hpMax} 攻${r.stats.attack} 防${r.stats.defense} 速${r.stats.speed}`
+      : "";
+    const techStr = r.techniqueIds?.length ? ` 功法[${r.techniqueIds.join(",")}]` : "";
     lines.push(
-      `relations[${r.id}] = ${r.name} ${r.title} ${relationTypeLabel(r.type)} 境界${r.realm} 亲疏${r.affinity}/${r.affinityMax}`,
+      `relations[${r.id}] = ${r.name} ${r.title} ${relationTypeLabel(r.type)} 境界${r.realm} 亲疏${r.affinity}/${r.affinityMax}${statsStr}${techStr}`,
     );
   });
 
@@ -304,8 +308,9 @@ export function buildProPrompt(params: {
   recentTurns: { input: string; narrative: string }[];
   decision: string;
   relevantData: string;
+  chatSummary?: string;
 }): ChatMessage[] {
-  const { state, summary, recentTurns, decision, relevantData } = params;
+  const { state, summary, recentTurns, decision, relevantData, chatSummary } = params;
   const realm = REALMS[state.player.realmIndex] ?? "未知";
   const location = LOCATION_INFO[state.currentLocation] || { name: "未知场所", allowed: "所有行为", forbidden: "无" };
 
@@ -651,8 +656,11 @@ affinity: 85
 affinityMax: 100
 realm: 引气中期
 note: 关系描述
+stats: {"hp":120,"hpMax":120,"mp":80,"mpMax":80,"attack":35,"defense":25,"speed":50}
+techniqueIds: ["t1"]
 
 type 可选值：dao_companion（道侣）、master（师父）、disciple（徒弟）、friend（好友）、enemy（仇敌）
+stats 和 techniqueIds 为可选字段，仅在战斗相关NPC上填写
 
 === news.items 格式 ===
 ADD news.items
@@ -811,7 +819,7 @@ ${summary || "（开端）"}
 【最近经历】
 ${recentText}
 
-【玩家本轮决策】
+${chatSummary ? `【近期交谈记录】\n${chatSummary}\n\n` : ""}【玩家本轮决策】
 ${decision}
 
 【相关数据（仅本轮可能涉及）】
