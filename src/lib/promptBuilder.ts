@@ -616,7 +616,7 @@ icon: 🌑
 desc: 功法描述文本
 
 type 可选值：心法、炼体、神通、身法、秘术
-category 可选值：heart（心法）、body（炼体）、divine（神通）、movement（身法）、secret（秘术）
+category 可选值：心法、炼体、神通、身法、秘术（与 type 保持一致）
 grade 可选值：凡品、灵品、玄品、地品、天品
 
 === inventory 格式 ===

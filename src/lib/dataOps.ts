@@ -58,6 +58,7 @@ export function parseModelOutput(raw: string): ParsedTurn {
   }
   narrative = narrative.trim();
   const ops = parseOpLines(opsRaw);
+  _debugOps(ops);
   return { narrative, ops, opsRaw: opsRaw.trim(), mode, battleEntities };
 }
 
@@ -209,6 +210,11 @@ function parseOpLines(block: string): DataOp[] {
   return ops;
 }
 
+function _debugOps(ops: DataOp[]): void {
+  const adds = ops.filter((o) => o.kind === "add");
+  console.debug("[parseOpLines] Total ops:", ops.length, "ADD ops:", adds.length, adds.map((a) => ({ collection: a.collection, payloadLen: a.payload.length })));
+}
+
 type PathSeg = string;
 
 function parsePath(path: string): PathSeg[] {
@@ -330,13 +336,18 @@ export function applyOpsToState(state: GameState, ops: DataOp[]): GameState {
     news: state.news ? clone(state.news) : { items: [], lastUpdate: "" },
   };
 
+  let addCount = 0, modifyCount = 0, deleteCount = 0;
   for (const op of limitedOps) {
     try {
+      if (op.kind === "add") addCount++;
+      else if (op.kind === "modify") modifyCount++;
+      else if (op.kind === "delete") deleteCount++;
       applyOne(next, op);
     } catch (e) {
       console.warn("[dataOps] 操作失败，已跳过:", op, e);
     }
   }
+  console.debug("[dataOps] Ops applied — ADD:", addCount, "MODIFY:", modifyCount, "DELETE:", deleteCount, "techniques.length:", next.techniques?.length);
   return next;
 }
 
@@ -373,6 +384,28 @@ function parseMarkdownBlockToJson(block: string): any {
     delete result.text;
   }
 
+  const CATEGORY_MAP: Record<string, string> = {
+    heart: "心法",
+    body: "炼体",
+    divine: "神通",
+    movement: "身法",
+    secret: "秘术",
+  };
+
+  if (typeof result.category === "string") {
+    result.category = CATEGORY_MAP[result.category] || result.category;
+  }
+
+  if (result.desc !== undefined && result.description === undefined) {
+    result.description = result.desc;
+    delete result.desc;
+  }
+
+  const TECHNIQUE_TYPES = new Set(["心法", "炼体", "神通", "身法", "秘术"]);
+  if (typeof result.type === "string" && TECHNIQUE_TYPES.has(result.type)) {
+    delete result.type;
+  }
+
   return Object.keys(result).length > 0 ? result : block;
 }
 
@@ -406,6 +439,9 @@ function applyOne(root: any, op: DataOp): void {
       return;
     }
     const payload = parseMarkdownBlockToJson(op.payload);
+    if (op.collection === "techniques" || op.collection === "inventory" || op.collection === "relations") {
+      console.debug("[dataOps] ADD", op.collection, "payload parsed:", typeof payload, "id:", (payload as any)?.id, "keys:", payload && typeof payload === "object" ? Object.keys(payload) : "N/A");
+    }
     if (op.collection === "log") {
       const text = typeof payload === "string" ? payload : payload.text || payload.desc || JSON.stringify(payload);
       arr.push(text);
