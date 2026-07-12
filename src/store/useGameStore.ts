@@ -984,6 +984,7 @@ EFFECT: [效果描述]`,
       },
 
       resetGame: () => {
+        localStorage.removeItem("useGameStore");
         set({ ...initialState, log: ["重入轮回，再启修真。"] });
       },
 
