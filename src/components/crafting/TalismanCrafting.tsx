@@ -1,11 +1,12 @@
 import { useState, useCallback, useMemo } from "react";
 import { useGameStore } from "@/store/useGameStore";
+import { useAIStore } from "@/store/useAIStore";
 import { ScrollCard } from "@/components/ui/ScrollCard";
 import { CloudDivider } from "@/components/ui/CloudDivider";
 import { SealButton } from "@/components/ui/SealButton";
 import { GradeTag } from "@/components/ui/GradeTag";
 import { cn } from "@/lib/utils";
-import type { TalismanElement, TalismanAction, TalismanModifier, TalismanRecipe } from "@/data/types";
+import type { TalismanElement, TalismanAction, TalismanModifier, TalismanRecipe, CraftingResult } from "@/data/types";
 
 const ELEMENTS: { value: TalismanElement; name: string; desc: string; color: string }[] = [
   { value: "金", name: "庚金", desc: "锋利，破甲", color: "gold" },
@@ -72,6 +73,9 @@ export function TalismanCrafting() {
   const draw = useGameStore((s) => s.drawTalisman);
   const inventory = useGameStore((s) => s.inventory);
   const mp = useGameStore((s) => s.player.mp);
+  const pendingCrafting = useAIStore((s) => s.conversation.pendingCrafting);
+  const resumeTurnAfterCrafting = useAIStore((s) => s.resumeTurnAfterCrafting);
+  const [isResuming, setIsResuming] = useState(false);
 
   const [element, setElement] = useState<TalismanElement | null>(null);
   const [action, setAction] = useState<TalismanAction | null>(null);
@@ -165,8 +169,19 @@ export function TalismanCrafting() {
       modifiers,
     };
 
-    draw(recipe);
-  }, [element, action, talismanName, calculatedStats, talismanDesc, modifiers, draw]);
+    const result = draw(recipe);
+
+    if (pendingCrafting) {
+      const craftingResult: CraftingResult = {
+        type: "talisman",
+        success: result.success,
+        summary: result.message,
+        details: `符箓名：${talismanName}\n元素：${element}\n行为：${action}\n品级：凡品\n效果：${talismanDesc}\n灵力消耗：${calculatedStats.totalMpCost}`,
+      };
+      setIsResuming(true);
+      resumeTurnAfterCrafting(craftingResult);
+    }
+  }, [element, action, talismanName, calculatedStats, talismanDesc, modifiers, draw, pendingCrafting, resumeTurnAfterCrafting]);
 
   return (
     <div className="grid grid-cols-12 gap-4">
@@ -373,10 +388,10 @@ export function TalismanCrafting() {
 
           <SealButton
             onClick={handleCraft}
-            disabled={!canCraft}
+            disabled={!canCraft || isResuming}
             className="w-full"
           >
-            画符
+            {isResuming ? "叙事生成中..." : pendingCrafting ? "画符并续写叙事" : "画符"}
           </SealButton>
         </ScrollCard>
       </div>

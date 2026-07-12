@@ -97,7 +97,7 @@ interface GameStore extends GameState {
   cultivate: () => void;
   breakthrough: () => void;
   comprehendTechnique: (id: string) => void;
-  drawTalisman: (recipe: TalismanRecipe) => void;
+  drawTalisman: (recipe: TalismanRecipe) => { success: boolean; message: string };
   brewAlchemy: (selectedHerbs: { name: string; count: number }[], fire: number, duration: number) => Promise<BrewResult>;
   acceptTask: (id: string) => void;
   promote: (id: string) => void;
@@ -538,11 +538,11 @@ export const useGameStore = create<GameStore>()(
         const cinnabar = s.inventory.find((i) => i.name === "朱砂");
         if (!paper || paper.count < recipe.paperCost || !cinnabar || cinnabar.count < recipe.cinnabarCost) {
           set((st) => ({ log: ["符纸或朱砂不足，无法画符。", ...st.log].slice(0, 30) }));
-          return;
+          return { success: false, message: "符纸或朱砂不足，无法画符。" };
         }
         if (s.player.mp < recipe.mpCost) {
           set((st) => ({ log: ["灵力不足，难以运笔。", ...st.log].slice(0, 30) }));
-          return;
+          return { success: false, message: "灵力不足，难以运笔。" };
         }
         const success = Math.random() * 100 < recipe.successRate;
         set((st) => {
@@ -585,6 +585,9 @@ export const useGameStore = create<GameStore>()(
             log: ["画符失败，符纸焦黑，灵力反噬。", ...st.log].slice(0, 30),
           };
         });
+        return success
+          ? { success: true, message: `画符成功！得《${recipe.name}》一道` }
+          : { success: false, message: "画符失败，符纸焦黑，灵力反噬。" };
       },
 
       brewAlchemy: async (selectedHerbs, fire, duration) => {

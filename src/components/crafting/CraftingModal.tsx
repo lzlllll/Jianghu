@@ -8,7 +8,7 @@ import { GradeTag } from "@/components/ui/GradeTag";
 import { TalismanCrafting } from "@/components/crafting/TalismanCrafting";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
-import type { AlchemyRecipe, TalismanRecipe, BrewResult } from "@/data/types";
+import type { AlchemyRecipe, TalismanRecipe, BrewResult, CraftingResult } from "@/data/types";
 
 export function CraftingModal() {
   const isOpen = useAIStore((s) => s.isCraftingOpen);
@@ -194,6 +194,8 @@ function AlchemyWorkshop() {
   const brew = useGameStore((s) => s.brewAlchemy);
   const inventory = useGameStore((s) => s.inventory);
   const mp = useGameStore((s) => s.player.mp);
+  const pendingCrafting = useAIStore((s) => s.conversation.pendingCrafting);
+  const resumeTurnAfterCrafting = useAIStore((s) => s.resumeTurnAfterCrafting);
   const [selectedHerbs, setSelectedHerbs] = useState<{ name: string; count: number }[]>([]);
   const [fire, setFire] = useState(50);
   const [duration, setDuration] = useState(30);
@@ -474,6 +476,27 @@ function AlchemyWorkshop() {
               try {
                 const result = await brew(selectedHerbs, fire, duration);
                 setBrewResult(result);
+
+                if (pendingCrafting && result.success) {
+                  const elementsStr = result.pillElements
+                    ? Object.entries(result.pillElements).map(([e, v]) => `${e}:${v}`).join(", ")
+                    : "";
+                  const craftingResult: CraftingResult = {
+                    type: "alchemy",
+                    success: result.success,
+                    summary: result.message,
+                    details: `丹药名：${result.pillName || "无名丹药"}\n品级：${result.pillGrade || "凡品"}\n效果：${result.pillDesc || ""}\n产出数量：${result.outputCount || 1}\n元素属性：${elementsStr}`,
+                  };
+                  await resumeTurnAfterCrafting(craftingResult);
+                } else if (pendingCrafting && !result.success) {
+                  const craftingResult: CraftingResult = {
+                    type: "alchemy",
+                    success: false,
+                    summary: result.message,
+                    details: "炼丹失败，丹药化为飞灰。",
+                  };
+                  await resumeTurnAfterCrafting(craftingResult);
+                }
               } finally {
                 setIsBrewing(false);
               }
@@ -481,7 +504,7 @@ function AlchemyWorkshop() {
             disabled={!canBrew() || isBrewing}
             className="w-full"
           >
-            {isBrewing ? "炼丹中..." : "开炉炼丹"}
+            {isBrewing ? (pendingCrafting ? "炼丹并生成叙事中..." : "炼丹中...") : (pendingCrafting ? "开炉炼丹并续写叙事" : "开炉炼丹")}
           </SealButton>
 
           {brewResult && (

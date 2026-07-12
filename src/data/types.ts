@@ -608,9 +608,31 @@ export interface AISettings {
 export type GenStage =
   | "idle"
   | "flash"
+  | "crafting_wait"
   | "pro"
   | "done"
   | "error";
+
+/** 炼丹/画符制作结果，用于传给Pro生成叙事 */
+export interface CraftingResult {
+  type: "alchemy" | "talisman";
+  success: boolean;
+  /** 简要描述：丹药名/符箓名 + 数量 + 结果 */
+  summary: string;
+  /** 详细信息（名称、品级、效果、元素等） */
+  details?: string;
+}
+
+/** 暂停推演等待百艺制作时的上下文 */
+export interface CraftingContext {
+  decision: string;
+  flashPaths: string[];
+  flashRaw: string;
+  relevantData: string;
+  recentTurns: { input: string; narrative: string }[];
+  chatSummary?: string;
+  craftingType: "alchemy" | "talisman";
+}
 
 export interface BattlePosition {
   x: number;
@@ -694,6 +716,8 @@ export interface ConversationState {
   quickDecisions: string[];
   /** 上次与NPC交谈的摘要，在下回合推演时发送给AI并清空 */
   pendingChatSummary: string;
+  /** 暂停推演等待百艺制作时的上下文，制作完成后恢复推演 */
+  pendingCrafting?: CraftingContext | null;
 }
 
 export type NPCChatRole = "player" | "npc";

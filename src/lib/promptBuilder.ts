@@ -1,4 +1,4 @@
-import type { AISettings, GameState, Turn, LocationType } from "@/data/types";
+import type { AISettings, GameState, Turn, LocationType, CraftingResult } from "@/data/types";
 import type { ChatMessage } from "@/lib/aiClient";
 
 const HOUR_NAMES = ["子时", "丑时", "寅时", "卯时", "辰时", "巳时", "午时", "未时", "申时", "酉时", "戌时", "亥时"];
@@ -172,28 +172,50 @@ function relationTypeLabel(t: string): string {
   )[t] ?? t;
 }
 
-/** flash 提示：判断决策涉及的数据路径 */
+/** flash 提示：判断决策涉及的数据路径 + 是否涉及炼丹/画符 */
 export function buildFlashPrompt(decision: string, schema: string): ChatMessage[] {
   return [
     {
       role: "system",
-      content:
-        "你是修仙文字游戏的数据判断助手。给定玩家决策与全部数据路径摘要，判断此次决策会读取或修改哪些数据。仅输出涉及的路径，每行一个，不要解释、不要编号。路径可为字段（如 player.cultivation）、数组元素（如 techniques[t1].proficiency）或集合名（如 inventory、log、relations、sect.tasks）。",
+      content: `你是修仙文字游戏的数据判断助手。给定玩家决策与全部数据路径摘要，需完成两项任务：
+
+任务一：判断此次决策是否涉及炼丹或画符制作
+- 若玩家决策明确涉及"开炉炼丹""炼制丹药""画符""绘制符箓"等百艺制作行为，输出对应标记
+- 玩家仅提及"服用丹药""使用符箓"等使用行为不算制作
+- 输出格式：第一行必须为 CRAFTING: alchemy（炼丹）、CRAFTING: talisman（画符）或 CRAFTING: none（不涉及）
+
+任务二：判断此次决策会读取或修改哪些数据
+- 从第二行开始，每行一个数据路径，不要解释、不要编号
+- 路径可为字段（如 player.cultivation）、数组元素（如 techniques[t1].proficiency）或集合名（如 inventory、log、relations、sect.tasks）
+
+示例输出：
+CRAFTING: alchemy
+player.mp
+inventory
+techniques[t1].proficiency`,
     },
     {
       role: "user",
-      content: `【玩家决策】\n${decision}\n\n【全部数据路径摘要】\n${schema}\n\n请输出涉及的数据路径，每行一个：`,
+      content: `【玩家决策】\n${decision}\n\n【全部数据路径摘要】\n${schema}\n\n请先判断是否涉及炼丹/画符制作（第一行），再输出涉及的数据路径（后续行）：`,
     },
   ];
 }
 
-/** 解析 flash 输出为路径列表 */
+/** 解析 flash 输出中的 CRAFTING 标记 */
+export function parseFlashCrafting(raw: string): "alchemy" | "talisman" | null {
+  const match = raw.match(/CRAFTING:\s*(alchemy|talisman)/i);
+  if (!match) return null;
+  return match[1].toLowerCase() as "alchemy" | "talisman";
+}
+
+/** 解析 flash 输出为路径列表（自动跳过 CRAFTING 标记行） */
 export function parseFlashPaths(raw: string): string[] {
   const paths: string[] = [];
   for (const rawLine of raw.split("\n")) {
     let line = rawLine.trim();
     line = line.replace(/^[-*•\d.、\s]+/, "").replace(/[。，,；;]$/, "").trim();
     if (!line) continue;
+    if (/^CRAFTING:/i.test(line)) continue;
     if (/(?:^|\s)(?:路径|数据|涉及|输出|注意|请)/.test(line)) continue;
     if (!/[.\[]/.test(line) && !/^(inventory|log|techniques|relations|sect\.tasks|spiritStones|player|sect)$/.test(line)) {
       // 容错：单字段名也接受
@@ -334,10 +356,15 @@ export function buildProPrompt(params: {
   decision: string;
   relevantData: string;
   chatSummary?: string;
+  craftingResult?: CraftingResult;
 }): ChatMessage[] {
-  const { state, summary, recentTurns, decision, relevantData, chatSummary } = params;
+  const { state, summary, recentTurns, decision, relevantData, chatSummary, craftingResult } = params;
   const realm = REALMS[state.player.realmIndex] ?? "未知";
   const location = LOCATION_INFO[state.currentLocation] || { name: "未知场所", allowed: "所有行为", forbidden: "无" };
+
+  const craftingConstraint = craftingResult
+    ? `\n\n【百艺制作结果 — 已入库，禁止重复ADD】\n玩家本轮进行了${craftingResult.type === "alchemy" ? "炼丹" : "画符"}制作，结果如下：\n${craftingResult.summary}\n${craftingResult.details || ""}\n\n重要：该丹药/符箓已通过制作系统自动入库，你的OPS块中禁止再次ADD该物品。可以MODIFY player.mp（灵力消耗）和currentTime（时间推进），但不得重复添加制作产物。叙事中应描写制作过程的生动细节。`
+    : "";
 
   const system = `你是一部古风修仙文字游戏的叙事引擎。以第二人称「你」叙述玩家的修真经历，文笔古雅、意象丰沛、节奏紧凑，单次叙事正文不少于 1000 字。
 
@@ -402,7 +429,7 @@ ${decision}
 
 【相关数据（仅本轮可能涉及）】
 ${relevantData}
-
+${craftingConstraint}
 请基于以上信息，续写本轮叙事，并在末尾用 <<<OPS>>>...<<<END>>> 块输出数据操作。
 
 （提醒：请务必在回复末尾包含 <<<OPS>>> 和 <<<END>>> 标记块，这是游戏功能正常运行所必需的。）`;

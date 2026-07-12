@@ -11,6 +11,8 @@ import type {
   BattleState,
   BattleMap,
   BattleEntity,
+  CraftingResult,
+  CraftingContext,
 } from "@/data/types";
 import { useGameStore } from "@/store/useGameStore";
 import { chatWithModel, type ChatMessage } from "@/lib/aiClient";
@@ -20,6 +22,7 @@ import {
   buildProPrompt,
   buildCompressionPrompt,
   parseFlashPaths,
+  parseFlashCrafting,
   resolveRelevantData,
 } from "@/lib/promptBuilder";
 import { parseModelOutput } from "@/lib/dataOps";
@@ -49,6 +52,7 @@ const INITIAL_CONVERSATION: ConversationState = {
   lastRawOutput: "",
   quickDecisions: [],
   pendingChatSummary: "",
+  pendingCrafting: null,
 };
 
 const INITIAL_NPC_CHAT: NPCChatState = {
@@ -92,6 +96,7 @@ interface AIStore {
   setDeveloperMode: (enabled: boolean) => void;
   openCrafting: () => void;
   closeCrafting: () => void;
+  resumeTurnAfterCrafting: (result: CraftingResult) => Promise<void>;
 
   getOrCreateNPCProfile: (npcId: string, name: string, title: string) => Promise<NPCProfile>;
   sendNPCMessage: (npcId: string, content: string) => Promise<void>;
@@ -136,7 +141,9 @@ export const useAIStore = create<AIStore>()(
             ...st.conversation,
             stage: "idle",
             errorMsg: "已取消生成。",
+            pendingCrafting: null,
           },
+          isCraftingOpen: false,
           npcChat: {
             ...st.npcChat,
             isTyping: false,
@@ -151,8 +158,219 @@ export const useAIStore = create<AIStore>()(
       openCrafting: () =>
         set({ isCraftingOpen: true }),
 
-      closeCrafting: () =>
-        set({ isCraftingOpen: false }),
+      closeCrafting: () => {
+        const { pendingCrafting } = get().conversation;
+        if (pendingCrafting) {
+          set((st) => ({
+            isCraftingOpen: false,
+            conversation: {
+              ...st.conversation,
+              stage: "idle",
+              pendingCrafting: null,
+              errorMsg: "",
+            },
+          }));
+        } else {
+          set({ isCraftingOpen: false });
+        }
+      },
+
+      resumeTurnAfterCrafting: async (result) => {
+        const { settings, conversation } = get();
+        const ctx = conversation.pendingCrafting;
+        if (!ctx) return;
+        if (!settings.apiKey) {
+          set((st) => ({
+            conversation: { ...st.conversation, stage: "error", errorMsg: "尚未配置 API Key。" },
+          }));
+          return;
+        }
+
+        abortController = new AbortController();
+        const signal = abortController.signal;
+
+        const gameState = useGameStore.getState().getSnapshot() as any;
+        const summary = conversation.summary;
+
+        set((st) => ({
+          conversation: { ...st.conversation, stage: "pro", errorMsg: "" },
+          isCraftingOpen: false,
+        }));
+
+        let narrative = "";
+        let ops: import("@/data/types").DataOp[] = [];
+        let opsRaw = "";
+
+        try {
+          const proStart = Date.now();
+          const proRaw = await chatWithModel(
+            settings,
+            settings.proModel,
+            buildProPrompt({
+              state: gameState,
+              summary,
+              recentTurns: ctx.recentTurns,
+              decision: ctx.decision,
+              relevantData: ctx.relevantData,
+              chatSummary: ctx.chatSummary,
+              craftingResult: result,
+            }),
+            { timeoutMs: 300000, signal, retries: 2 },
+          );
+          if (signal.aborted) return;
+          const parsed = parseModelOutput(proRaw);
+          narrative = parsed.narrative;
+          ops = parsed.ops;
+          opsRaw = parsed.opsRaw;
+
+          if (ops.length === 0 && narrative.trim().length > 0 && !signal.aborted) {
+            console.warn("[resumeCrafting] Pro模型未输出OPS块，尝试从叙事中提取...");
+            try {
+              const dataSchema = buildDataSchema(gameState);
+              const extractPrompt: ChatMessage[] = [
+                {
+                  role: "system",
+                  content: `你是一个数据提取助手。请分析叙事中发生的数据变化，以游戏数据操作格式输出。
+
+输出格式：
+<<<OPS>>>
+MODIFY player.hp - 10
+MODIFY currentTime.hour = 6
+<<<END>>>
+
+重要：丹药/符箓已通过制作系统入库，不要输出ADD该物品的操作。仅输出其他数据变化（灵力消耗、时间推进、修为变化等）。
+
+参考当前游戏状态：
+${dataSchema}`,
+                },
+                {
+                  role: "user",
+                  content: `请从以下叙事中提取数据操作（排除丹药/符箓的ADD）：\n\n${narrative.slice(0, 8000)}`,
+                },
+              ];
+              const extractRaw = await chatWithModel(
+                settings,
+                settings.flashModel,
+                extractPrompt,
+                { timeoutMs: 30000, signal, retries: 1 },
+              );
+              const extractParsed = parseModelOutput(extractRaw);
+              if (extractParsed.ops.length > 0) {
+                ops = extractParsed.ops;
+                opsRaw = extractParsed.opsRaw;
+              }
+            } catch (extractErr) {
+              console.warn("[resumeCrafting] OPS回退提取失败:", extractErr);
+            }
+          }
+
+          set((st) => ({
+            conversation: {
+              ...st.conversation,
+              lastProDuration: Date.now() - proStart,
+              lastRawOutput: proRaw,
+              quickDecisions: parsed.quickDecisions,
+            },
+          }));
+        } catch (e) {
+          if (signal.aborted) return;
+          const errorMsg = (e as Error).message;
+          const isNetworkError = errorMsg.includes("网络") || errorMsg.includes("CORS") ||
+            errorMsg.includes("请求超时") || errorMsg.includes("不可达") || errorMsg.includes("重试");
+
+          if (isNetworkError && settings.proModel !== settings.flashModel) {
+            console.warn("[resumeCrafting] Pro模型失败，降级Flash...");
+            try {
+              const proStart = Date.now();
+              const proRaw = await chatWithModel(
+                settings,
+                settings.flashModel,
+                buildProPrompt({
+                  state: gameState,
+                  summary,
+                  recentTurns: ctx.recentTurns,
+                  decision: ctx.decision,
+                  relevantData: ctx.relevantData,
+                  chatSummary: ctx.chatSummary,
+                  craftingResult: result,
+                }),
+                { timeoutMs: 300000, signal, retries: 2 },
+              );
+              const parsed = parseModelOutput(proRaw);
+              narrative = parsed.narrative;
+              ops = parsed.ops;
+              opsRaw = parsed.opsRaw;
+              set((st) => ({
+                conversation: {
+                  ...st.conversation,
+                  lastProDuration: Date.now() - proStart,
+                  lastRawOutput: proRaw,
+                  quickDecisions: parsed.quickDecisions,
+                },
+              }));
+            } catch (fallbackErr) {
+              set((st) => ({
+                conversation: {
+                  ...st.conversation,
+                  stage: "error",
+                  pendingCrafting: null,
+                  errorMsg: `叙事生成失败：${(fallbackErr as Error).message}`,
+                },
+              }));
+              abortController = null;
+              return;
+            }
+          } else {
+            set((st) => ({
+              conversation: {
+                ...st.conversation,
+                stage: "error",
+                pendingCrafting: null,
+                errorMsg: `叙事生成失败：${errorMsg}`,
+              },
+            }));
+            abortController = null;
+            return;
+          }
+        }
+
+        useGameStore.getState().applyOps(ops);
+
+        const turn: Turn = {
+          id: `turn-${Date.now()}`,
+          playerInput: ctx.decision,
+          flashPaths: ctx.flashPaths,
+          flashRaw: ctx.flashRaw,
+          proRequest: {
+            summary,
+            recentTurns: ctx.recentTurns,
+            decision: ctx.decision,
+            relevantData: ctx.relevantData.slice(0, 3000),
+          },
+          narrative: narrative.slice(0, 20000),
+          ops: ops.slice(0, 100),
+          opsRaw: opsRaw.slice(0, 5000),
+          applied: true,
+          snapshot: gameState,
+          timestamp: Date.now(),
+        };
+
+        await new Promise<void>((resolve) => queueMicrotask(() => resolve()));
+
+        set((st) => ({
+          conversation: {
+            ...st.conversation,
+            turns: [...st.conversation.turns, turn],
+            stage: "done",
+            errorMsg: "",
+            pendingChatSummary: "",
+            pendingCrafting: null,
+          },
+        }));
+        abortController = null;
+
+        await get().compressNow();
+      },
 
       runTurn: async (decision) => {
         const trimmed = decision.trim();
@@ -210,12 +428,44 @@ export const useAIStore = create<AIStore>()(
             { timeoutMs: 30000, signal, retries: 1 },
           );
           flashPaths = parseFlashPaths(flashRaw);
+          const craftingType = parseFlashCrafting(flashRaw);
           set((st) => ({
             conversation: {
               ...st.conversation,
               lastFlashDuration: Date.now() - flashStart,
             },
           }));
+
+          // 检测到炼丹/画符制作意图，暂停推演等待玩家操作
+          if (craftingType) {
+            const isFirstTurnForCrafting = conv.turns.length === 0;
+            const relevantDataForCrafting = isFirstTurnForCrafting
+              ? buildDataSchema(gameState)
+              : resolveRelevantData(gameState, flashPaths);
+            const recentTurnsForCrafting = recentForPrompt(conv.turns);
+            const chatSummaryForCrafting = conv.pendingChatSummary || undefined;
+
+            const craftingContext: CraftingContext = {
+              decision: trimmed,
+              flashPaths,
+              flashRaw: flashRaw.slice(0, 2000),
+              relevantData: relevantDataForCrafting,
+              recentTurns: recentTurnsForCrafting,
+              chatSummary: chatSummaryForCrafting,
+              craftingType,
+            };
+
+            set((st) => ({
+              conversation: {
+                ...st.conversation,
+                stage: "crafting_wait",
+                pendingCrafting: craftingContext,
+              },
+              isCraftingOpen: true,
+            }));
+            useGameStore.getState().setCraftingTab(craftingType);
+            return;
+          }
         } catch (e) {
           if (signal.aborted) return;
           const errorMsg = (e as Error).message;
@@ -319,10 +569,6 @@ ${dataSchema}`,
             }
           }
 
-          if (parsed.mode && (parsed.mode.includes("crafting") || parsed.mode.includes("制作百艺"))) {
-            set({ isCraftingOpen: true });
-          }
-
           set((st) => ({
             conversation: {
               ...st.conversation,
@@ -358,10 +604,6 @@ ${dataSchema}`,
               narrative = parsed.narrative;
               ops = parsed.ops;
               opsRaw = parsed.opsRaw;
-
-              if (parsed.mode && (parsed.mode.includes("crafting") || parsed.mode.includes("制作百艺"))) {
-                set({ isCraftingOpen: true });
-              }
 
               set((st) => ({
                 conversation: {
@@ -592,6 +834,7 @@ ${dataSchema}`,
             lastRawOutput: "",
             quickDecisions: [],
             pendingChatSummary: "",
+            pendingCrafting: null,
           },
         });
       },
