@@ -3,6 +3,7 @@ import type { DataOp, GameState, BattleEntity } from "@/data/types";
 const START_MARKER = "<<<OPS>>>";
 const END_MARKER = "<<<END>>>";
 const BATTLE_START = "<<<BATTLE>>>";
+const QUICK_START = "<<<QUICK>>>";
 
 export interface ParsedTurn {
   narrative: string;
@@ -10,6 +11,7 @@ export interface ParsedTurn {
   opsRaw: string;
   mode: string | null;
   battleEntities: BattleEntity[] | null;
+  quickDecisions: string[];
 }
 
 const MODE_START = "<<<MODE>>>";
@@ -41,6 +43,22 @@ export function parseModelOutput(raw: string): ParsedTurn {
     }
   }
 
+  let quickDecisions: string[] = [];
+  const quickStartIdx = text.indexOf(QUICK_START);
+  if (quickStartIdx !== -1) {
+    const afterQuickStart = text.slice(quickStartIdx + QUICK_START.length);
+    const quickEndIdx = afterQuickStart.indexOf(END_MARKER);
+    const quickContent = quickEndIdx !== -1 ? afterQuickStart.slice(0, quickEndIdx) : afterQuickStart;
+    quickDecisions = quickContent
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l && !l.startsWith("#"))
+      .slice(0, 8);
+    text = quickEndIdx !== -1
+      ? text.slice(0, quickStartIdx) + afterQuickStart.slice(quickEndIdx + END_MARKER.length)
+      : text.slice(0, quickStartIdx);
+  }
+
   const startIdx = text.indexOf(START_MARKER);
   let opsRaw = "";
   let narrative = text;
@@ -59,7 +77,7 @@ export function parseModelOutput(raw: string): ParsedTurn {
   narrative = narrative.trim();
   const ops = parseOpLines(opsRaw);
   _debugOps(ops);
-  return { narrative, ops, opsRaw: opsRaw.trim(), mode, battleEntities };
+  return { narrative, ops, opsRaw: opsRaw.trim(), mode, battleEntities, quickDecisions };
 }
 
 function parseBattleEntities(content: string): BattleEntity[] {
@@ -409,6 +427,83 @@ function parseMarkdownBlockToJson(block: string): any {
   return Object.keys(result).length > 0 ? result : block;
 }
 
+function normalizeTechnique(item: any): any {
+  if (!item || typeof item !== "object") return item;
+
+  if (!item.element && item.attributes && typeof item.attributes === "object") {
+    const entries = Object.entries(item.attributes as Record<string, number>);
+    if (entries.length > 0) {
+      entries.sort((a, b) => b[1] - a[1]);
+      item.element = entries[0][0];
+    }
+  }
+  if (!item.element) item.element = "无";
+
+  if (!item.nature) {
+    const natureMap: Record<string, string> = { 心法: "中性", 炼体: "刚猛", 神通: "凌厉", 身法: "灵动", 秘术: "诡秘" };
+    item.nature = natureMap[item.category as string] || "中性";
+  }
+
+  if (!item.daoPath) {
+    const daoMap: Record<string, string> = { 心法: "内功心法", 炼体: "炼体之术", 神通: "神通术法", 身法: "身法遁术", 秘术: "秘术禁法" };
+    item.daoPath = daoMap[item.category as string] || "内功心法";
+  }
+
+  if (!item.insight) {
+    item.insight = `${item.name || "无名功法"}，${item.grade || ""}${item.category || ""}，修至深处可通天地玄妙。`;
+  }
+
+  if (!item.description && item.desc) {
+    item.description = item.desc;
+    delete item.desc;
+  }
+  if (!item.description) item.description = item.desc || `${item.name || "无名功法"}的修炼法门。`;
+
+  if (!item.heartMatch) {
+    item.heartMatch = (item.heartCompatibility && Array.isArray(item.heartCompatibility))
+      ? item.heartCompatibility.map((hc: any) => hc.trait).filter(Boolean)
+      : [];
+  }
+
+  if (!item.levels || !Array.isArray(item.levels) || item.levels.length === 0) {
+    const rank = typeof item.rank === "number" ? item.rank : 1;
+    const levelNames = [
+      "初窥门径", "登堂入室", "融会贯通", "小有所成", "心领神会",
+      "登峰造极", "炉火纯青", "出神入化", "返璞归真", "道成",
+    ];
+    item.levels = levelNames.map((name, i) => ({
+      level: i + 1,
+      name,
+      proficiencyNeeded: Math.round((item.proficiencyMax || 100) * (i + 1) / 10 * 0.8),
+      stats: i + 1 <= rank ? { cultivationSpeed: 5 + i * 3 } : {},
+      skillUnlocked: (i === 2 || i === 5 || i === 9) && i + 1 <= rank ? `skill_${i}` : undefined,
+    }));
+  }
+
+  if (item.skills && Array.isArray(item.skills)) {
+    item.skills = item.skills.map((s: any, idx: number) => ({
+      id: s.id || `sk_${item.id}_${idx}`,
+      name: s.name || `技能${idx + 1}`,
+      description: s.description || s.desc || "",
+      levelRequired: typeof s.rank === "number" ? s.rank : (idx === 0 ? 3 : idx === 1 ? 6 : 10),
+      mpCost: typeof s.mpCost === "number" ? s.mpCost : 20 + idx * 15,
+      damage: typeof s.damage === "number" ? s.damage : 20 + idx * 25,
+      cooldown: typeof s.cooldown === "number" ? s.cooldown : 3 + idx,
+      effects: s.effects || [],
+    }));
+  }
+
+  if (item.prerequisites && Array.isArray(item.prerequisites)) {
+    item.prerequisites = item.prerequisites.map((p: any) => ({
+      type: p.type || "realm",
+      value: p.value || "引气初期",
+      minLevel: typeof p.minLevel === "number" ? p.minLevel : undefined,
+    }));
+  }
+
+  return item;
+}
+
 function applyOne(root: any, op: DataOp): void {
   if (op.kind === "modify") {
     const segs = parsePath(op.path);
@@ -446,7 +541,11 @@ function applyOne(root: any, op: DataOp): void {
       const text = typeof payload === "string" ? payload : payload.text || payload.desc || JSON.stringify(payload);
       arr.push(text);
     } else {
-      arr.push(payload);
+      if (op.collection === "techniques") {
+        arr.push(normalizeTechnique(payload));
+      } else {
+        arr.push(payload);
+      }
     }
   } else if (op.kind === "delete") {
     const arr = resolveCollection(root, op.collection);

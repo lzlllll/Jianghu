@@ -651,6 +651,7 @@ export interface ConversationState {
   lastFlashDuration: number;
   lastProDuration: number;
   lastRawOutput: string;
+  quickDecisions: string[];
 }
 
 export type NPCChatRole = "player" | "npc";

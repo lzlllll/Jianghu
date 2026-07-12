@@ -41,6 +41,10 @@ export function StoryPanel({ onOpenSettings }: StoryPanelProps) {
   const log = useGameStore((s) => s.log);
   const isDeveloperMode = useAIStore((s) => s.isDeveloperMode);
 
+  const quickDecisions = conversation.quickDecisions?.length
+    ? conversation.quickDecisions
+    : QUICK_DECISIONS;
+
   const [showRawOutput, setShowRawOutput] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -173,7 +177,7 @@ export function StoryPanel({ onOpenSettings }: StoryPanelProps) {
         >
           {/* 快捷决断 */}
           <div className="flex flex-wrap gap-1.5 mb-3">
-            {QUICK_DECISIONS.map((q) => (
+            {quickDecisions.map((q) => (
               <button
                 key={q}
                 onClick={() => setDecision(q)}

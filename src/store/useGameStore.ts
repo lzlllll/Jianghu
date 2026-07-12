@@ -984,7 +984,18 @@ EFFECT: [效果描述]`,
       },
 
       resetGame: () => {
-        localStorage.removeItem("useGameStore");
+        localStorage.removeItem("xiuxian-save");
+        try {
+          const aiRaw = localStorage.getItem("xiuxian-ai");
+          if (aiRaw) {
+            const aiData = JSON.parse(aiRaw);
+            delete aiData.state?.conversation;
+            delete aiData.state?.npcChat;
+            delete aiData.state?.battle;
+            delete aiData.state?.crafting;
+            localStorage.setItem("xiuxian-ai", JSON.stringify(aiData));
+          }
+        } catch { /* ignore */ }
         set({ ...initialState, log: ["重入轮回，再启修真。"] });
       },
 

@@ -47,6 +47,7 @@ const INITIAL_CONVERSATION: ConversationState = {
   lastFlashDuration: 0,
   lastProDuration: 0,
   lastRawOutput: "",
+  quickDecisions: [],
 };
 
 const INITIAL_NPC_CHAT: NPCChatState = {
@@ -277,6 +278,7 @@ export const useAIStore = create<AIStore>()(
               ...st.conversation,
               lastProDuration: Date.now() - proStart,
               lastRawOutput: proRaw,
+              quickDecisions: parsed.quickDecisions,
             },
           }));
         } catch (e) {
@@ -403,8 +405,9 @@ export const useAIStore = create<AIStore>()(
               conversation: {
                 ...st.conversation,
                 turns,
+                quickDecisions: parsed.quickDecisions,
                 stage: "done",
-                errorMsg: "",
+                lastRawOutput: proRaw,
               },
             };
           });
