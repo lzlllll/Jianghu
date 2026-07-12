@@ -336,17 +336,66 @@ ${dataSchema}`,
           const errorMsg = (e as Error).message;
           const isNetworkError = errorMsg.includes("网络") || errorMsg.includes("CORS") ||
             errorMsg.includes("请求超时") || errorMsg.includes("不可达") || errorMsg.includes("重试");
-          set((st) => ({
-            conversation: {
-              ...st.conversation,
-              stage: "error",
-              errorMsg: isNetworkError
-                ? `网络连接失败：${errorMsg}\n请检查网络连接或在设置中更换Base URL。\n如果问题持续，可尝试切换为其他模型或降低温度设置。`
-                : `叙事生成失败：${errorMsg}`,
-            },
-          }));
-          abortController = null;
-          return;
+
+          if (isNetworkError && settings.proModel !== settings.flashModel) {
+            console.warn("[runTurn] Pro模型网络请求失败，尝试降级到Flash模型...");
+            try {
+              const proStart = Date.now();
+              const proRaw = await chatWithModel(
+                settings,
+                settings.flashModel,
+                buildProPrompt({
+                  state: gameState,
+                  summary: conv.summary,
+                  recentTurns,
+                  decision: trimmed,
+                  relevantData,
+                  chatSummary,
+                }),
+                { timeoutMs: 120000, signal, retries: 2 },
+              );
+              const parsed = parseModelOutput(proRaw);
+              narrative = parsed.narrative;
+              ops = parsed.ops;
+              opsRaw = parsed.opsRaw;
+
+              if (parsed.mode && (parsed.mode.includes("crafting") || parsed.mode.includes("制作百艺"))) {
+                set({ isCraftingOpen: true });
+              }
+
+              set((st) => ({
+                conversation: {
+                  ...st.conversation,
+                  lastProDuration: Date.now() - proStart,
+                  lastRawOutput: proRaw,
+                  quickDecisions: parsed.quickDecisions,
+                },
+              }));
+            } catch (fallbackErr) {
+              console.error("[runTurn] Flash模型降级也失败:", fallbackErr);
+              set((st) => ({
+                conversation: {
+                  ...st.conversation,
+                  stage: "error",
+                  errorMsg: `Pro模型网络请求失败，Flash模型降级也失败：${(fallbackErr as Error).message}\n请检查网络连接或在设置中更换Base URL。`,
+                },
+              }));
+              abortController = null;
+              return;
+            }
+          } else {
+            set((st) => ({
+              conversation: {
+                ...st.conversation,
+                stage: "error",
+                errorMsg: isNetworkError
+                  ? `网络连接失败：${errorMsg}\n请检查网络连接或在设置中更换Base URL。\n如果问题持续，可尝试切换为其他模型或降低温度设置。`
+                  : `叙事生成失败：${errorMsg}`,
+              },
+            }));
+            abortController = null;
+            return;
+          }
         }
 
         useGameStore.getState().applyOps(ops);
@@ -692,33 +741,32 @@ ${background ? `【背景】${background}\n` : ""}
           },
         }));
 
-        try {
-          const recentStoryTurns = recentForPrompt(conversation.turns);
-          const storyContext = recentStoryTurns
-            .map((t) => `玩家：${t.input}\n叙述：${t.narrative.slice(0, 100)}`)
-            .join("\n---\n");
+        const recentStoryTurns = recentForPrompt(conversation.turns);
+        const storyContext = recentStoryTurns
+          .map((t) => `玩家：${t.input}\n叙述：${t.narrative.slice(0, 100)}`)
+          .join("\n---\n");
 
-          const recentMessages = (Array.isArray(profile.messages) ? profile.messages : []).slice(-8);
-          const chatHistory = recentMessages
-            .map((m) => `${m.role === "player" ? "玩家" : profile.name}：${m.content}`)
-            .join("\n");
+        const recentMessages = (Array.isArray(profile.messages) ? profile.messages : []).slice(-8);
+        const chatHistory = recentMessages
+          .map((m) => `${m.role === "player" ? "玩家" : profile.name}：${m.content}`)
+          .join("\n");
 
-          const location = useGameStore.getState().currentLocation;
-          const locationNames: Record<string, string> = {
-            home: "住所",
-            alchemy_room: "炼丹房",
-            forge_room: "炼器室",
-            meditation_room: "闭关室",
-            market: "集市",
-            library: "藏经阁",
-            training_ground: "演武场",
-            outdoor: "野外",
-          };
+        const location = useGameStore.getState().currentLocation;
+        const locationNames: Record<string, string> = {
+          home: "住所",
+          alchemy_room: "炼丹房",
+          forge_room: "炼器室",
+          meditation_room: "闭关室",
+          market: "集市",
+          library: "藏经阁",
+          training_ground: "演武场",
+          outdoor: "野外",
+        };
 
-          const prompt = [
-            {
-              role: "system" as const,
-              content: `${profile.initialPrompt}
+        const prompt: import("@/lib/aiClient").ChatMessage[] = [
+          {
+            role: "system" as const,
+            content: `${profile.initialPrompt}
 
 【当前剧情上下文】：
 ${conversation.summary || "暂无"}
@@ -728,13 +776,14 @@ ${storyContext || "暂无"}
 
 【本次对话记录】：
 ${chatHistory || "暂无"}`,
-            },
-            {
-              role: "user" as const,
-              content: content.trim(),
-            },
-          ];
+          },
+          {
+            role: "user" as const,
+            content: content.trim(),
+          },
+        ];
 
+        try {
           const raw = await chatWithModel(settings, settings.proModel, prompt, {
             timeoutMs: 120000,
             signal,
@@ -765,16 +814,58 @@ ${chatHistory || "暂无"}`,
           if (signal.aborted) return;
           const errorMsg = (e as Error).message;
           const isNetworkError = errorMsg.includes("网络") || errorMsg.includes("CORS") ||
-            errorMsg.includes("请求超时") || errorMsg.includes("不可达");
-          set((st) => ({
-            npcChat: {
-              ...st.npcChat,
-              isTyping: false,
-              errorMsg: isNetworkError
-                ? `网络连接失败：${errorMsg}\n请检查网络连接或在设置中更换Base URL。`
-                : `发送失败：${errorMsg}`,
-            },
-          }));
+            errorMsg.includes("请求超时") || errorMsg.includes("不可达") || errorMsg.includes("重试");
+
+          if (isNetworkError && settings.proModel !== settings.flashModel) {
+            console.warn("[sendNPCMessage] Pro模型网络请求失败，尝试降级到Flash模型...");
+            try {
+              const raw = await chatWithModel(settings, settings.flashModel, prompt, {
+                timeoutMs: 120000,
+                signal,
+                retries: 2,
+              });
+
+              if (signal.aborted) return;
+
+              const npcMsg: NPCMessage = {
+                id: `msg-${Date.now()}`,
+                role: "npc",
+                content: raw.trim(),
+                timestamp: Date.now(),
+              };
+
+              set((st) => ({
+                npcChat: {
+                  ...st.npcChat,
+                  isTyping: false,
+                  profiles: (Array.isArray(st.npcChat.profiles) ? st.npcChat.profiles : []).map((p) =>
+                    p.npcId === npcId
+                      ? { ...p, messages: [...(Array.isArray(p.messages) ? p.messages : []), npcMsg], lastUpdated: Date.now() }
+                      : p,
+                  ),
+                },
+              }));
+            } catch (fallbackErr) {
+              console.error("[sendNPCMessage] Flash模型降级也失败:", fallbackErr);
+              set((st) => ({
+                npcChat: {
+                  ...st.npcChat,
+                  isTyping: false,
+                  errorMsg: `Pro模型网络请求失败，Flash模型降级也失败：${(fallbackErr as Error).message}\n请检查网络连接或在设置中更换Base URL。`,
+                },
+              }));
+            }
+          } else {
+            set((st) => ({
+              npcChat: {
+                ...st.npcChat,
+                isTyping: false,
+                errorMsg: isNetworkError
+                  ? `网络连接失败：${errorMsg}\n请检查网络连接或在设置中更换Base URL。`
+                  : `发送失败：${errorMsg}`,
+              },
+            }));
+          }
         }
         abortController = null;
       },
@@ -891,20 +982,18 @@ ${chatHistory || "暂无"}`,
           },
         }));
 
-        try {
-          const player = useGameStore.getState().player;
-          const battleState = get().battle;
+        const player = useGameStore.getState().player;
+        const battleState = get().battle;
+        const inventory = Array.isArray(useGameStore.getState().inventory) ? useGameStore.getState().inventory : [];
+        const techniques = Array.isArray(useGameStore.getState().techniques) ? useGameStore.getState().techniques : [];
+        const playerWeapons = inventory.filter((i) => i.type === "法宝");
+        const playerTalismans = inventory.filter((i) => i.type === "符箓");
+        const playerPills = inventory.filter((i) => i.type === "丹药");
 
-          const inventory = Array.isArray(useGameStore.getState().inventory) ? useGameStore.getState().inventory : [];
-          const techniques = Array.isArray(useGameStore.getState().techniques) ? useGameStore.getState().techniques : [];
-          const playerWeapons = inventory.filter((i) => i.type === "法宝");
-          const playerTalismans = inventory.filter((i) => i.type === "符箓");
-          const playerPills = inventory.filter((i) => i.type === "丹药");
-
-          const prompt: import("@/lib/aiClient").ChatMessage[] = [
-            {
-              role: "system" as const,
-              content: `你是一个仙侠战斗模拟器。当前处于战斗模式，地图为10x10瓦片。
+        const prompt: import("@/lib/aiClient").ChatMessage[] = [
+          {
+            role: "system" as const,
+            content: `你是一个仙侠战斗模拟器。当前处于战斗模式，地图为10x10瓦片。
 
 当前战斗状态：
 - 回合：${battleState.round}
@@ -937,13 +1026,14 @@ ${battleState.context.join("\n")}
 MODIFY player.hp - 20
 MODIFY player.mp - 10
 <<<END>>>`,
-            },
-            {
-              role: "user" as const,
-              content: action,
-            },
-          ];
+          },
+          {
+            role: "user" as const,
+            content: action,
+          },
+        ];
 
+        try {
           const raw = await chatWithModel(
             settings,
             settings.proModel,
@@ -989,16 +1079,74 @@ MODIFY player.mp - 10
         } catch (e) {
           const errorMsg = (e as Error).message;
           const isNetworkError = errorMsg.includes("网络") || errorMsg.includes("CORS") ||
-            errorMsg.includes("请求超时") || errorMsg.includes("不可达");
-          set((st) => ({
-            battle: {
-              ...st.battle,
-              isResolving: false,
-              errorMsg: isNetworkError
-                ? `网络连接失败：${errorMsg}\n请检查网络连接或在设置中更换Base URL。`
-                : errorMsg,
-            },
-          }));
+            errorMsg.includes("请求超时") || errorMsg.includes("不可达") || errorMsg.includes("重试");
+
+          if (isNetworkError && settings.proModel !== settings.flashModel) {
+            console.warn("[runBattleTurn] Pro模型网络请求失败，尝试降级到Flash模型...");
+            try {
+              const raw = await chatWithModel(
+                settings,
+                settings.flashModel,
+                prompt,
+                { timeoutMs: 60000, retries: 2 },
+              );
+
+              const parsed = parseModelOutput(raw);
+
+              if (parsed.ops.length > 0) {
+                useGameStore.getState().applyOps(parsed.ops);
+              }
+
+              const isPlayerTurn = get().battle.turn === "player";
+              const allEnemiesDead = parsed.battleEntities?.every(
+                e => e.type === "enemy" && e.isDead
+              ) ?? false;
+              const playerDead = parsed.battleEntities?.find(
+                e => e.type === "player" && e.isDead
+              ) ?? false;
+
+              const actionContext = `回合${battleState.round} ${battleState.turn === "player" ? "玩家" : "敌人"}行动：${action}`;
+              const resultContext = parsed.narrative ? `结果：${parsed.narrative}` : "";
+
+              set((st) => {
+                const nextTurn: "player" | "enemy" = isPlayerTurn ? "enemy" : "player";
+                const newContext = [...st.battle.context, actionContext, resultContext].slice(-20);
+                return {
+                  battle: {
+                    ...st.battle,
+                    isResolving: false,
+                    turn: nextTurn,
+                    round: !isPlayerTurn ? st.battle.round + 1 : st.battle.round,
+                    narrative: parsed.narrative || st.battle.narrative,
+                    map: parsed.battleEntities && parsed.battleEntities.length > 0
+                      ? { ...st.battle.map, entities: parsed.battleEntities }
+                      : st.battle.map,
+                    isActive: !(allEnemiesDead || playerDead),
+                    context: newContext,
+                  },
+                };
+              });
+            } catch (fallbackErr) {
+              console.error("[runBattleTurn] Flash模型降级也失败:", fallbackErr);
+              set((st) => ({
+                battle: {
+                  ...st.battle,
+                  isResolving: false,
+                  errorMsg: `Pro模型网络请求失败，Flash模型降级也失败：${(fallbackErr as Error).message}\n请检查网络连接或在设置中更换Base URL。`,
+                },
+              }));
+            }
+          } else {
+            set((st) => ({
+              battle: {
+                ...st.battle,
+                isResolving: false,
+                errorMsg: isNetworkError
+                  ? `网络连接失败：${errorMsg}\n请检查网络连接或在设置中更换Base URL。`
+                  : errorMsg,
+              },
+            }));
+          }
         }
       },
     }),
