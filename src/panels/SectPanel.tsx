@@ -110,61 +110,139 @@ export function SectPanel() {
 
 function SectOverview() {
   const sect = useGameStore((s) => s.sect);
-  return (
-    <div className="grid grid-cols-2 gap-4">
-      <ScrollCard title="宗门概况" subtitle="云栖山脉，仙家福地">
-        <div className="space-y-3">
-          <InfoRow label="门派等级" value={`Lv.${sect.level}`} />
-          <InfoRow label="门派声望" value={sect.reputation.toLocaleString()} />
-          <InfoRow label="掌门" value={sect.leader} />
-          <InfoRow label="护法长老" value={`${sect.elders} 位`} />
-          <InfoRow label="门下弟子" value={`${sect.disciples} 人`} />
-          <InfoRow label="宗门驻地" value={sect.territory} />
-        </div>
-      </ScrollCard>
+  const hasAppearance = (sect.appearance || "").length > 0;
+  const hasReputation = (sect.reputationDesc || "").length > 0;
+  const hasSurroundings = (sect.surroundings || "").length > 0;
 
-      <ScrollCard title="宗门势力" subtitle="方圆千里，云栖称尊">
-        <div className="space-y-3">
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-serif text-xs text-paper-300">势力影响</span>
-              <span className="font-number text-xs text-gold-400">8600 / 10000</span>
-            </div>
-            <div className="h-2 bg-ink-900/80 rounded-sm overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-cinnabar-600 to-gold-400" style={{ width: "86%" }} />
-            </div>
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-4">
+        <ScrollCard title="宗门概况" subtitle="云栖山脉，仙家福地">
+          <div className="space-y-3">
+            <InfoRow label="门派等级" value={`Lv.${sect.level}`} />
+            <InfoRow label="门派声望" value={sect.reputation.toLocaleString()} />
+            <InfoRow label="掌门" value={sect.leader} />
+            <InfoRow label="护法长老" value={`${sect.elders} 位`} />
+            <InfoRow label="门下弟子" value={`${sect.disciples} 人`} />
+            <InfoRow label="宗门驻地" value={sect.territory} />
           </div>
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-serif text-xs text-paper-300">资源储备</span>
-              <span className="font-number text-xs text-jade-400">充裕</span>
+        </ScrollCard>
+
+        <ScrollCard title="宗门势力" subtitle="方圆千里，云栖称尊">
+          <div className="space-y-3">
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-serif text-xs text-paper-300">势力影响</span>
+                <span className="font-number text-xs text-gold-400">8600 / 10000</span>
+              </div>
+              <div className="h-2 bg-ink-900/80 rounded-sm overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-cinnabar-600 to-gold-400" style={{ width: "86%" }} />
+              </div>
             </div>
-            <div className="h-2 bg-ink-900/80 rounded-sm overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-jade-500 to-pine-400" style={{ width: "72%" }} />
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-serif text-xs text-paper-300">资源储备</span>
+                <span className="font-number text-xs text-jade-400">充裕</span>
+              </div>
+              <div className="h-2 bg-ink-900/80 rounded-sm overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-jade-500 to-pine-400" style={{ width: "72%" }} />
+              </div>
             </div>
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="font-serif text-xs text-paper-300">传承完整</span>
+                <span className="font-number text-xs text-cinnabar-400">六成</span>
+              </div>
+              <div className="h-2 bg-ink-900/80 rounded-sm overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-cinnabar-600 to-cinnabar-400" style={{ width: "60%" }} />
+              </div>
+            </div>
+            <CloudDivider />
+            {sect.name ? (
+              <p className="font-serif text-xs text-paper-400/70 leading-relaxed">
+                {sect.name}，当前等级 {sect.level}，门下弟子 {sect.disciples} 人。
+                {sect.territory ? `据守${sect.territory}。` : ""}
+              </p>
+            ) : (
+              <p className="font-serif text-xs text-paper-400/40 leading-relaxed italic">
+                尚未创建宗门，AI将在开局时生成。
+              </p>
+            )}
           </div>
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-serif text-xs text-paper-300">传承完整</span>
-              <span className="font-number text-xs text-cinnabar-400">六成</span>
+        </ScrollCard>
+      </div>
+
+      {/* 宗门外观 */}
+      {hasAppearance && (
+        <ScrollCard title="宗门外观" subtitle="青山隐隐，道观藏云"
+          ornament={<span className="font-brush text-sm text-gold-400/40">形胜</span>}
+        >
+          <div className="relative">
+            <div className="absolute -left-1 top-0 font-brush text-5xl text-gold-500/10 select-none pointer-events-none">
+              {(sect.appearance || "").charAt(0) || "云"}
             </div>
-            <div className="h-2 bg-ink-900/80 rounded-sm overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-cinnabar-600 to-cinnabar-400" style={{ width: "60%" }} />
-            </div>
-          </div>
-          <CloudDivider />
-          {sect.name ? (
-            <p className="font-serif text-xs text-paper-400/70 leading-relaxed">
-              {sect.name}，当前等级 {sect.level}，门下弟子 {sect.disciples} 人。
-              {sect.territory ? `据守${sect.territory}。` : ""}
+            <p className="font-serif text-base text-paper-100 leading-loose tracking-wide indent-[2em] relative z-10 whitespace-pre-wrap">
+              {sect.appearance}
             </p>
-          ) : (
-            <p className="font-serif text-xs text-paper-400/40 leading-relaxed italic">
-              尚未创建宗门，AI将在开局时生成。
+          </div>
+          <div className="mt-4 pt-4 border-t border-gold-500/15 flex items-center justify-between">
+            <span className="font-serif text-sm text-paper-400/50">
+              共 {sect.appearance.length} 字
+            </span>
+            <span className="font-brush text-base text-gold-400/40 tracking-wider">
+              · 胜境录 ·
+            </span>
+          </div>
+        </ScrollCard>
+      )}
+
+      {/* 江湖风评 */}
+      {hasReputation && (
+        <ScrollCard title="江湖风评" subtitle="江湖风波恶，评说各不同"
+          ornament={<span className="font-brush text-sm text-cinnabar-400/40">风评</span>}
+        >
+          <div className="relative">
+            <div className="absolute -left-1 top-0 font-brush text-5xl text-cinnabar-500/10 select-none pointer-events-none">
+              {(sect.reputationDesc || "").charAt(0) || "风"}
+            </div>
+            <p className="font-serif text-base text-paper-100 leading-loose tracking-wide indent-[2em] relative z-10 whitespace-pre-wrap">
+              {sect.reputationDesc}
             </p>
-          )}
-        </div>
-      </ScrollCard>
+          </div>
+          <div className="mt-4 pt-4 border-t border-cinnabar-500/15 flex items-center justify-between">
+            <span className="font-serif text-sm text-paper-400/50">
+              共 {sect.reputationDesc.length} 字
+            </span>
+            <span className="font-brush text-base text-cinnabar-400/40 tracking-wider">
+              · 风评录 ·
+            </span>
+          </div>
+        </ScrollCard>
+      )}
+
+      {/* 周围环境 */}
+      {hasSurroundings && (
+        <ScrollCard title="周围环境" subtitle="山门之外，别有洞天"
+          ornament={<span className="font-brush text-sm text-jade-400/40">疆域</span>}
+        >
+          <div className="relative">
+            <div className="absolute -left-1 top-0 font-brush text-5xl text-jade-500/10 select-none pointer-events-none">
+              {(sect.surroundings || "").charAt(0) || "山"}
+            </div>
+            <p className="font-serif text-base text-paper-100 leading-loose tracking-wide indent-[2em] relative z-10 whitespace-pre-wrap">
+              {sect.surroundings}
+            </p>
+          </div>
+          <div className="mt-4 pt-4 border-t border-jade-500/15 flex items-center justify-between">
+            <span className="font-serif text-sm text-paper-400/50">
+              共 {sect.surroundings.length} 字
+            </span>
+            <span className="font-brush text-base text-jade-400/40 tracking-wider">
+              · 舆图录 ·
+            </span>
+          </div>
+        </ScrollCard>
+      )}
     </div>
   );
 }

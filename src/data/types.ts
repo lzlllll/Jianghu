@@ -519,6 +519,12 @@ export interface Sect {
   disciples: number;
   territory: string;
   contribution: number;
+  /** 宗门外观描述 */
+  appearance: string;
+  /** 江湖风评 */
+  reputationDesc: string;
+  /** 周围环境/地理信息 */
+  surroundings: string;
   positions: SectPosition[];
   tasks: SectTask[];
   shop: SectShopItem[];

@@ -233,6 +233,9 @@ const initialState: GameState = {
     disciples: 0,
     territory: "",
     contribution: 0,
+    appearance: "",
+    reputationDesc: "",
+    surroundings: "",
     positions: [],
     tasks: [],
     shop: [],
@@ -1153,7 +1156,7 @@ EFFECT: [效果描述]`,
     }),
     {
       name: "xiuxian-save",
-      version: 12,
+      version: 13,
       migrate: (state: any, version: number) => {
         if (version < 2) {
           if (state.techniques && Array.isArray(state.techniques)) {
@@ -1499,6 +1502,13 @@ EFFECT: [效果描述]`,
             if (typeof state.currentTime.month !== "number") state.currentTime.month = 1;
             if (typeof state.currentTime.day !== "number") state.currentTime.day = 1;
             if (typeof state.currentTime.hour !== "number") state.currentTime.hour = 0;
+          }
+        }
+        if (version < 13) {
+          if (state.sect && typeof state.sect === "object") {
+            if (typeof state.sect.appearance !== "string") state.sect.appearance = "";
+            if (typeof state.sect.reputationDesc !== "string") state.sect.reputationDesc = "";
+            if (typeof state.sect.surroundings !== "string") state.sect.surroundings = "";
           }
         }
         return state;

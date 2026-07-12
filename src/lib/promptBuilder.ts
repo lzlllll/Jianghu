@@ -118,6 +118,10 @@ export function buildDataSchema(state: GameState): string {
   lines.push(`sect.level = ${s.level}`);
   lines.push(`sect.contribution = ${s.contribution}`);
   lines.push(`sect.leader = ${s.leader || ""}`);
+  lines.push(`sect.territory = ${s.territory || ""}`);
+  lines.push(`sect.appearance = ${s.appearance || ""}`);
+  lines.push(`sect.reputationDesc = ${s.reputationDesc || ""}`);
+  lines.push(`sect.surroundings = ${s.surroundings || ""}`);
 
   const positions = Array.isArray(s.positions) ? s.positions : [];
   positions.forEach((pos) => {
@@ -393,7 +397,10 @@ export function buildProPrompt(params: {
 5. 【灵石 MODIFY spiritStones】设置 spiritStones.low、spiritStones.mid（中下品灵石数量）
 
 6. 【宗门 MODIFY sect 和 ADD sect.positions/tasks】如果用户属于宗门：
-   - MODIFY sect.name、sect.level、sect.leader、sect.contribution
+   - MODIFY sect.name、sect.level、sect.leader、sect.contribution、sect.territory
+   - MODIFY sect.appearance（宗门外观描述，100-200字）
+   - MODIFY sect.reputationDesc（江湖风评，100-200字）
+   - MODIFY sect.surroundings（周围环境信息，100-200字）
    - ADD sect.positions（至少添加1个当前职位）
 
 7. 【关系 ADD relations】添加2-4位初始关系人物，必须包含完整字段：id、name、title、type、affinity、affinityMax、realm、note
@@ -686,6 +693,10 @@ MODIFY sect.name = 幻梦宗
 MODIFY sect.level = 1
 MODIFY sect.leader = 叶笙歌
 MODIFY sect.contribution = 0
+MODIFY sect.territory = 云栖山脉东麓
+MODIFY sect.appearance = 云栖山脉东麓，三座青瓦白墙的殿阁依山势错落而建，门前一株千年银杏，落叶如金。山门石阶共九十九级，两侧立着两座斑驳的石麒麟。
+MODIFY sect.reputationDesc = 幻梦宗虽是小门派，但因擅长炼制幻梦丹而在西域散修中小有名气。正道联盟对其不闻不问，魔道也未将其放在眼里，算是在夹缝中求生存的典型。
+MODIFY sect.surroundings = 方圆百里内有赤崖镇的修仙坊市、乱星滩的散修聚集地、以及一座上古修士遗留的洞府遗迹。北面有低阶妖兽出没的苍岭，南面则是一片瘴气弥漫的毒沼。
 
 ADD sect.positions
 id: p1
