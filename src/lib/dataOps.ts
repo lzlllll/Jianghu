@@ -352,6 +352,7 @@ export function applyOpsToState(state: GameState, ops: DataOp[]): GameState {
     log: Array.isArray(state.log) ? [...state.log] : [],
     pillCache: state.pillCache ? { ...state.pillCache } : {},
     news: state.news ? clone(state.news) : { items: [], lastUpdate: "" },
+    currentTime: state.currentTime ? clone(state.currentTime) : { year: 1, month: 1, day: 1, hour: 0 },
   };
 
   let addCount = 0, modifyCount = 0, deleteCount = 0;

@@ -1,6 +1,8 @@
 import type { AISettings, GameState, Turn, LocationType } from "@/data/types";
 import type { ChatMessage } from "@/lib/aiClient";
 
+const HOUR_NAMES = ["子时", "丑时", "寅时", "卯时", "辰时", "巳时", "午时", "未时", "申时", "酉时", "戌时", "亥时"];
+
 const LOCATION_INFO: Record<LocationType, { name: string; allowed: string; forbidden: string }> = {
   home: {
     name: "住所",
@@ -73,6 +75,12 @@ export function buildDataSchema(state: GameState): string {
   lines.push(`player.background = ${p.background || ""}`);
   lines.push(`player.personality = ${p.personality || ""}`);
   lines.push(`player.description = ${p.description || ""}`);
+
+  const t = state.currentTime || { year: 1, month: 1, day: 1, hour: 0 };
+  lines.push(`currentTime.year = ${t.year}`);
+  lines.push(`currentTime.month = ${t.month}`);
+  lines.push(`currentTime.day = ${t.day}`);
+  lines.push(`currentTime.hour = ${t.hour}`);
 
   const spiritRoots = Array.isArray(p.spiritRoots) ? p.spiritRoots : [];
   lines.push(`player.spiritRoots = ${spiritRoots.map((r) => `${r.element}${r.value}`).join(" ") || "(空)"}`);
@@ -803,7 +811,12 @@ battle
 5. 叙事正文内不得出现 <<<OPS>>>、<<<MODE>>>、MODIFY、ADD、DELETE 等标记字样
 6. 若本轮无任何数据变化，仍需输出空的 <<<OPS>>> 与 <<<END>>> 标记
 7. 数值变化须遵循个体适配度与修炼效率计算规则，灵根、心性、经脉状态都会影响修炼效果
-8. 功法等级和熟练程度决定技能强度，需合理分配修炼资源`;
+8. 功法等级和熟练程度决定技能强度，需合理分配修炼资源
+9. 【时间推进】每轮叙事结束必须用 MODIFY 更新当前时间，时间推进尺度不固定——若叙事跨越数日则 days +3，若仅片刻则 hour +1（溢出进位）。格式：
+MODIFY currentTime.year = 1
+MODIFY currentTime.month = 3
+MODIFY currentTime.day = 15
+MODIFY currentTime.hour = 5（子时=0 丑时=1...亥时=11）`;
 
   const recentText =
     recentTurns.length > 0
@@ -812,7 +825,9 @@ battle
         .join("\n\n")
       : "（尚无近况）";
 
-  const user = `【玩家身世背景】
+  const user = `【当前时间】第${state.currentTime.year}年${state.currentTime.month}月${state.currentTime.day}日${HOUR_NAMES[state.currentTime.hour]}
+
+【玩家身世背景】
 ${state.player.background || "（暂无记载）"}
 
 ${state.player.personality ? `【玩家心性】\n${state.player.personality}\n\n` : ""}${state.player.description ? `【玩家外貌】\n${state.player.description}\n\n` : ""}【前情提要（已压缩）】

@@ -187,6 +187,7 @@ export const useAIStore = create<AIStore>()(
           log: game.log,
           news: game.news,
           pillCache: game.pillCache,
+          currentTime: game.currentTime,
         };
 
         const snapshot = game.getSnapshot();

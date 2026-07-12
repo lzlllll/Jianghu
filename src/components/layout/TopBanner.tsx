@@ -1,9 +1,11 @@
 import { useGameStore } from "@/store/useGameStore";
 import { useAIStore } from "@/store/useAIStore";
 import { REALMS } from "@/data/mockData";
-import { Settings, Download, Upload, RotateCcw } from "lucide-react";
+import { Settings, Download, Upload, RotateCcw, Clock } from "lucide-react";
 import { LocationSelector } from "./LocationSelector";
 import type { GameSnapshot } from "@/data/types";
+
+const HOUR_NAMES = ["子时", "丑时", "寅时", "卯时", "辰时", "巳时", "午时", "未时", "申时", "酉时", "戌时", "亥时"];
 
 interface TopBannerProps {
   onOpenSettings: () => void;
@@ -11,6 +13,7 @@ interface TopBannerProps {
 
 export function TopBanner({ onOpenSettings }: TopBannerProps) {
   const player = useGameStore((s) => s.player);
+  const currentTime = useGameStore((s) => s.currentTime);
   const realm = REALMS[player.realmIndex];
   const hasApiKey = useAIStore((s) => !!s.settings.apiKey);
   const stage = useAIStore((s) => s.conversation.stage);
@@ -90,6 +93,16 @@ export function TopBanner({ onOpenSettings }: TopBannerProps) {
         <div className="text-right">
           <div className="font-serif text-[10px] text-paper-400/60 tracking-wider">气运</div>
           <div className="font-serif text-sm text-paper-200">{player.fortune}</div>
+        </div>
+        <div className="w-px h-10 bg-gold-500/20" />
+        <div className="flex items-center gap-3 text-right">
+          <Clock size={16} className="text-gold-400/60" strokeWidth={1.5} />
+          <div>
+            <div className="font-serif text-[10px] text-paper-400/60 tracking-wider">修真历</div>
+            <div className="font-number text-sm text-paper-200 whitespace-nowrap">
+              第{currentTime.year}年 {currentTime.month}月{currentTime.day}日 {HOUR_NAMES[currentTime.hour] ?? "子时"}
+            </div>
+          </div>
         </div>
         <div className="w-px h-10 bg-gold-500/20" />
         <LocationSelector />

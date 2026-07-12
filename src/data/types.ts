@@ -558,6 +558,14 @@ export interface PillCacheEntry {
   outputCount: number;
 }
 
+export interface GameTime {
+  year: number;
+  month: number;
+  day: number;
+  /** 时辰: 0=子时, 1=丑时, ..., 11=亥时 */
+  hour: number;
+}
+
 export interface GameState {
   player: Player;
   techniques: Technique[];
@@ -573,6 +581,7 @@ export interface GameState {
   log: string[];
   pillCache: Record<string, PillCacheEntry>;
   news: NewsState;
+  currentTime: GameTime;
 }
 
 // ===== AI 叙事系统类型 =====
@@ -664,6 +673,8 @@ export interface GameSnapshot {
   relations: Relation[];
   log: string[];
   pillCache?: Record<string, PillCacheEntry>;
+  news?: NewsState;
+  currentTime?: GameTime;
 }
 
 export interface ConversationState {

@@ -262,6 +262,12 @@ const initialState: GameState = {
     items: [],
     lastUpdate: "",
   },
+  currentTime: {
+    year: 1,
+    month: 1,
+    day: 1,
+    hour: 0,
+  },
 };
 
 export const useGameStore = create<GameStore>()(
@@ -1064,6 +1070,7 @@ EFFECT: [效果描述]`,
             log: st.log,
             pillCache: st.pillCache,
             news: st.news,
+            currentTime: st.currentTime,
           };
           const next = applyOpsToState(dataView, ops);
           return {
@@ -1076,6 +1083,7 @@ EFFECT: [效果描述]`,
             log: next.log,
             pillCache: next.pillCache,
             news: next.news,
+            currentTime: next.currentTime,
           };
         });
       },
@@ -1091,6 +1099,7 @@ EFFECT: [效果描述]`,
             sect: st.sect,
             relations: st.relations,
             log: st.log,
+            currentTime: st.currentTime,
           }));
         } catch (e) {
           console.warn("[getSnapshot] Failed to snapshot:", e);
@@ -1102,6 +1111,7 @@ EFFECT: [效果描述]`,
             sect: st.sect,
             relations: st.relations,
             log: st.log,
+            currentTime: st.currentTime,
           };
         }
       },
@@ -1130,12 +1140,20 @@ EFFECT: [效果描述]`,
           log: Array.isArray(snap.log) ? clone(snap.log) : [],
           pillCache: clone(snap.pillCache || {}),
           news: { items: [], lastUpdate: "" },
+          currentTime: snap.currentTime && typeof snap.currentTime === "object"
+            ? {
+              year: typeof snap.currentTime.year === "number" ? snap.currentTime.year : 1,
+              month: typeof snap.currentTime.month === "number" ? snap.currentTime.month : 1,
+              day: typeof snap.currentTime.day === "number" ? snap.currentTime.day : 1,
+              hour: typeof snap.currentTime.hour === "number" ? snap.currentTime.hour : 0,
+            }
+            : { year: 1, month: 1, day: 1, hour: 0 },
         });
       },
     }),
     {
       name: "xiuxian-save",
-      version: 11,
+      version: 12,
       migrate: (state: any, version: number) => {
         if (version < 2) {
           if (state.techniques && Array.isArray(state.techniques)) {
@@ -1473,6 +1491,16 @@ EFFECT: [效果描述]`,
             if (!Array.isArray(state.sect.tasks)) state.sect.tasks = [];
           }
         }
+        if (version < 12) {
+          if (!state.currentTime || typeof state.currentTime !== "object") {
+            state.currentTime = { year: 1, month: 1, day: 1, hour: 0 };
+          } else {
+            if (typeof state.currentTime.year !== "number") state.currentTime.year = 1;
+            if (typeof state.currentTime.month !== "number") state.currentTime.month = 1;
+            if (typeof state.currentTime.day !== "number") state.currentTime.day = 1;
+            if (typeof state.currentTime.hour !== "number") state.currentTime.hour = 0;
+          }
+        }
         return state;
       },
       partialize: (s) => ({
@@ -1484,6 +1512,7 @@ EFFECT: [效果描述]`,
         relations: s.relations,
         log: s.log,
         pillCache: s.pillCache,
+        currentTime: s.currentTime,
       }),
       onRehydrateStorage: () => (state) => {
         if (!state) return state;
