@@ -427,6 +427,48 @@ function parseMarkdownBlockToJson(block: string): any {
   return Object.keys(result).length > 0 ? result : block;
 }
 
+function normalizeNewsItem(item: any): any {
+  if (!item || typeof item !== "object") return item;
+
+  // 如果 AI 用了 text: "分类 | 内容" 格式，解析它
+  if (item.text && typeof item.text === "string") {
+    const pipeIdx = item.text.indexOf("|");
+    if (pipeIdx > 0) {
+      item.category = item.text.slice(0, pipeIdx).trim();
+      item.content = item.text.slice(pipeIdx + 1).trim();
+    } else {
+      item.content = item.text.trim();
+    }
+    delete item.text;
+  }
+
+  // 规范化 category
+  const validCategories = ["官府公告", "宗门布告", "市井传言"];
+  if (!validCategories.includes(item.category)) {
+    // 尝试匹配已知分类
+    const matched = validCategories.find((c) => item.category?.includes(c));
+    item.category = matched || item.category || "市井传言";
+  }
+
+  // 自动补全缺失字段
+  if (!item.id) {
+    item.id = `news-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+  if (!item.date) {
+    item.date = "今日";
+  }
+  if (!item.title) {
+    // 取 content 前 15 字作为标题
+    const raw = item.content || "";
+    item.title = raw.length > 15 ? raw.slice(0, 15) + "..." : raw;
+  }
+  if (!item.source) {
+    item.source = item.category || "江湖消息";
+  }
+
+  return item;
+}
+
 function normalizeTechnique(item: any): any {
   if (!item || typeof item !== "object") return item;
 
@@ -543,6 +585,8 @@ function applyOne(root: any, op: DataOp): void {
     } else {
       if (op.collection === "techniques") {
         arr.push(normalizeTechnique(payload));
+      } else if (op.collection === "news.items") {
+        arr.push(normalizeNewsItem(payload));
       } else {
         arr.push(payload);
       }
