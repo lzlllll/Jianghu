@@ -6,22 +6,43 @@ export interface ChatMessage {
 }
 
 const MAX_REQUEST_BODY_SIZE = 15 * 1024 * 1024;
+const DEFAULT_TIMEOUT = 180000;
+
+const PROXY_MAP: Record<string, string> = {
+  "https://api.deepseek.com/v1": "/api/deepseek",
+  "https://api.openai.com/v1": "/api/openai",
+  "https://open.bigmodel.cn/api/paas/v4": "/api/glm",
+  "https://dashscope.aliyuncs.com/compatible-mode/v1": "/api/qwen",
+};
+
+function isDevMode(): boolean {
+  return import.meta.env.DEV;
+}
 
 function buildEndpoint(baseUrl: string): string {
   let url = baseUrl.trim().replace(/\/+$/, "");
+
+  if (isDevMode() && PROXY_MAP[url]) {
+    url = PROXY_MAP[url];
+    console.debug(`[aiClient] Development mode detected, using proxy: ${url}`);
+  }
+
   if (!/\/chat\/completions$/.test(url)) {
     url += "/chat/completions";
   }
   return url;
 }
 
-function logRequestInfo(model: string, messages: ChatMessage[], bodySize: number): void {
+function logRequestInfo(model: string, messages: ChatMessage[], bodySize: number, endpoint: string): void {
   const systemLen = messages.find((m) => m.role === "system")?.content.length ?? 0;
   const userLen = messages.find((m) => m.role === "user")?.content.length ?? 0;
-  console.debug(`[aiClient] Calling model: ${model}`);
+  console.debug(`[aiClient] === 请求开始 ===`);
+  console.debug(`[aiClient] Endpoint: ${endpoint}`);
+  console.debug(`[aiClient] Model: ${model}`);
   console.debug(`[aiClient] Request body size: ${(bodySize / 1024).toFixed(2)} KB`);
   console.debug(`[aiClient] System prompt: ${systemLen} chars`);
   console.debug(`[aiClient] User prompt: ${userLen} chars`);
+  console.debug(`[aiClient] Total messages: ${messages.length}`);
 }
 
 function checkRequestSize(bodySize: number): void {
@@ -41,7 +62,7 @@ export async function chatComplete(
   }
   const endpoint = buildEndpoint(settings.baseUrl);
   const controller = new AbortController();
-  const timeout = opts.timeoutMs ?? 90000;
+  const timeout = opts.timeoutMs ?? DEFAULT_TIMEOUT;
   const timer = setTimeout(() => controller.abort(), timeout);
   if (opts.signal) {
     opts.signal.addEventListener("abort", () => controller.abort(), { once: true });
@@ -58,7 +79,7 @@ export async function chatComplete(
     const bodyStr = JSON.stringify(requestBody);
     const bodySize = new Blob([bodyStr]).size;
 
-    logRequestInfo(requestBody.model, messages, bodySize);
+    logRequestInfo(requestBody.model, messages, bodySize, endpoint);
     checkRequestSize(bodySize);
 
     const resp = await fetch(endpoint, {
@@ -102,8 +123,17 @@ export async function chatComplete(
     }
     if (e instanceof TypeError) {
       console.error("[aiClient] Network error:", e);
+      console.error("[aiClient] === 网络错误诊断 === ");
+      console.error("[aiClient] Endpoint:", endpoint);
+      console.error("[aiClient] Base URL:", settings.baseUrl);
+      console.error("[aiClient] Possible causes:");
+      console.error("[aiClient] 1. CORS restriction - browser blocks direct API calls");
+      console.error("[aiClient] 2. Network timeout - request body too large");
+      console.error("[aiClient] 3. DNS resolution failure");
+      console.error("[aiClient] 4. Firewall/proxy blocking the connection");
+      console.error("[aiClient] === 诊断结束 ===");
       throw new Error(
-        "网络请求失败，可能为 CORS 跨域限制或 Base URL 不可达。可尝试更换 Base URL 或使用支持浏览器直连的服务商。",
+        `网络请求失败：${e.message}\n\n目标地址：${endpoint}\n\n可能原因：\n1. CORS 跨域限制（浏览器安全策略阻止直接调用）\n2. 网络超时（请求体过大或网络不稳定）\n3. DNS 解析失败\n4. 防火墙/代理拦截\n\n解决方案：\n- 开发环境：运行 npm run dev 使用 Vite 代理\n- 生产环境：配置支持 CORS 的反向代理\n- 更换为支持浏览器直连的 API 服务商`,
       );
     }
     console.error("[aiClient] Unexpected error:", e);
@@ -129,7 +159,7 @@ export async function chatWithModel(
   }
   const endpoint = buildEndpoint(settings.baseUrl);
   const maxRetries = opts.retries ?? 2;
-  const timeout = opts.timeoutMs ?? 90000;
+  const timeout = opts.timeoutMs ?? DEFAULT_TIMEOUT;
 
   for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
     const controller = new AbortController();
@@ -149,7 +179,7 @@ export async function chatWithModel(
       const bodyStr = JSON.stringify(requestBody);
       const bodySize = new Blob([bodyStr]).size;
 
-      logRequestInfo(model, messages, bodySize);
+      logRequestInfo(model, messages, bodySize, endpoint);
       checkRequestSize(bodySize);
 
       const resp = await fetch(endpoint, {
@@ -214,8 +244,14 @@ export async function chatWithModel(
           await new Promise((r) => setTimeout(r, 3000 * attempt));
           continue;
         }
+        console.error("[aiClient] === 网络错误诊断 ===");
+        console.error("[aiClient] Endpoint:", endpoint);
+        console.error("[aiClient] Base URL:", settings.baseUrl);
+        console.error("[aiClient] Model:", model);
+        console.error("[aiClient] Request body size:", (new Blob([JSON.stringify({ model, messages })]).size / 1024).toFixed(2), "KB");
+        console.error("[aiClient] === 诊断结束 ===");
         throw new Error(
-          "网络请求失败，可能为 CORS 跨域限制或 Base URL 不可达。可尝试更换 Base URL 或使用支持浏览器直连的服务商。",
+          `网络请求失败（已重试 ${maxRetries} 次）：${e.message}\n\n目标地址：${endpoint}\n模型：${model}\n\n可能原因：\n1. CORS 跨域限制（浏览器安全策略）\n2. 网络超时或不稳定\n3. DNS 解析失败\n4. 防火墙/代理拦截\n\n解决方案：\n- 开发环境：确保使用 npm run dev 启动（已内置代理）\n- 检查网络连接和代理设置\n- 尝试更换 Base URL 或模型`,
         );
       }
 
