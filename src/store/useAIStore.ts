@@ -13,7 +13,7 @@ import type {
   BattleEntity,
 } from "@/data/types";
 import { useGameStore } from "@/store/useGameStore";
-import { chatWithModel } from "@/lib/aiClient";
+import { chatWithModel, type ChatMessage } from "@/lib/aiClient";
 import {
   buildDataSchema,
   buildFlashPrompt,
@@ -273,6 +273,50 @@ export const useAIStore = create<AIStore>()(
           narrative = parsed.narrative;
           ops = parsed.ops;
           opsRaw = parsed.opsRaw;
+
+          // 回退机制：Pro 模型未输出 OPS 块时，用 Flash 从叙事中提取数据变更
+          if (ops.length === 0 && narrative.trim().length > 0 && !signal.aborted) {
+            console.warn("[runTurn] Pro模型未输出OPS块，尝试从叙事中提取数据变更...");
+            try {
+              const dataSchema = buildDataSchema(gameState);
+              const extractPrompt: ChatMessage[] = [
+                {
+                  role: "system",
+                  content: `你是一个数据提取助手。以下是一段修仙游戏的叙事文本。请仔细分析叙事中发生了哪些数据变化（修为增减、气血波动、物品得失、时间推移等），以游戏数据操作格式输出。
+
+输出格式：
+<<<OPS>>>
+MODIFY player.hp - 10
+MODIFY player.cultivation + 50
+MODIFY currentTime.hour = 6
+<<<END>>>
+
+叙事中明确发生的变化才需要输出，没有发生的不要编造。
+
+参考当前游戏状态：
+${dataSchema}`,
+                },
+                {
+                  role: "user",
+                  content: `请从以下叙事中提取数据操作：\n\n${narrative.slice(0, 8000)}`,
+                },
+              ];
+              const extractRaw = await chatWithModel(
+                settings,
+                settings.flashModel,
+                extractPrompt,
+                { timeoutMs: 30000, signal },
+              );
+              const extractParsed = parseModelOutput(extractRaw);
+              if (extractParsed.ops.length > 0) {
+                ops = extractParsed.ops;
+                opsRaw = extractParsed.opsRaw;
+                console.debug("[runTurn] OPS回退提取成功，共", ops.length, "条操作");
+              }
+            } catch (extractErr) {
+              console.warn("[runTurn] OPS回退提取失败:", extractErr);
+            }
+          }
 
           if (parsed.mode && (parsed.mode.includes("crafting") || parsed.mode.includes("制作百艺"))) {
             set({ isCraftingOpen: true });
