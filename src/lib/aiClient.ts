@@ -87,11 +87,9 @@ export async function chatComplete(
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${settings.apiKey}`,
-        "Content-Length": String(bodySize),
       },
       body: bodyStr,
       signal: controller.signal,
-      keepalive: true,
     });
 
     console.debug(`[aiClient] Response status: ${resp.status}`);
@@ -187,11 +185,9 @@ export async function chatWithModel(
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${settings.apiKey}`,
-          "Content-Length": String(bodySize),
         },
         body: bodyStr,
         signal: controller.signal,
-        keepalive: true,
       });
 
       console.debug(`[aiClient] Response status (attempt ${attempt}): ${resp.status}`);
@@ -239,32 +235,13 @@ export async function chatWithModel(
 
       if (e instanceof TypeError) {
         console.error(`[aiClient] Network error (attempt ${attempt}):`, e);
-        console.error(`[aiClient] Error message: ${e.message}`);
-        console.error(`[aiClient] Error stack:`, e.stack);
-
-        if (e.message.includes("ERR_CERT")) {
-          console.error("[aiClient] SSL/TLS certificate error detected");
-        } else if (e.message.includes("ERR_CONNECTION")) {
-          console.error("[aiClient] Connection error detected");
-        } else if (e.message.includes("ERR_NAME_NOT_RESOLVED")) {
-          console.error("[aiClient] DNS resolution failed");
-        }
-
         if (attempt <= maxRetries) {
           console.warn(`[aiClient] Retrying (attempt ${attempt}/${maxRetries}) after network error`);
           await new Promise((r) => setTimeout(r, 3000 * attempt));
           continue;
         }
-        console.error("[aiClient] === 网络错误诊断 ===");
-        console.error("[aiClient] Endpoint:", endpoint);
-        console.error("[aiClient] Base URL:", settings.baseUrl);
-        console.error("[aiClient] Model:", model);
-        console.error("[aiClient] Request body size:", (new Blob([JSON.stringify({ model, messages })]).size / 1024).toFixed(2), "KB");
-        console.error("[aiClient] Is dev mode:", isDevMode());
-        console.error("[aiClient] Proxy mapping:", PROXY_MAP[settings.baseUrl] || "not found");
-        console.error("[aiClient] === 诊断结束 ===");
         throw new Error(
-          `网络请求失败（已重试 ${maxRetries} 次）：${e.message}\n\n目标地址：${endpoint}\n模型：${model}\n\n可能原因：\n1. CORS 跨域限制（浏览器安全策略）\n2. 网络超时或不稳定\n3. DNS 解析失败\n4. 防火墙/代理拦截\n\n解决方案：\n- 开发环境：确保使用 npm run dev 启动（已内置代理）\n- 检查网络连接和代理设置\n- 尝试更换 Base URL 或模型`,
+          `网络请求失败（已重试 ${maxRetries} 次）：${e.message}\n\n目标地址：${endpoint}\n模型：${model}\n请求体大小：${(new Blob([JSON.stringify({ model, messages })]).size / 1024).toFixed(2)} KB\n\n可能原因：\n1. CORS 跨域限制（浏览器安全策略阻止直接调用）\n2. 网络超时或不稳定\n3. DNS 解析失败\n4. 防火墙/代理拦截\n\n解决方案：\n- 开发环境：使用 npm run dev 启动（已内置代理，可绕过 CORS）\n- 如果开发环境已运行但仍失败，请检查 API Key 是否正确\n- 尝试更换 Base URL 或模型`,
         );
       }
 
