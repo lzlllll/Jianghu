@@ -147,6 +147,9 @@ export function TopBanner({ onOpenSettings }: TopBannerProps) {
                   if (saveData.ai?.settings) {
                     useAIStore.getState().updateSettings(saveData.ai.settings);
                   }
+                  if (saveData.ai?.conversation) {
+                    useAIStore.getState().restoreConversation(saveData.ai.conversation);
+                  }
                   window.location.reload();
                 } catch (err) {
                   alert(`导入存档失败：${(err as Error).message}`);

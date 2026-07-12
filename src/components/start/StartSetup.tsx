@@ -181,8 +181,8 @@ export function StartSetup() {
           updateSettings(saveData.ai.settings);
         }
         
-        if (saveData.ai?.conversation?.turns) {
-          useAIStore.getState().setStage("done");
+        if (saveData.ai?.conversation) {
+          useAIStore.getState().restoreConversation(saveData.ai.conversation);
         }
         
         window.location.reload();

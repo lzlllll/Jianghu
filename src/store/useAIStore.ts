@@ -85,6 +85,7 @@ interface AIStore {
   regenerate: () => Promise<void>;
   compressNow: () => Promise<void>;
   clearConversation: () => void;
+  restoreConversation: (conv: ConversationState) => void;
   cancel: () => void;
   setStage: (stage: GenStage, msg?: string) => void;
 
@@ -510,6 +511,40 @@ ${dataSchema}`,
           abortController = null;
         }
         set({ conversation: INITIAL_CONVERSATION });
+      },
+
+      restoreConversation: (conv: ConversationState) => {
+        if (abortController) {
+          abortController.abort();
+          abortController = null;
+        }
+        const turns = Array.isArray(conv.turns)
+          ? conv.turns.slice(-4).map((t) => ({
+            ...t,
+            snapshot: null,
+            flashRaw: "",
+            opsRaw: "",
+            proRequest: {
+              summary: t.proRequest?.summary || "",
+              recentTurns: [],
+              decision: t.proRequest?.decision || "",
+              relevantData: "",
+            },
+          }))
+          : [];
+        set({
+          conversation: {
+            turns,
+            summary: conv.summary || "",
+            stage: turns.length > 0 ? "done" : "idle",
+            errorMsg: "",
+            lastFlashDuration: 0,
+            lastProDuration: 0,
+            lastRawOutput: "",
+            quickDecisions: [],
+            pendingChatSummary: "",
+          },
+        });
       },
 
       getOrCreateNPCProfile: async (npcId, name, title) => {
