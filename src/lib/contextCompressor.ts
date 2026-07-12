@@ -1,6 +1,6 @@
 import type { Turn } from "@/data/types";
 
-export const RECENT_WINDOW = 4;
+export const RECENT_WINDOW = 3;
 export const SUMMARY_MAX_CHARS = 1000;
 
 /** 切分：保留最近 RECENT_WINDOW 轮，其余进入待压缩区 */

@@ -6,7 +6,7 @@ export interface ChatMessage {
 }
 
 const MAX_REQUEST_BODY_SIZE = 15 * 1024 * 1024;
-const DEFAULT_TIMEOUT = 180000;
+const DEFAULT_TIMEOUT = 300000;
 
 const PROXY_MAP: Record<string, string> = {
   "https://api.deepseek.com/v1": "/api/deepseek",
@@ -93,6 +93,9 @@ export async function chatComplete(
     });
 
     console.debug(`[aiClient] Response status: ${resp.status}`);
+
+    // 连接已建立，清除超时计时器，让响应读取不受限
+    clearTimeout(timer);
 
     if (!resp.ok) {
       const errText = await resp.text().catch(() => "");
@@ -191,6 +194,9 @@ export async function chatWithModel(
       });
 
       console.debug(`[aiClient] Response status (attempt ${attempt}): ${resp.status}`);
+
+      // 连接已建立，清除超时计时器，让响应读取不受限
+      clearTimeout(timer);
 
       if (!resp.ok) {
         const errText = await resp.text().catch(() => "");
