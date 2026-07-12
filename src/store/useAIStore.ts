@@ -207,7 +207,7 @@ export const useAIStore = create<AIStore>()(
             settings,
             settings.flashModel,
             buildFlashPrompt(trimmed, schema),
-            { timeoutMs: 30000, signal },
+            { timeoutMs: 30000, signal, retries: 1 },
           );
           flashPaths = parseFlashPaths(flashRaw);
           set((st) => ({
@@ -220,7 +220,7 @@ export const useAIStore = create<AIStore>()(
           if (signal.aborted) return;
           const errorMsg = (e as Error).message;
           const isNetworkError = errorMsg.includes("网络") || errorMsg.includes("CORS") ||
-            errorMsg.includes("请求超时") || errorMsg.includes("不可达");
+            errorMsg.includes("请求超时") || errorMsg.includes("不可达") || errorMsg.includes("重试");
           set((st) => ({
             conversation: {
               ...st.conversation,
@@ -268,7 +268,7 @@ export const useAIStore = create<AIStore>()(
               relevantData,
               chatSummary,
             }),
-            { timeoutMs: 120000, signal },
+            { timeoutMs: 120000, signal, retries: 2 },
           );
           const parsed = parseModelOutput(proRaw);
           narrative = parsed.narrative;
@@ -306,7 +306,7 @@ ${dataSchema}`,
                 settings,
                 settings.flashModel,
                 extractPrompt,
-                { timeoutMs: 30000, signal },
+                { timeoutMs: 30000, signal, retries: 1 },
               );
               const extractParsed = parseModelOutput(extractRaw);
               if (extractParsed.ops.length > 0) {
@@ -335,13 +335,13 @@ ${dataSchema}`,
           if (signal.aborted) return;
           const errorMsg = (e as Error).message;
           const isNetworkError = errorMsg.includes("网络") || errorMsg.includes("CORS") ||
-            errorMsg.includes("请求超时") || errorMsg.includes("不可达");
+            errorMsg.includes("请求超时") || errorMsg.includes("不可达") || errorMsg.includes("重试");
           set((st) => ({
             conversation: {
               ...st.conversation,
               stage: "error",
               errorMsg: isNetworkError
-                ? `网络连接失败：${errorMsg}\n请检查网络连接或在设置中更换Base URL。`
+                ? `网络连接失败：${errorMsg}\n请检查网络连接或在设置中更换Base URL。\n如果问题持续，可尝试切换为其他模型或降低温度设置。`
                 : `叙事生成失败：${errorMsg}`,
             },
           }));
@@ -491,7 +491,7 @@ ${dataSchema}`,
             settings,
             settings.flashModel,
             buildCompressionPrompt(oldSummary, turnsData),
-            { timeoutMs: 30000 },
+            { timeoutMs: 30000, retries: 1 },
           );
           set((st) => ({
             conversation: {
@@ -738,6 +738,7 @@ ${chatHistory || "暂无"}`,
           const raw = await chatWithModel(settings, settings.proModel, prompt, {
             timeoutMs: 120000,
             signal,
+            retries: 2,
           });
 
           if (signal.aborted) return;
@@ -947,7 +948,7 @@ MODIFY player.mp - 10
             settings,
             settings.proModel,
             prompt,
-            { timeoutMs: 60000 },
+            { timeoutMs: 60000, retries: 2 },
           );
 
           const parsed = parseModelOutput(raw);
