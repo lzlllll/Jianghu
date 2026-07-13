@@ -380,8 +380,8 @@ function StageIndicator({ stage }: { stage: string }) {
   );
 }
 
-function NarrativeText({ text }: { text: string }) {
-  const paragraphs = text.split(/\n+/).filter((p) => p.trim());
+function NarrativeText({ text }: { text?: string }) {
+  const paragraphs = (text || "").split(/\n+/).filter((p) => p.trim());
   if (paragraphs.length === 0) {
     return (
       <p className="text-paper-400/40 text-center py-8">

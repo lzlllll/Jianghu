@@ -133,6 +133,7 @@ export const HEART_STAT_DISPLAY: Record<string, string> = {
 };
 
 export function generateHeartModifiers(trait: string, score: number): HeartModifier[] {
+  if (!trait) return [];
   const seed = trait.split("").reduce((acc, c) => acc + c.charCodeAt(0), 0);
   const allStats: BuffTargetStat[] = [
     "vitality", "soul", "wisdom", "agility", "cultivation",

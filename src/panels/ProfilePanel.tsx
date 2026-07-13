@@ -102,10 +102,10 @@ export function ProfilePanel() {
               {(Array.isArray(player.stats?.heartScores) ? player.stats.heartScores : []).map((hs) => {
                 const modifiers = hs.modifiers && hs.modifiers.length > 0
                   ? hs.modifiers
-                  : generateHeartModifiers(hs.trait, hs.score);
+                  : hs.trait ? generateHeartModifiers(hs.trait, hs.score) : [];
                 return (
                   <div
-                    key={hs.trait}
+                    key={hs.trait || Math.random().toString(36).substr(2, 9)}
                     className="flex flex-col p-4 rounded-lg bg-ink-800/40 border border-paper-400/10"
                   >
                     <div className="flex items-center justify-between mb-3">
