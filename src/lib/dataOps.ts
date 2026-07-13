@@ -243,7 +243,7 @@ function _debugOps(ops: DataOp[]): void {
   console.debug("[parseOpLines] Total ops:", ops.length, "ADD ops:", adds.length, adds.map((a) => ({ collection: a.collection, payloadLen: a.payload.length })));
 }
 
-type PathSeg = string;
+type PathSeg = string | { type: "array"; id: string };
 
 function parsePath(path: string): PathSeg[] {
   const segs: PathSeg[] = [];
@@ -251,6 +251,12 @@ function parsePath(path: string): PathSeg[] {
   for (const ch of path) {
     if (ch === ".") {
       if (cur) segs.push(cur);
+      cur = "";
+    } else if (ch === "[") {
+      if (cur) segs.push(cur);
+      cur = "";
+    } else if (ch === "]") {
+      if (cur) segs.push({ type: "array", id: cur });
       cur = "";
     } else {
       cur += ch;
@@ -683,6 +689,9 @@ function descend(obj: any, seg: PathSeg): any {
   if (typeof seg === "string") {
     return obj?.[seg];
   }
+  if (seg.type === "array" && Array.isArray(obj)) {
+    return obj.find((item: any) => item && String(item.id) === seg.id);
+  }
   return undefined;
 }
 
@@ -700,7 +709,12 @@ function normalizeMeridianZone(meridian: any): any {
   return meridian;
 }
 
-function applyModify(parent: any, key: string, op: Extract<DataOp, { kind: "modify" }>): void {
+function applyModify(parent: any, key: PathSeg, op: Extract<DataOp, { kind: "modify" }>): void {
+  if (typeof key !== "string") {
+    console.warn("[applyModify] Last segment cannot be an array index:", key);
+    return;
+  }
+
   const current = parent[key];
   if (op.op === "=") {
     let value = parseValue(op.value);
