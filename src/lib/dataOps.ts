@@ -621,7 +621,6 @@ function applyOne(root: any, op: DataOp): void {
       if (op.collection === "techniques") {
         arr.push(normalizeTechnique(payload));
       } else if (op.collection === "news.items") {
-        const item = normalizeNewsItem(payload);
         const ct = root.currentTime || { year: 1, month: 1, day: 1, hour: 0 };
         const todayKey = `${ct.year}-${ct.month}-${ct.day}`;
         const todayStr = getDayString(ct);
@@ -630,10 +629,37 @@ function applyOne(root: any, op: DataOp): void {
           arr.length = 0;
           root.news.lastUpdate = todayKey;
         }
-        const catCount = arr.filter((x: any) => x.category === item.category).length;
-        if (catCount >= 3) return;
-        item.date = todayStr;
-        arr.push(item);
+
+        const validCategories = ["官府公告", "宗门布告", "市井传言"];
+        let itemsToAdd: any[] = [];
+
+        if (typeof payload === "string") {
+          const lines = payload.split("\n").filter((l) => l.trim());
+          for (const line of lines) {
+            const colonIdx = line.indexOf(":");
+            if (colonIdx > 0) {
+              const category = line.slice(0, colonIdx).trim();
+              const content = line.slice(colonIdx + 1).trim();
+              if (content) {
+                const matchedCat = validCategories.find((c) => category.includes(c)) || category || "市井传言";
+                itemsToAdd.push({
+                  category: matchedCat,
+                  content: content,
+                });
+              }
+            }
+          }
+        } else {
+          itemsToAdd = [normalizeNewsItem(payload)];
+        }
+
+        for (const item of itemsToAdd) {
+          const normalized = normalizeNewsItem(item);
+          const catCount = arr.filter((x: any) => x.category === normalized.category).length;
+          if (catCount >= 3) continue;
+          normalized.date = todayStr;
+          arr.push(normalized);
+        }
       } else {
         arr.push(payload);
       }
