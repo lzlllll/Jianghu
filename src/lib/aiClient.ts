@@ -104,7 +104,21 @@ export async function chatComplete(
       throw new Error(`接口返回 ${resp.status}：${errorDetail}`);
     }
 
-    const data = await resp.json();
+    let data: any;
+    try {
+      data = await resp.json();
+    } catch (jsonErr) {
+      const text = await resp.text().catch(() => "");
+      console.error(`[aiClient] JSON parse error in chatComplete:`, jsonErr);
+      console.error(`[aiClient] Response text (first 500 chars):`, text.slice(0, 500));
+
+      if (text.startsWith("<") || text.includes("<!DOCTYPE") || text.includes("<html")) {
+        throw new Error(`接口返回非 JSON 数据（可能是错误页面）。\n\n响应内容预览：${text.slice(0, 300)}\n\n请检查：1. Base URL 是否正确 2. 模型名称是否有效 3. API Key 是否正确`);
+      }
+
+      throw new Error(`JSON 解析失败：${(jsonErr as Error).message}\n\n响应内容：${text.slice(0, 300)}`);
+    }
+
     const content: string =
       data?.choices?.[0]?.message?.content ??
       data?.choices?.[0]?.text ??
@@ -213,7 +227,26 @@ export async function chatWithModel(
         throw new Error(`接口返回 ${resp.status}：${errorDetail}`);
       }
 
-      const data = await resp.json();
+      let data: any;
+      try {
+        data = await resp.json();
+      } catch (jsonErr) {
+        const text = await resp.text().catch(() => "");
+        console.error(`[aiClient] JSON parse error (attempt ${attempt}):`, jsonErr);
+        console.error(`[aiClient] Response text (first 500 chars):`, text.slice(0, 500));
+
+        if (text.startsWith("<") || text.includes("<!DOCTYPE") || text.includes("<html")) {
+          console.error(`[aiClient] Server returned HTML instead of JSON. This usually means:`);
+          console.error(`[aiClient] 1. The API endpoint is incorrect`);
+          console.error(`[aiClient] 2. The model name is not recognized by the server`);
+          console.error(`[aiClient] 3. Authentication failed`);
+          console.error(`[aiClient] 4. CORS error`);
+          throw new Error(`接口返回非 JSON 数据（可能是错误页面）。\n\n响应内容预览：${text.slice(0, 300)}\n\n请检查：1. Base URL 是否正确 2. 模型名称是否有效 3. API Key 是否正确`);
+        }
+
+        throw new Error(`JSON 解析失败：${(jsonErr as Error).message}\n\n响应内容：${text.slice(0, 300)}`);
+      }
+
       const content: string =
         data?.choices?.[0]?.message?.content ??
         data?.choices?.[0]?.text ??

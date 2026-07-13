@@ -587,6 +587,51 @@ function normalizeTechnique(item: any): any {
   return item;
 }
 
+function normalizeRelation(item: any): any {
+  if (!item || typeof item !== "object") return item;
+
+  if (item.closeness !== undefined) {
+    if (typeof item.closeness === "string" && item.closeness.includes("/")) {
+      const parts = item.closeness.split("/");
+      item.affinity = parseInt(parts[0], 10) || 50;
+      item.affinityMax = parseInt(parts[1], 10) || 100;
+    } else {
+      item.affinity = typeof item.closeness === "number" ? item.closeness : 50;
+      item.affinityMax = 100;
+    }
+    delete item.closeness;
+  }
+
+  if (item.notes !== undefined) {
+    item.note = item.notes;
+    delete item.notes;
+  }
+
+  if (!item.id) {
+    item.id = `npc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+  if (!item.title) {
+    item.title = "散修";
+  }
+  if (!item.type) {
+    item.type = "friend";
+  }
+  if (item.affinity === undefined) {
+    item.affinity = 50;
+  }
+  if (item.affinityMax === undefined) {
+    item.affinityMax = 100;
+  }
+  if (!item.realm) {
+    item.realm = "炼气初期";
+  }
+  if (!item.note) {
+    item.note = "";
+  }
+
+  return item;
+}
+
 function applyOne(root: any, op: DataOp): void {
   if (op.kind === "modify") {
     const segs = parsePath(op.path);
@@ -666,6 +711,8 @@ function applyOne(root: any, op: DataOp): void {
           normalized.date = todayStr;
           arr.push(normalized);
         }
+      } else if (op.collection === "relations") {
+        arr.push(normalizeRelation(payload));
       } else {
         arr.push(payload);
       }

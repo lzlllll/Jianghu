@@ -37,8 +37,8 @@ import {
 const DEFAULT_SETTINGS: AISettings = {
   baseUrl: "https://api.deepseek.com/v1",
   apiKey: "",
-  flashModel: "deepseek-chat",
-  proModel: "deepseek-chat",
+  flashModel: "deepseek-v4-flash",
+  proModel: "deepseek-v4-pro",
   temperature: 0.85,
 };
 
