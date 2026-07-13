@@ -402,7 +402,17 @@ DELETE <集合> <id>
 
 【时间推进】每轮必须用MODIFY更新currentTime（year/month/day/hour），尺度不固定。
 
-【新闻生成】仅跨天时生成3条（官府公告/宗门布告/市井传言），同一天不再生成。
+【新闻生成规则】
+- 当前日期：第${state.currentTime.year}年${state.currentTime.month}月${state.currentTime.day}日
+- 上次新闻更新日期：${state.news?.lastUpdate ? state.news.lastUpdate.replace(/-/g, "年").replace(/年(\d+)$/, "月$1日") : "无"}
+- 仅当当前日期与上次新闻更新日期不同时（跨天），才生成3条新闻（官府公告/宗门布告/市井传言各1条）
+- 同一天内不再生成新新闻，保持现有新闻显示
+- 新闻格式：
+  ADD news.items
+  category: 官府公告/宗门布告/市井传言
+  title: 新闻标题（10-15字）
+  content: 新闻内容（50-100字）
+  source: 消息来源（如"京城快报"、"宗门传讯"、"茶馆闲谈"）
 
 【重要约束】1.仅输出实际数据变化；2.数值变化与叙事相符；3.当前境界：${realm}；4.ADD物品/关系需完整字段；5.叙事内不得出现标记字样；6.强制包含<<<OPS>>>块；7.遵循修炼效率规则。`;
 

@@ -642,6 +642,20 @@ ${dataSchema}`,
 
         useGameStore.getState().applyOps(ops);
 
+        const afterState = useGameStore.getState();
+        const hasNewsOp = ops.some((o) => o.kind === "add" && o.collection === "news.items");
+        const hasNews = Array.isArray(afterState.news?.items) && afterState.news.items.length > 0;
+        const hasNewsUpdate = afterState.news?.lastUpdate;
+
+        const now = afterState.currentTime || { year: 1, month: 1, day: 1 };
+        const todayKey = `${now.year}-${now.month}-${now.day}`;
+
+        if (!hasNewsOp && (!hasNewsUpdate || hasNewsUpdate !== todayKey)) {
+          const defaultNews = generateDefaultNews(now);
+          useGameStore.getState().updateNews(defaultNews);
+          console.debug("[runTurn] AI未生成新闻，已自动生成默认新闻");
+        }
+
         const turn: Turn = {
           id: `turn-${Date.now()}`,
           playerInput: trimmed,
@@ -1484,5 +1498,98 @@ MODIFY player.mp - 10
     },
   ),
 );
+
+function generateDefaultNews(time: { year: number; month: number; day: number }): any[] {
+  const season = time.month >= 3 && time.month <= 5 ? "春" :
+    time.month >= 6 && time.month <= 8 ? "夏" :
+      time.month >= 9 && time.month <= 11 ? "秋" : "冬";
+
+  const newsTemplates = [
+    {
+      category: "官府公告",
+      titles: [
+        `${season}季赋税减免告示`,
+        "京城举行修仙大会",
+        "边境妖兽异动警示",
+        "科举放榜通知",
+        "皇家赐婚消息",
+        "禁宵令解除",
+        "赈灾物资发放",
+        "新科状元册封",
+      ],
+      contents: [
+        `朝廷体恤民情，${season}季赋税减半，各州县务必遵照执行，不得苛捐杂税。`,
+        `京城将在三日后举行盛大修仙大会，各方修士可前往观摩交流，切磋技艺。`,
+        `边境传来急报，妖兽活动频繁，各宗门需加强警戒，保护周边百姓安全。`,
+        `今科科举放榜，共录取进士三百名，榜首为江南才子李慕白。`,
+        `皇家传来消息，太子殿下将与清河郡主赐婚，婚期定在下月初八。`,
+        `京城禁宵令已解除，百姓可自由出入，但需注意夜间安全。`,
+        `近日各地灾情得到控制，朝廷已调拨赈灾物资，灾民安置有序。`,
+        `新科状元张鸿渐已受册封，将赴翰林院任职。`,
+      ],
+      sources: ["京城快报", "官府文告", "御书房传讯"],
+    },
+    {
+      category: "宗门布告",
+      titles: [
+        "宗门大比即将举行",
+        "新弟子入门考核",
+        "长老闭关出关",
+        "资源分配调整",
+        "秘境开放通知",
+        "宗门巡视安排",
+        "功法借阅新规",
+        "外门晋升公告",
+      ],
+      contents: [
+        `宗门大比将于下月初一举行，各峰弟子需积极备战，展现宗门风采。`,
+        `新弟子入门考核即将开始，凡年满十六岁、灵根合格者均可报名参加。`,
+        `闭关三年的玄清长老今日出关，修为更上一层，可喜可贺。`,
+        `经宗门商议，下月起资源分配将向有功弟子倾斜，望各位努力修炼。`,
+        `宗门秘境将于三日后开放，每位弟子可进入一次，机遇与危险并存。`,
+        `本月宗门巡视由执法堂负责，各峰需配合检查，遵守宗门规矩。`,
+        `藏经阁功法借阅新规出台，弟子需达到相应修为方可借阅高阶功法。`,
+        `外门弟子晋升考核结果已出，共有十二人晋升内门，望继续努力。`,
+      ],
+      sources: ["宗门传讯", "布告栏", "执事堂通知"],
+    },
+    {
+      category: "市井传言",
+      titles: [
+        "神秘修士现身茶馆",
+        "天价丹药交易",
+        "灵异事件频发",
+        "失踪人口传闻",
+        "宝藏传说兴起",
+        "黑市交易猖獗",
+        "奇人异事",
+        "酒馆趣闻",
+      ],
+      contents: [
+        `城南茶馆来了一位神秘修士，气质非凡，出手阔绰，无人知其来历。`,
+        `据说有人在黑市以天价购得一枚九转金丹，不知是真是假。`,
+        `近日城郊频发灵异事件，夜晚常有鬼火出现，百姓人心惶惶。`,
+        `城中已有三人离奇失踪，坊间传言与邪修有关。`,
+        `江湖上兴起一则宝藏传说，据说藏宝图已落入神秘人手中。`,
+        `黑市交易愈发猖獗，各种违禁物品琳琅满目，官府束手无策。`,
+        `有人亲眼目睹一位白发老者在空中飞行，疑似隐世高人。`,
+        `酒馆中有人吹嘘曾在秘境中获得上古传承，引来众人哄笑。`,
+      ],
+      sources: ["茶馆闲谈", "街头巷议", "酒肆传闻"],
+    },
+  ];
+
+  return newsTemplates.map((template) => {
+    const titleIdx = (time.day + time.month * 10) % template.titles.length;
+    const contentIdx = (time.day + time.year * 5) % template.contents.length;
+    const sourceIdx = (time.day) % template.sources.length;
+    return {
+      category: template.category,
+      title: template.titles[titleIdx],
+      content: template.contents[contentIdx],
+      source: template.sources[sourceIdx],
+    };
+  });
+}
 
 export { RECENT_WINDOW };

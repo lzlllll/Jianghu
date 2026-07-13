@@ -365,6 +365,10 @@ export function applyOpsToState(state: GameState, ops: DataOp[]): GameState {
     currentTime: state.currentTime ? clone(state.currentTime) : { year: 1, month: 1, day: 1, hour: 0 },
   };
 
+  const oldDateKey = state.currentTime
+    ? `${state.currentTime.year}-${state.currentTime.month}-${state.currentTime.day}`
+    : "";
+
   let addCount = 0, modifyCount = 0, deleteCount = 0;
   for (const op of limitedOps) {
     try {
@@ -376,6 +380,20 @@ export function applyOpsToState(state: GameState, ops: DataOp[]): GameState {
       console.warn("[dataOps] 操作失败，已跳过:", op, e);
     }
   }
+
+  const newDateKey = next.currentTime
+    ? `${next.currentTime.year}-${next.currentTime.month}-${next.currentTime.day}`
+    : "";
+
+  if (newDateKey && oldDateKey && newDateKey !== oldDateKey) {
+    if (!next.news) next.news = { items: [], lastUpdate: "" };
+    if (next.news.lastUpdate !== newDateKey) {
+      next.news.items = [];
+      next.news.lastUpdate = newDateKey;
+      console.debug("[dataOps] 跨天检测：日期从", oldDateKey, "变为", newDateKey, "，已清空旧闻");
+    }
+  }
+
   console.debug("[dataOps] Ops applied — ADD:", addCount, "MODIFY:", modifyCount, "DELETE:", deleteCount, "techniques.length:", next.techniques?.length);
   return next;
 }
@@ -604,17 +622,14 @@ function applyOne(root: any, op: DataOp): void {
         arr.push(normalizeTechnique(payload));
       } else if (op.collection === "news.items") {
         const item = normalizeNewsItem(payload);
-        // 获取当前日期
         const ct = root.currentTime || { year: 1, month: 1, day: 1, hour: 0 };
         const todayKey = `${ct.year}-${ct.month}-${ct.day}`;
         const todayStr = getDayString(ct);
-        // 跨天：清空旧闻
         if (!root.news) root.news = { items: [], lastUpdate: "" };
         if (root.news.lastUpdate !== todayKey) {
           arr.length = 0;
           root.news.lastUpdate = todayKey;
         }
-        // 同一天内每种分类上限3条
         const catCount = arr.filter((x: any) => x.category === item.category).length;
         if (catCount >= 3) return;
         item.date = todayStr;
