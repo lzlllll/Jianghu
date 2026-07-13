@@ -396,7 +396,8 @@ DELETE <集合> <id>
 
 【ADD集合】inventory、log、techniques、relations、sect.tasks、sect.heritage、news.items、player.stats.heartScores、player.meridians
 
-【DELETE格式】集合名与id用空格分隔，如 DELETE inventory i10
+【DELETE集合】可删除的集合：inventory、log、techniques、relations、sect.tasks、sect.heritage、news.items
+【DELETE格式】集合名与id用空格分隔，如 DELETE inventory i10、DELETE relations npc001
 
 【场所约束】当前场所：${location.name}。允许：${location.allowed}。禁止：${location.forbidden}。冲突时在叙事中体现限制，不执行冲突操作。
 

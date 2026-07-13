@@ -884,6 +884,7 @@ NPC 信息：
 称号：${title}
 与玩家关系：${relation?.note || "暂无"}
 好感度：${affinity}/100
+${statsStr ? `${statsStr}\n` : ""}${techStr ? `${techStr}\n` : ""}
 
 玩家信息：
 姓名：${player.name}
@@ -892,14 +893,16 @@ NPC 信息：
 宗门：${player.sectName}
 
 请生成：
-1. 性格特点（50字以内）
-2. 说话风格（30字以内）
-3. 背景故事（100字以内）
+1. 性格特点（50字以内）——描述NPC的性格、处事方式
+2. 说话风格（30字以内）——描述NPC的语气、用词习惯
+3. 背景故事（100字以内）——描述NPC的来历、修为境界、宗门归属、与玩家的过往交集
+4. 立场态度（30字以内）——描述NPC对玩家的态度、立场、可能的帮助或阻碍
 
 格式要求：
 PERSONA: [性格特点]
 STYLE: [说话风格]
-BACKGROUND: [背景故事]`,
+BACKGROUND: [背景故事]
+ATTITUDE: [立场态度]`,
             },
           ];
 
@@ -910,14 +913,17 @@ BACKGROUND: [背景故事]`,
           let persona = "";
           let style = "";
           let background = "";
+          let attitude = "";
 
           const personaMatch = raw.match(/PERSONA:\s*(.+)/);
           const styleMatch = raw.match(/STYLE:\s*(.+)/);
           const backgroundMatch = raw.match(/BACKGROUND:\s*(.+)/);
+          const attitudeMatch = raw.match(/ATTITUDE:\s*(.+)/);
 
           if (personaMatch) persona = personaMatch[1].trim();
           if (styleMatch) style = styleMatch[1].trim();
           if (backgroundMatch) background = backgroundMatch[1].trim();
+          if (attitudeMatch) attitude = attitudeMatch[1].trim();
 
           if (!persona) {
             persona = `${title}，性格沉稳，处事有度。`;
@@ -925,13 +931,20 @@ BACKGROUND: [背景故事]`,
           if (!style) {
             style = "语气平和，言辞简练，偶尔引经据典。";
           }
+          if (!attitude) {
+            attitude = affinity >= 70 ? "对玩家友善，愿意提供帮助" :
+              affinity >= 40 ? "与玩家保持中立，态度礼貌" :
+                "对玩家冷淡或敌对";
+          }
 
           const initialPrompt = `你是修真者「${name}」，称号「${title}」。
 ${statsStr ? `${statsStr}\n` : ""}${techStr ? `${techStr}\n` : ""}
 【性格】${persona}
 【说话风格】${style}
 ${background ? `【背景】${background}\n` : ""}
-你正在与「${player.name}」（${player.title}）交谈。请以你的身份回复对方的话语，保持角色一致性。`;
+【对玩家态度】${attitude}
+你正在与「${player.name}」（${player.title}）交谈。请以你的身份回复对方的话语，保持角色一致性。
+重要：你的回复必须符合修真世界观，使用古风语言风格，避免现代用语。`;
 
           const profile: NPCProfile = {
             npcId,
@@ -1000,15 +1013,16 @@ ${background ? `【背景】${background}\n` : ""}
 
         const recentStoryTurns = recentForPrompt(conversation.turns);
         const storyContext = recentStoryTurns
-          .map((t) => `玩家：${t.input}\n叙述：${t.narrative.slice(0, 100)}`)
+          .map((t) => `玩家：${t.input}\n叙述：${t.narrative.slice(0, 300)}`)
           .join("\n---\n");
 
-        const recentMessages = (Array.isArray(profile.messages) ? profile.messages : []).slice(-8);
+        const recentMessages = (Array.isArray(profile.messages) ? profile.messages : []).slice(-10);
         const chatHistory = recentMessages
           .map((m) => `${m.role === "player" ? "玩家" : profile.name}：${m.content}`)
           .join("\n");
 
-        const location = useGameStore.getState().currentLocation;
+        const gameState = useGameStore.getState();
+        const location = gameState.currentLocation;
         const locationNames: Record<string, string> = {
           home: "住所",
           alchemy_room: "炼丹房",
@@ -1020,19 +1034,45 @@ ${background ? `【背景】${background}\n` : ""}
           outdoor: "野外",
         };
 
+        const time = gameState.currentTime;
+        const timeStr = `第${time.year}年${time.month}月${time.day}日`;
+
+        const relation = gameState.relations.find((r) => r.id === npcId);
+        const relationType = relation?.type || "friend";
+        const relationLabels: Record<string, string> = {
+          dao_companion: "道侣",
+          master: "师父",
+          disciple: "弟子",
+          friend: "好友",
+          enemy: "仇敌",
+        };
+
         const prompt: import("@/lib/aiClient").ChatMessage[] = [
           {
             role: "system" as const,
             content: `${profile.initialPrompt}
 
+【游戏背景】
+这是一个古风修真世界，存在宗门、功法、丹药、符箓等元素。境界分为炼气、筑基、金丹、元婴等。
+
+【当前时间】：${timeStr}
+【玩家当前所在】：${locationNames[location] || location}
+【与玩家关系】：${relationLabels[relationType]}（好感度：${relation?.affinity || 50}/100）
+
 【当前剧情上下文】：
 ${conversation.summary || "暂无"}
 ${storyContext || "暂无"}
 
-【玩家当前所在】：${locationNames[location] || location}
-
 【本次对话记录】：
-${chatHistory || "暂无"}`,
+${chatHistory || "暂无"}
+
+【回复要求】：
+1. 以「${name}」的身份和口吻回复，保持角色一致性
+2. 语言风格符合古风修真设定，使用文言或半文言
+3. 回复要符合你的性格、背景和对玩家的态度
+4. 根据剧情上下文和对话历史，做出合理的回应
+5. 回复长度适中，不要太长也不要太短（50-200字）
+6. 不要输出任何数据操作标记或系统提示，只输出对话内容`,
           },
           {
             role: "user" as const,
