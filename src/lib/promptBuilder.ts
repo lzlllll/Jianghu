@@ -286,6 +286,26 @@ function describePath(state: GameState, path: string): string {
     if (tasks.length === 0) return "sect.tasks: (空)";
     return "sect.tasks:\n" + tasks.slice(0, 30).map((t) => `  [${t.id}] ${t.title} ${t.difficulty} 贡献${t.contribution}${t.accepted ? " 已接" : ""}`).join("\n");
   }
+  if (path === "sect.shop") {
+    const shop = Array.isArray(state.sect?.shop) ? state.sect.shop : [];
+    if (shop.length === 0) return "sect.shop: (空)";
+    return "sect.shop:\n" + shop.slice(0, 30).map((s) => `  [${s.id}] ${s.name} ${s.type} 花费${s.cost}灵石`).join("\n");
+  }
+  if (path === "sect.resources") {
+    const resources = Array.isArray(state.sect?.resources) ? state.sect.resources : [];
+    if (resources.length === 0) return "sect.resources: (空)";
+    return "sect.resources:\n" + resources.slice(0, 30).map((r) => `  ${r.name} ${r.amount}${r.unit}`).join("\n");
+  }
+  if (path === "sect.positions") {
+    const positions = Array.isArray(state.sect?.positions) ? state.sect.positions : [];
+    if (positions.length === 0) return "sect.positions: (空)";
+    return "sect.positions:\n" + positions.slice(0, 30).map((p) => `  [${p.id}] ${p.name} Lv${p.level} 需贡献${p.contributionNeeded}${p.isCurrent ? " 当前" : ""}`).join("\n");
+  }
+  if (path === "sect.heritage") {
+    const heritage = Array.isArray(state.sect?.heritage) ? state.sect.heritage : [];
+    if (heritage.length === 0) return "sect.heritage: (空)";
+    return "sect.heritage:\n" + heritage.slice(0, 30).map((h) => `  ${h.name} ${h.type} ${h.grade} ${h.status}`).join("\n");
+  }
 
   // 路径解析
   const segMatch = path.match(/^([a-zA-Z_]+)\[([^\]]+)\](?:\.(.+))?$/);
@@ -357,8 +377,9 @@ export function buildProPrompt(params: {
   relevantData: string;
   chatSummary?: string;
   craftingResult?: CraftingResult;
+  customPrompt?: string;
 }): ChatMessage[] {
-  const { state, summary, recentTurns, decision, relevantData, chatSummary, craftingResult } = params;
+  const { state, summary, recentTurns, decision, relevantData, chatSummary, craftingResult, customPrompt } = params;
   const realm = REALMS[state.player.realmIndex] ?? "未知";
   const location = LOCATION_INFO[state.currentLocation] || { name: "未知场所", allowed: "所有行为", forbidden: "无" };
 
@@ -392,12 +413,14 @@ ADD <集合>
 DELETE <集合> <id>
 <<<END>>>
 
-【路径示例】player.cultivation、player.stats.vitality、techniques[t1].proficiency、inventory[i1].count、sect.contribution
+【路径示例】player.cultivation、player.stats.vitality、techniques[t1].proficiency、inventory[i1].count、sect.contribution、sect.appearance、sect.reputationDesc、sect.surroundings、sect.management.treasury.spiritStones
 
-【ADD集合】inventory、log、techniques、relations、sect.tasks、sect.heritage、news.items、player.stats.heartScores、player.meridians
+【ADD集合】inventory、log、techniques、relations、sect.tasks、sect.heritage、sect.shop、sect.resources、sect.positions、news.items、player.stats.heartScores、player.meridians
 
-【DELETE集合】可删除的集合：inventory、log、techniques、relations、sect.tasks、sect.heritage、news.items
+【DELETE集合】可删除的集合：inventory、log、techniques、relations、sect.tasks、sect.heritage、sect.shop、sect.resources、sect.positions、news.items
 【DELETE格式】集合名与id用空格分隔，如 DELETE inventory i10、DELETE relations npc001
+
+【宗门字段】可MODIFY的宗门字段：sect.name、sect.level、sect.reputation、sect.leader、sect.elders、sect.disciples、sect.territory、sect.contribution、sect.appearance、sect.reputationDesc、sect.surroundings、sect.management.treasury.spiritStones
 
 【场所约束】当前场所：${location.name}。允许：${location.allowed}。禁止：${location.forbidden}。冲突时在叙事中体现限制，不执行冲突操作。
 
@@ -415,7 +438,7 @@ DELETE <集合> <id>
   content: 新闻内容（50-100字）
   source: 消息来源（如"京城快报"、"宗门传讯"、"茶馆闲谈"）
 
-【重要约束】1.仅输出实际数据变化；2.数值变化与叙事相符；3.当前境界：${realm}；4.ADD物品/关系需完整字段；5.叙事内不得出现标记字样；6.强制包含<<<OPS>>>块；7.遵循修炼效率规则。`;
+【重要约束】1.仅输出实际数据变化；2.数值变化与叙事相符；3.当前境界：${realm}；4.ADD物品/关系需完整字段；5.叙事内不得出现标记字样；6.强制包含<<<OPS>>>块；7.遵循修炼效率规则。${customPrompt ? `\n\n【玩家自定义指令】\n${customPrompt}` : ""}`;
 
   const recentText =
     recentTurns.length > 0

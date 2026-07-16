@@ -371,6 +371,21 @@ export function AISettingsModal({ open, onClose }: AISettingsModalProps) {
             </div>
           </section>
 
+          {/* 自定义提示词 */}
+          <section>
+            <SectionLabel>自定义提示词</SectionLabel>
+            <textarea
+              value={draft.customPrompt || ""}
+              onChange={(e) => patch({ customPrompt: e.target.value })}
+              placeholder="在此输入自定义指令，将追加到AI系统提示词末尾。例如：&#10;- 增加更多战斗描写&#10;- NPC对话更加幽默&#10;- 剧情偏向黑暗风格&#10;- 关注角色情感变化"
+              className="input-ink mt-2 min-h-[100px] resize-y font-serif text-xs leading-relaxed"
+              spellCheck={false}
+            />
+            <p className="font-serif text-[10px] text-paper-400/50 mt-1.5 leading-relaxed">
+              玩家自定义指令将追加到每轮叙事生成的系统提示词末尾，用于微调AI的叙事风格和偏好。留空则不追加。
+            </p>
+          </section>
+
           {/* 开发者模式 */}
           <section>
             <div className="flex items-center justify-between">

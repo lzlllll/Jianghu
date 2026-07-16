@@ -603,6 +603,8 @@ export interface AISettings {
   flashModel: string;
   proModel: string;
   temperature: number;
+  /** 玩家自定义提示词，追加到系统提示词末尾 */
+  customPrompt: string;
 }
 
 export type GenStage =

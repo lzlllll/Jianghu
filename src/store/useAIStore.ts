@@ -40,6 +40,7 @@ const DEFAULT_SETTINGS: AISettings = {
   flashModel: "deepseek-v4-flash",
   proModel: "deepseek-v4-pro",
   temperature: 0.85,
+  customPrompt: "",
 };
 
 const INITIAL_CONVERSATION: ConversationState = {
@@ -214,6 +215,7 @@ export const useAIStore = create<AIStore>()(
               relevantData: ctx.relevantData,
               chatSummary: ctx.chatSummary,
               craftingResult: result,
+              customPrompt: settings.customPrompt,
             }),
             { timeoutMs: 300000, signal, retries: 2 },
           );
@@ -293,6 +295,7 @@ ${dataSchema}`,
                   relevantData: ctx.relevantData,
                   chatSummary: ctx.chatSummary,
                   craftingResult: result,
+                  customPrompt: settings.customPrompt,
                 }),
                 { timeoutMs: 300000, signal, retries: 2 },
               );
@@ -517,6 +520,7 @@ ${dataSchema}`,
               decision: trimmed,
               relevantData,
               chatSummary,
+              customPrompt: settings.customPrompt,
             }),
             { timeoutMs: 120000, signal, retries: 2 },
           );
@@ -597,6 +601,7 @@ ${dataSchema}`,
                   decision: trimmed,
                   relevantData,
                   chatSummary,
+                  customPrompt: settings.customPrompt,
                 }),
                 { timeoutMs: 120000, signal, retries: 2 },
               );
@@ -738,6 +743,7 @@ ${dataSchema}`,
               recentTurns: lastTurn.proRequest.recentTurns,
               decision: lastTurn.proRequest.decision,
               relevantData: lastTurn.proRequest.relevantData,
+              customPrompt: settings.customPrompt,
             }),
             { timeoutMs: 120000, signal },
           );
@@ -1449,7 +1455,7 @@ MODIFY player.mp - 10
     }),
     {
       name: "xiuxian-ai",
-      version: 2,
+      version: 3,
       migrate: (state: any, version: number) => {
         if (version < 1) {
           if (state.conversation && !Array.isArray(state.conversation.turns)) {
@@ -1500,6 +1506,11 @@ MODIFY player.mp - 10
           }
           if (state.battle) {
             state.battle.context = [];
+          }
+        }
+        if (version < 3) {
+          if (state.settings && !state.settings.customPrompt) {
+            state.settings.customPrompt = "";
           }
         }
         return state;
