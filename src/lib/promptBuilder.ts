@@ -413,7 +413,9 @@ ADD <集合>
 DELETE <集合> <id>
 <<<END>>>
 
-【路径示例】player.cultivation、player.stats.vitality、techniques[t1].proficiency、inventory[i1].count、sect.contribution、sect.appearance、sect.reputationDesc、sect.surroundings、sect.management.treasury.spiritStones
+【路径示例】player.cultivation、player.stats.vitality、player.stats.soul、player.stats.wisdom、player.stats.heart、techniques[t1].proficiency、inventory[i1].count、sect.contribution、sect.appearance、sect.reputationDesc、sect.surroundings、sect.management.treasury.spiritStones
+
+【玩家字段】可MODIFY的玩家字段：player.name、player.title、player.realmIndex、player.cultivation、player.hp、player.hpMax、player.mp、player.mpMax、player.spirit、player.spiritMax、player.lifespanCurrent、player.lifespanMax、player.body、player.fortune、player.karma、player.personality、player.description、player.background、player.spiritRoots.<元素>（如player.spiritRoots.暗）、player.stats.vitality、player.stats.soul、player.stats.wisdom、player.stats.agility、player.stats.heart（心性，字符串）
 
 【ADD集合】inventory、log、techniques、relations、sect.tasks、sect.heritage、sect.shop、sect.resources、sect.positions、news.items、player.stats.heartScores、player.meridians
 

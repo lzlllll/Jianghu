@@ -632,25 +632,148 @@ function normalizeRelation(item: any): any {
   return item;
 }
 
+/** AI字段名 → 实际字段名映射 */
+const FIELD_ALIASES: Record<string, string> = {
+  "maxHp": "hpMax",
+  "maxMp": "mpMax",
+  "maxSpirit": "spiritMax",
+  "lifespan": "lifespanMax",
+  "lifespanRemaining": "lifespanCurrent",
+  "appearance": "description",
+};
+
+/** 统计属性别名 */
+const STATS_ALIASES: Record<string, string> = {
+  "spirit": "soul",
+  "comprehension": "wisdom",
+  "heart": "heartScores",
+};
+
+/** 灵根元素中文 → 英文映射 */
+const ELEMENT_ALIASES: Record<string, string> = {
+  "金": "金", "木": "木", "水": "水", "火": "火", "土": "土",
+  "风": "风", "雷": "雷", "冰": "冰", "暗": "暗",
+  "metal": "金", "wood": "木", "water": "水", "fire": "火", "earth": "土",
+  "wind": "风", "thunder": "雷", "ice": "冰", "dark": "暗",
+};
+
+const REALMS_LIST = [
+  "引气初期", "引气中期", "引气后期", "引气圆满",
+  "炼气初期", "炼气中期", "炼气后期", "炼气圆满",
+  "筑基初期", "筑基中期", "筑基后期", "筑基圆满",
+  "金丹初期", "金丹中期", "金丹后期", "金丹圆满",
+  "元婴初期", "元婴中期", "元婴后期", "元婴圆满",
+  "化神初期", "化神中期", "化神后期", "化神圆满",
+];
+
+/** 规范化MODIFY路径，将AI使用的字段名映射为实际字段名 */
+function normalizeModifyPath(root: any, path: string, value: string): { path: string; value: string } | null {
+  // 处理 player.maxHp → player.hpMax 等
+  let normalizedPath = path;
+  for (const [alias, actual] of Object.entries(FIELD_ALIASES)) {
+    if (normalizedPath === `player.${alias}`) {
+      normalizedPath = `player.${actual}`;
+    }
+  }
+
+  // 处理 player.stats.spirit → player.stats.soul 等
+  for (const [alias, actual] of Object.entries(STATS_ALIASES)) {
+    if (normalizedPath === `player.stats.${alias}`) {
+      normalizedPath = `player.stats.${actual}`;
+    }
+  }
+
+  // 处理 player.realm "化神初期" → player.realmIndex 21
+  if (normalizedPath === "player.realm") {
+    const realmIdx = REALMS_LIST.indexOf(value.trim().replace(/["']/g, ""));
+    if (realmIdx >= 0) {
+      return { path: "player.realmIndex", value: String(realmIdx) };
+    }
+    return null;
+  }
+
+  // 处理 player.spiritRoots.dark 88 → 更新灵根数组
+  const rootMatch = normalizedPath.match(/^player\.spiritRoots\.(\S+)$/);
+  if (rootMatch) {
+    const elementKey = ELEMENT_ALIASES[rootMatch[1]] || rootMatch[1];
+    const roots = root?.player?.spiritRoots;
+    if (Array.isArray(roots)) {
+      const rootItem = roots.find((r: any) => r.element === elementKey);
+      if (rootItem) {
+        rootItem.value = Number(value) || 0;
+        return null; // 已直接处理
+      } else {
+        // 添加新的灵根
+        roots.push({ element: elementKey, value: Number(value) || 0 });
+        return null;
+      }
+    }
+  }
+
+  // 处理 player.stats.heart "玩世不恭" → 更新心性数组
+  if (normalizedPath === "player.stats.heart") {
+    const heartVal = value.trim().replace(/["']/g, "");
+    const stats = root?.player?.stats;
+    if (stats) {
+      if (!Array.isArray(stats.heartScores)) {
+        stats.heartScores = [];
+      }
+      // 简单更新：如果已有心性条目则更新trait，否则新增
+      if (stats.heartScores.length > 0) {
+        stats.heartScores[0].trait = heartVal as any;
+      } else {
+        stats.heartScores.push({ trait: heartVal as any, score: 50, modifiers: [] });
+      }
+      return null;
+    }
+  }
+
+  // 处理 player.meridians 90 (数值) → 更新所有经脉的clarity
+  if (normalizedPath === "player.meridians") {
+    const numVal = Number(value);
+    if (!isNaN(numVal)) {
+      const meridians = root?.player?.meridians;
+      if (Array.isArray(meridians)) {
+        meridians.forEach((m: any) => {
+          m.clarity = Math.min(numVal, m.maxClarity || 100);
+        });
+        return null;
+      }
+    }
+  }
+
+  // 处理 player.body 1425 (数字) → 转为字符串
+  if (normalizedPath === "player.body" || normalizedPath === "player.fortune") {
+    return { path: normalizedPath, value: value.replace(/["']/g, "") };
+  }
+
+  return { path: normalizedPath, value };
+}
+
 function applyOne(root: any, op: DataOp): void {
   if (op.kind === "modify") {
-    const segs = parsePath(op.path);
+    // 规范化路径和值
+    const normalized = normalizeModifyPath(root, op.path, op.value);
+    if (!normalized) return; // 已直接处理
+
+    const segs = parsePath(normalized.path);
     if (segs.length === 0) return;
     let parent: any = root;
     for (let i = 0; i < segs.length - 1; i++) {
       parent = descend(parent, segs[i]);
       if (parent == null) return;
       if (typeof parent !== "object") {
-        console.warn("[applyOne] Path segment is not an object:", op.path, "at segment", i, "value:", parent);
+        console.warn("[applyOne] Path segment is not an object:", normalized.path, "at segment", i, "value:", parent);
         return;
       }
     }
     const last = segs[segs.length - 1];
     if (typeof parent !== "object" || parent === null) {
-      console.warn("[applyOne] Parent is not an object for modify:", op.path);
+      console.warn("[applyOne] Parent is not an object for modify:", normalized.path);
       return;
     }
-    applyModify(parent, last, op);
+    const normalizedOp = { ...op, path: normalized.path, value: normalized.value };
+    applyModify(parent, last, normalizedOp);
   } else if (op.kind === "add") {
     const arr = resolveCollection(root, op.collection);
     if (!Array.isArray(arr)) {
