@@ -513,6 +513,27 @@ function normalizeNewsItem(item: any): any {
 function normalizeTechnique(item: any): any {
   if (!item || typeof item !== "object") return item;
 
+  if (item.type && !item.category) {
+    item.category = item.type;
+    delete item.type;
+  }
+
+  if (item.maxProficiency !== undefined && item.proficiencyMax === undefined) {
+    item.proficiencyMax = item.maxProficiency;
+    delete item.maxProficiency;
+  }
+
+  const validGrades = ["凡品", "灵品", "玄品", "天品", "仙品"];
+  if (item.grade && !validGrades.includes(item.grade)) {
+    const gradeMap: Record<string, string> = {
+      "一品": "凡品", "二品": "凡品", "三品": "灵品", "四品": "灵品",
+      "五品": "玄品", "六品": "玄品", "七品": "天品", "八品": "天品", "九品": "仙品",
+      "地品": "天品", "地级": "天品",
+      "人级": "凡品", "神级": "仙品",
+    };
+    item.grade = gradeMap[item.grade] || "凡品";
+  }
+
   if (!item.element && item.attributes && typeof item.attributes === "object") {
     const entries = Object.entries(item.attributes as Record<string, number>);
     if (entries.length > 0) {
@@ -576,12 +597,17 @@ function normalizeTechnique(item: any): any {
     }));
   }
 
-  if (item.prerequisites && Array.isArray(item.prerequisites)) {
-    item.prerequisites = item.prerequisites.map((p: any) => ({
-      type: p.type || "realm",
-      value: p.value || "引气初期",
-      minLevel: typeof p.minLevel === "number" ? p.minLevel : undefined,
-    }));
+  if (!item.prerequisites || !Array.isArray(item.prerequisites)) {
+    item.prerequisites = [];
+  }
+
+  if (!item.attributes || typeof item.attributes !== "object") {
+    item.attributes = {};
+  }
+
+  if (!item.basePracticeSpeed) {
+    const gradeSpeed: Record<string, number> = { "凡品": 1, "灵品": 1.2, "玄品": 1.5, "天品": 2, "仙品": 3 };
+    item.basePracticeSpeed = gradeSpeed[item.grade as string] || 1;
   }
 
   return item;

@@ -422,7 +422,7 @@ DELETE <集合> <id>
 【DELETE集合】可删除的集合：inventory、log、techniques、relations、sect.tasks、sect.heritage、sect.shop、sect.resources、sect.positions、news.items
 【DELETE格式】集合名与id用空格分隔，如 DELETE inventory i10、DELETE relations npc001
 
-【宗门字段】可MODIFY的宗门字段：sect.name、sect.level、sect.reputation、sect.leader、sect.elders、sect.disciples、sect.territory、sect.contribution、sect.appearance、sect.reputationDesc、sect.surroundings、sect.management.treasury.spiritStones
+【功法字段】ADD techniques 时支持的字段：id、name、category（心法/炼体/神通/身法/秘术）、grade（凡品/灵品/玄品/天品/仙品）、proficiency、proficiencyMax、element（金/木/水/火/土/风/雷/冰/暗）、description（或desc）、nature（刚/柔/奇/毒/速/稳/幻/霸）、daoPath
 
 【场所约束】当前场所：${location.name}。允许：${location.allowed}。禁止：${location.forbidden}。冲突时在叙事中体现限制，不执行冲突操作。
 
