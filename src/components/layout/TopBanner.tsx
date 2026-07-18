@@ -74,7 +74,7 @@ export function TopBanner({ onOpenSettings }: TopBannerProps) {
         <div className="text-right">
           <div className="font-serif text-[10px] text-paper-400/60 tracking-wider">修为</div>
           <div className="font-number text-lg text-gold-400">
-            {player.cultivation.toLocaleString()}
+            {(player.cultivation ?? 0).toLocaleString()}
           </div>
         </div>
         <div className="w-px h-10 bg-gold-500/20" />

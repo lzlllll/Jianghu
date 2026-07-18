@@ -267,7 +267,7 @@ export function ProfilePanel() {
                         </div>
                         {!isPast && (
                           <div className="font-number text-sm text-paper-400/50">
-                            需修为 {realm.cultivationNeeded.toLocaleString()}
+                            需修为 {(realm.cultivationNeeded ?? 0).toLocaleString()}
                           </div>
                         )}
                       </div>

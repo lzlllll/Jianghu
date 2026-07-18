@@ -82,7 +82,7 @@ function IndustryPanel({ industries }: { industries: SectIndustry[] }) {
                 <span className="font-brush text-lg text-paper-100">{ind.name}</span>
                 <span className="font-number text-xs text-gold-400">Lv.{ind.level}</span>
               </div>
-              <span className="font-number text-sm text-cinnabar-400">投入 {ind.investment.toLocaleString()} 灵石</span>
+              <span className="font-number text-sm text-cinnabar-400">投入 {(ind.investment ?? 0).toLocaleString()} 灵石</span>
             </div>
             <div className="grid grid-cols-2 gap-2 mb-2">
               <div>
@@ -188,13 +188,13 @@ function TreasuryPanel({ treasury, consumption }: { treasury: { spiritStones: nu
       <ScrollCard title="宗门宝库" subtitle="灵石储备">
         <div className="text-center py-6">
           <div className="font-number text-4xl text-gold-400 mb-2">
-            {treasury.spiritStones.toLocaleString()}
+            {(treasury.spiritStones ?? 0).toLocaleString()}
           </div>
           <div className="font-serif text-xs text-paper-400/60">下品灵石</div>
           <div className="mt-4 pt-4 border-t border-paper-400/10">
             <div className="flex items-center justify-between mb-1">
               <span className="font-serif text-xs text-paper-400/50">日消耗</span>
-              <span className="font-number text-xs text-cinnabar-400">{consumption.dailyCost.toLocaleString()}</span>
+              <span className="font-number text-xs text-cinnabar-400">{(consumption.dailyCost ?? 0).toLocaleString()}</span>
             </div>
             <div className="h-1.5 bg-ink-900/80 rounded-sm overflow-hidden">
               <div className="h-full bg-cinnabar-500" style={{ width: `${Math.min(100, (consumption.dailyCost / 5000) * 100)}%` }} />
@@ -208,7 +208,7 @@ function TreasuryPanel({ treasury, consumption }: { treasury: { spiritStones: nu
           {(Array.isArray(treasury.materials) ? treasury.materials : []).map((mat) => (
             <div key={mat.name} className="flex items-center justify-between p-2 rounded bg-ink-900/20">
               <span className="font-serif text-xs text-paper-300">{mat.name}</span>
-              <span className="font-number text-xs text-jade-400">{mat.amount.toLocaleString()}</span>
+              <span className="font-number text-xs text-jade-400">{(mat.amount ?? 0).toLocaleString()}</span>
             </div>
           ))}
         </div>

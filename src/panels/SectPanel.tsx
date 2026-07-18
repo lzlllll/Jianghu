@@ -64,14 +64,14 @@ export function SectPanel() {
           <div className="text-right">
             <div className="font-serif text-[10px] text-paper-400/60">声望</div>
             <div className="font-number text-2xl text-gold-400">
-              {sect.reputation.toLocaleString()}
+              {(sect.reputation ?? 0).toLocaleString()}
             </div>
           </div>
           <div className="w-px h-12 bg-gold-500/20" />
           <div className="text-right">
             <div className="font-serif text-[10px] text-paper-400/60">我的贡献</div>
             <div className="font-number text-2xl text-cinnabar-400">
-              {sect.contribution.toLocaleString()}
+              {(sect.contribution ?? 0).toLocaleString()}
             </div>
           </div>
         </div>
@@ -311,7 +311,7 @@ function PositionTree() {
                   </div>
                   <p className="font-serif text-xs text-paper-400/60 mt-0.5">{pos.privilege}</p>
                   <div className="font-number text-[10px] text-paper-400/50 mt-0.5">
-                    需贡献 {pos.contributionNeeded.toLocaleString()}
+                    需贡献 {(pos.contributionNeeded ?? 0).toLocaleString()}
                   </div>
                 </div>
 
@@ -409,7 +409,7 @@ function ShopBoard() {
   return (
     <ScrollCard
       title="贡献商店"
-      subtitle={`现有贡献 ${contribution.toLocaleString()}`}
+      subtitle={`现有贡献 ${(contribution ?? 0).toLocaleString()}`}
     >
       <p className="font-serif text-xs text-paper-400/50 mb-3">
         请在宗门叙事中提及兑换物品，系统将自动扣除贡献并发放物品。
@@ -433,7 +433,7 @@ function ShopBoard() {
                   <span className="font-serif text-[10px] text-paper-400/50">{item.type}</span>
                 </div>
                 <span className="font-number text-sm text-cinnabar-400">
-                  {item.cost.toLocaleString()}
+                  {(item.cost ?? 0).toLocaleString()}
                 </span>
               </div>
               <p className="font-serif text-xs text-paper-400/60 leading-relaxed">
@@ -516,7 +516,7 @@ function HeritageBoard() {
               </div>
               <div className="text-right">
                 <span className="font-number text-sm text-gold-400">
-                  {r.amount.toLocaleString()}
+                  {(r.amount ?? 0).toLocaleString()}
                 </span>
                 <span className="font-serif text-[10px] text-paper-400/50 ml-1">
                   {r.unit}
